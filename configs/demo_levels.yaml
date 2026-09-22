@@ -1,0 +1,45 @@
+# DEMO ONLY: shows support and resistance levels used as rules. It is NOT the
+# brother's strategy (his rules are still to be written down precisely) and it
+# is not a trading recommendation. It trades the index-style price series, not options.
+#
+# Level indicators available: prev_day_high, prev_day_low, prev_day_close,
+# prev_week_high, prev_week_low (no period needed), and swing_high / swing_low
+# (period = bars needed on EACH side to confirm a swing).
+name: demo_previous_day_levels
+capital: 100000
+
+data:
+  path: data/sample_5min.csv
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: pdh, type: prev_day_high}
+      - {name: pdl, type: prev_day_low}
+    entry_long:  "close > pdh and close_prev <= pdh_prev"
+    exit_long:   "close < pdh"
+    entry_short: "close < pdl and close_prev >= pdl_prev"
+    exit_short:  "close > pdl"
+  quantity: 10
+  allow_short: true
+  stop_loss_pct: 0.5
+  target_pct: 1.0
+
+risk:
+  max_daily_loss: 2000
+  max_trades_per_day: 4
+  max_position_value: 50000
+  trading_start: "09:20"
+  no_new_entries_after: "14:45"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2

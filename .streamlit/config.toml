@@ -1,0 +1,14 @@
+# A dark, trading-desk look. Nothing here is secret; it only sets colours and behaviour.
+[theme]
+base = "dark"
+primaryColor = "#16C784"
+backgroundColor = "#0B0F14"
+secondaryBackgroundColor = "#121923"
+textColor = "#E6EDF3"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

@@ -1,0 +1,9 @@
+# Secrets and personal data: never commit these
+.env
+*.db
+results/
+__pycache__/
+.pytest_cache/
+.venv/
+
+feedback.csv

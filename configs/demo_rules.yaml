@@ -1,0 +1,46 @@
+# DEMO ONLY: shows how a trader can write entry and exit rules in plain words
+# without touching Python. This is not a trading recommendation.
+#
+# Rules are true/false conditions. You can use:
+#   open, high, low, close, volume, and every indicator you define below
+#   <name>_prev  = the value on the previous bar (for crossovers)
+#   > < >= <= == !=   + - * /   and  or  not   ( )
+name: demo_rules_ema_rsi
+capital: 100000
+
+data:
+  path: data/sample_5min.csv
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: ema_fast, type: ema, period: 9}
+      - {name: ema_slow, type: ema, period: 21}
+      - {name: rsi_14,   type: rsi, period: 14}
+    entry_long:  "ema_fast > ema_slow and ema_fast_prev <= ema_slow_prev and rsi_14 > 50"
+    exit_long:   "ema_fast < ema_slow"
+    entry_short: "ema_fast < ema_slow and ema_fast_prev >= ema_slow_prev and rsi_14 < 50"
+    exit_short:  "ema_fast > ema_slow"
+  quantity: 10
+  allow_short: true
+  stop_loss_pct: 0.5
+  target_pct: 1.0
+
+risk:
+  max_daily_loss: 2000
+  max_trades_per_day: 6
+  max_position_value: 50000
+  trading_start: "09:20"
+  no_new_entries_after: "14:45"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2

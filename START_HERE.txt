@@ -1,0 +1,51 @@
+ALGOBOT TRADING DESK: START HERE
+================================
+
+What this is
+------------
+A workshop for practising and testing options ideas with FAKE money and PAST prices.
+It calculates position sizes, keeps your trade journal, shows what time decay and spread
+do to an option, and tries to break a trading rule before real money is at risk.
+
+What it is NOT
+--------------
+- It never places an order and never connects to your broker account.
+- It never asks for a password, OTP, API key or API secret. If anything ever does, close it.
+- It cannot promise profit. Nothing can.
+
+How to open it
+--------------
+A) If you were sent a LINK: open it in your browser. If it asks for a password, use the one you were given.
+
+B) On your own computer:
+   1. Unzip the folder first (do not run it from inside the zip).
+   2. Windows: double-click  run_windows.bat
+      Mac:     double-click  run_mac.command   (if it will not open: right-click it, choose Open)
+   3. The first time it sets itself up (a few minutes, needs internet). Then your browser opens.
+   4. To stop it, close the black window.
+   If Python is missing, the window tells you exactly what to install.
+
+A 10-minute tour (left menu)
+----------------------------
+1. Position size          Enter an option price and a stop. See how many lots fit your loss limit.
+2. Practice room          Start a market, buy an option with a stop, run the clock, sell, press
+                          "Finish and review". It shows what the market move earned and what time
+                          decay, spread and charges took.
+3. Option breakeven       For an at-the-money option with 3 days left, how far must Nifty move just
+                          to break even? How likely is a normal losing streak to wreck a small account?
+4. Journal and report     Write a trade down. Read the daily report. It flags trades with no stop.
+5. Feedback               Write what is wrong, confusing or missing. This is the most useful part.
+
+Sending your suggestions back
+-----------------------------
+On the Feedback page, copy the text into WhatsApp, or download the file and send it.
+Please write in trading words. For example:
+  - "The strike ladder should show open interest, like on Upstox."
+  - "This label says premium but it is the ask."
+  - "I check the day's high and low before entering, and I do not see them here."
+  - Your exact rules: which levels, what triggers an entry, where the stop goes, when you skip a trade.
+
+Your data
+---------
+On your own computer your journal is saved in a file called journal.db in this folder.
+On a shared link it lives only in your browser tab: use "Backup" on the Journal page to download it.

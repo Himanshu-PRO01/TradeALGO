@@ -1,0 +1,37 @@
+# DEMO ONLY: proves the pipeline works. This is not a trading recommendation.
+# Times must be in quotes, like "09:20".
+name: demo_sma_crossover
+capital: 100000
+
+data:
+  path: data/sample_5min.csv
+
+strategy:
+  name: sma_crossover
+  params:
+    fast: 10
+    slow: 30
+  quantity: 10            # shares per trade
+  allow_short: false
+  stop_loss_pct: 0.5      # exit if price moves 0.5% against you (leave empty for none)
+  target_pct: 1.0         # take profit at +1.0% (leave empty for none)
+
+risk:
+  max_daily_loss: 2000        # stop trading for the day after losing this much (rupees)
+  max_trades_per_day: 6
+  max_position_value: 50000   # biggest single position (rupees)
+  trading_start: "09:20"
+  no_new_entries_after: "14:45"
+  square_off_time: "15:15"
+
+# EXAMPLE charges for Indian equity intraday. Check your broker's charge
+# calculator and edit these before trusting any result.
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2
