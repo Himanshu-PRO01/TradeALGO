@@ -13,7 +13,6 @@ from typing import Callable, Optional
 
 SANDBOX_HOST = "https://api-sandbox.upstox.com"
 SANDBOX_TOKEN_ENV = "UPSTOX_SANDBOX_ACCESS_TOKEN"
-SANDBOX_API_VERSION = "2.0"
 
 
 class UpstoxSandboxError(RuntimeError):
@@ -98,7 +97,7 @@ def _sdk_order_api(token: str):
         configuration = upstox_client.Configuration(sandbox=True)
         configuration.access_token = token
         api_client = upstox_client.ApiClient(configuration)
-        return upstox_client.OrderApi(api_client), upstox_client
+        return upstox_client.OrderApiV3(api_client), upstox_client
     except Exception as exc:
         raise UpstoxSandboxError(
             f"Could not initialize the Upstox Sandbox SDK: {exc}"
@@ -187,14 +186,14 @@ class UpstoxSandboxClient:
 
         api, sdk = _sdk_order_api(self.token or "")
         try:
-            body = sdk.PlaceOrderRequest(
+            body = sdk.PlaceOrderV3Request(
                 quantity=int(quantity), product=product, validity=validity,
                 price=price, instrument_token=instrument_token.strip(),
                 order_type=order_type, transaction_type=transaction_type,
                 disclosed_quantity=disclosed_quantity,
                 trigger_price=trigger_price, is_amo=False,
             )
-            response = api.place_order(body, SANDBOX_API_VERSION)
+            response = api.place_order(body)
             return _sdk_response_to_dict(response)
         except Exception as exc:
             raise _sdk_error(exc) from exc
@@ -243,7 +242,7 @@ class UpstoxSandboxClient:
                 disclosed_quantity=int(disclosed_quantity),
                 trigger_price=float(trigger_price),
             )
-            response = api.modify_order(body, SANDBOX_API_VERSION)
+            response = api.modify_order(body)
             return _sdk_response_to_dict(response)
         except Exception as exc:
             raise _sdk_error(exc) from exc
@@ -257,7 +256,7 @@ class UpstoxSandboxClient:
                          self.transport)
         api, _ = _sdk_order_api(self.token or "")
         try:
-            response = api.cancel_order(order_id.strip(), SANDBOX_API_VERSION)
+            response = api.cancel_order(order_id.strip())
             return _sdk_response_to_dict(response)
         except Exception as exc:
             raise _sdk_error(exc) from exc
