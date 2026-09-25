@@ -512,3 +512,29 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - Refresh the Streamlit app after deployment to see the new sidebar.
+
+
+## Activity: Fix Sidebar Page Routing Error
+
+**Date:** 2026-09-25
+
+### Files changed
+- `algobot/ui.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Fixed the trader-friendly sidebar's Home/Trading Desk link for the app's `dashboard.py` entrypoint.
+- The previous menu pointed Home to `Trading_Desk.py`, but this deployed app is launched through `dashboard.py` and Streamlit could not resolve that target as a registered page.
+- No trading, risk, broker, or execution logic was changed.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: GitHub connector only; no local test runner available in this session.
+
+### Commits
+- Initial routing fix: `538729b31b0689a6b45eaa18c27c740e4f04f912`
+- Cleanup: `a95b2d1a957f9627953284444e1ef5dee484af52`
+
+### Notes
+- Refresh the Streamlit app after deployment. The sidebar should load without the StreamlitPageNotFoundError.
