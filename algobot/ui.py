@@ -7,6 +7,7 @@ down, loss and sell; amber means caution or practice.
 from __future__ import annotations
 
 from html import escape
+import os
 from typing import Iterable, Optional
 
 import streamlit as st
@@ -112,7 +113,7 @@ def _menu() -> None:
         )
         sections = [
             ("Trade Desk", [
-                ("🏠", "Trading Desk", "Trading_Desk.py"),
+                ("🏠", "Trading Desk", os.path.basename(__file__).replace("algobot", "") if False else "dashboard.py"),
                 ("🧮", "Position Size", "pages/1_Position_size.py"),
                 ("📒", "Journal & Report", "pages/2_Journal_and_report.py"),
             ]),
