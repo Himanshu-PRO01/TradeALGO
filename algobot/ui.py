@@ -66,22 +66,22 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 
 /* mobile-first trading UX */
-@media (max-width: 768px) {
-    .block-container {
+@media (max-width: 768px) {{
+    .block-container {{
         padding: .65rem .75rem 4.5rem;
         max-width: 100%;
-    }
-    .ab-top {
+    }}
+    .ab-top {{
         align-items: flex-start;
         gap: 7px;
         padding: 3px 0 8px;
         margin-bottom: 6px;
-    }
-    .ab-brand {
+    }}
+    .ab-brand {{
         font-size: .82rem;
         letter-spacing: .12em;
-    }
-    .ab-pills {
+    }}
+    .ab-pills {{
         width: 100%;
         gap: 5px;
         overflow-x: auto;
@@ -89,32 +89,32 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
         padding-bottom: 2px;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-    }
-    .ab-pills::-webkit-scrollbar { display:none; }
-    .ab-pill {
+    }}
+    .ab-pills::-webkit-scrollbar {{ display:none; }}
+    .ab-pill {{
         flex: 0 0 auto;
         padding: 4px 9px;
         font-size: 10px;
-    }
-    h1 { font-size: 1.65rem !important; }
-    h2 { font-size: 1.35rem !important; }
-    h3 { font-size: 1.05rem !important; }
-    .ab-hero {
+    }}
+    h1 {{ font-size: 1.65rem !important; }}
+    h2 {{ font-size: 1.35rem !important; }}
+    h3 {{ font-size: 1.05rem !important; }}
+    .ab-hero {{
         padding: 18px 16px;
         border-radius: 16px;
         margin-bottom: 12px;
-    }
-    .ab-hero h2 { font-size: 1.45rem; }
-    .ab-card {
+    }}
+    .ab-hero h2 {{ font-size: 1.45rem; }}
+    .ab-card {{
         min-height: auto;
         padding: 14px;
         border-radius: 12px;
-    }
-    .ab-nav-card {
+    }}
+    .ab-nav-card {{
         min-height: auto;
         padding: 14px;
-    }
-    .ab-strip {
+    }}
+    .ab-strip {{
         gap: 0;
         padding: 9px 10px;
         border-radius: 11px;
@@ -122,101 +122,101 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
         flex-wrap: nowrap;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-    }
-    .ab-strip::-webkit-scrollbar { display:none; }
-    .ab-strip > div {
+    }}
+    .ab-strip::-webkit-scrollbar {{ display:none; }}
+    .ab-strip > div {{
         flex: 0 0 auto;
         min-width: 125px;
         padding-right: 16px;
-    }
-    .ab-strip .val { font-size: .96rem; }
+    }}
+    .ab-strip .val {{ font-size: .96rem; }}
     .stButton > button,
     .stDownloadButton > button,
-    [data-testid="stFormSubmitButton"] > button {
+    [data-testid="stFormSubmitButton"] > button {{
         width: 100%;
         min-height: 46px;
         border-radius: 11px;
-    }
+    }}
     .stTextInput input,
     .stNumberInput input,
     .stTextArea textarea,
     .stDateInput input,
-    .stTimeInput input {
+    .stTimeInput input {{
         font-size: 16px !important;
         min-height: 44px;
-    }
+    }}
     .stSelectbox [data-baseweb="select"],
-    .stMultiSelect [data-baseweb="select"] {
+    .stMultiSelect [data-baseweb="select"] {{
         min-height: 44px;
-    }
-    .stTabs [data-baseweb="tab-list"] {
+    }}
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 4px;
         overflow-x: auto;
         flex-wrap: nowrap;
         scrollbar-width: none;
-    }
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display:none; }
-    .stTabs [data-baseweb="tab"] {
+    }}
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{ display:none; }}
+    .stTabs [data-baseweb="tab"] {{
         flex: 0 0 auto;
         padding: 9px 12px;
         font-size: .84rem;
-    }
-    [data-testid="stDataFrame"] {
+    }}
+    [data-testid="stDataFrame"] {{
         max-width: 100%;
         overflow-x: auto;
-    }
-    [data-testid="stSidebar"] {
+    }}
+    [data-testid="stSidebar"] {{
         min-width: min(88vw, 340px);
         max-width: min(88vw, 340px);
-    }
-    [data-testid="stSidebar"] > div:first-child {
+    }}
+    [data-testid="stSidebar"] > div:first-child {{
         padding-top: .65rem;
-    }
-    [data-testid="stSidebar"] [data-testid="stPageLink"] {
+    }}
+    [data-testid="stSidebar"] [data-testid="stPageLink"] {{
         margin: 5px 0;
-    }
-    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+    }}
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {{
         min-height: 48px;
         padding: 10px 12px !important;
         border-radius: 12px;
         font-size: .92rem;
-    }
-    .ab-menu-section {
+    }}
+    .ab-menu-section {{
         margin: 12px 6px 4px;
-    }
-    .stCaption {
+    }}
+    .stCaption {{
         line-height: 1.4;
-    }
+    }}
     /* Streamlit columns become easier to scan when their contents are separated. */
-    [data-testid="stHorizontalBlock"] {
+    [data-testid="stHorizontalBlock"] {{
         gap: .65rem !important;
-    }
-}
-@media (max-width: 430px) {
-    .block-container {
+    }}
+}}
+@media (max-width: 430px) {{
+    .block-container {{
         padding-left: .6rem;
         padding-right: .6rem;
-    }
-    .ab-brand {
+    }}
+    .ab-brand {{
         font-size: .76rem;
-    }
-    .ab-menu-brand {
+    }}
+    .ab-menu-brand {{
         font-size: .92rem;
-    }
-    .ab-menu-status {
+    }}
+    .ab-menu-status {{
         font-size: .66rem;
-    }
-    .ab-check {
+    }}
+    .ab-check {{
         gap: 8px;
         padding: 9px 10px;
-    }
-    .ab-check .txt span {
+    }}
+    .ab-check .txt span {{
         font-size: .82rem;
-    }
-    [data-testid="stMetric"] {
+    }}
+    [data-testid="stMetric"] {{
         padding: 10px 12px;
-    }
-}
+    }}
+}}
 
 /* metric cards */
 [data-testid="stMetric"] {{ background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px; padding: 12px 16px; }}
