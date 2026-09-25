@@ -6,7 +6,7 @@ from algobot.config import validate_config
 from algobot.data import validate_bars
 from algobot.lab import format_lab, null_test, run_lab
 from algobot.lookahead import LeakyStrategy
-from algobot.strategy import REGIMES, REGISTRY
+from algobot.strategy import REGISTRY
 from algobot.worlds import REGIMES, generate_mixed_world, generate_world, get_regime
 
 
