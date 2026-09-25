@@ -31,7 +31,9 @@ with c:
                 unsafe_allow_html=True)
     st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
     st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
-    st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")st.markdown("### 📈 Market Chart")
+    st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
+
+st.markdown("### 📈 Market Chart")
 st.caption("Real market visualization for research. No broker connection and no live orders.")
 
 chart_controls = st.columns([2, 2, 3])
