@@ -58,11 +58,11 @@ with chart_controls[1]:
 with chart_controls[2]:
     dashboard_height = st.slider(
         "Chart height",
-        min_value=600,
-        max_value=1400,
-        value=1000,
+        min_value=500,
+        max_value=1200,
+        value=720,
         step=20,
-        help="Drag this to make the dashboard chart smaller or larger. 1000–1400 px is recommended for detailed viewing.",
+        help="Drag this to make the dashboard chart smaller or larger. 720–1000 px works well on phones and desktop; increase it for detailed viewing.",
         key="dashboard_chart_height",
     )
 
