@@ -41,3 +41,11 @@ def test_missing_token_is_explained():
 def test_no_live_host_exists():
     assert SANDBOX_HOST=="https://sandbox.upstox.com"
     assert "api.upstox.com" not in SANDBOX_HOST
+
+def test_order_validation_rejects_invalid_price_and_disclosed_quantity():
+    fake=Fake()
+    with pytest.raises(UpstoxSandboxError,match="Limit price"):
+        client(fake).place_order("NSE_FO|TEST",75,"BUY",order_type="LIMIT",price=0)
+    with pytest.raises(UpstoxSandboxError,match="Disclosed quantity"):
+        client(fake).place_order("NSE_FO|TEST",75,"BUY",disclosed_quantity=76)
+    assert fake.calls==[]
