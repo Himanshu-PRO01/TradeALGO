@@ -87,6 +87,9 @@ class PracticeSession:
         self.journal = Journal(":memory:", check_same_thread=False)   # kept alive across dashboard reruns
         self.blocked = 0
         self.overrides = 0
+        # Cache deterministic option prices for the current fake market session.
+        # The same price is requested repeatedly by the UI during Streamlit reruns.
+        self._mid_cache: dict[tuple, float] = {}
 
     # ------------------------------------------------------------------ time and prices
     @property
@@ -122,10 +125,18 @@ class PracticeSession:
         return [atm + k * self.s.strike_step for k in range(-each_side, each_side + 1)]
 
     def mid(self, kind: str, strike: float, spot: Optional[float] = None, ts=None, dte: Optional[float] = None) -> float:
-        d = self.dte(ts) if dte is None else dte
-        price = bs_price(self.spot if spot is None else spot, strike, d, self.s.iv_pct / 100.0,
-                         "call" if _kind(kind) == "CE" else "put", self.s.rate)
-        return max(price, 0.0)
+        kind = _kind(kind)
+        spot_value = self.spot if spot is None else float(spot)
+        ts_value = self.now if ts is None else ts
+        d = self.dte(ts_value) if dte is None else float(dte)
+        key = (pd.Timestamp(ts_value), kind, int(strike), round(spot_value, 8), round(d, 8))
+        cached = self._mid_cache.get(key)
+        if cached is not None:
+            return cached
+        price = max(bs_price(spot_value, strike, d, self.s.iv_pct / 100.0,
+                             "call" if kind == "CE" else "put", self.s.rate), 0.0)
+        self._mid_cache[key] = price
+        return price
 
     def quote(self, kind: str, strike: float) -> tuple:
         """(bid, ask). You buy at the ask and sell at the bid."""
