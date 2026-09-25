@@ -1,0 +1,279 @@
+# ChatGPT Activity Log
+
+This file records changes, checks, and important project decisions made by ChatGPT/AI agents so future agents can understand the project history before modifying code.
+
+## Purpose
+
+- Keep a persistent handover between ChatGPT, Codex, Antigravity, and other agents.
+- Record what was changed, why it was changed, and what was tested.
+- Make limitations and unverified items explicit.
+- Prevent agents from unknowingly repeating work or changing protected trading logic.
+
+## Project Safety Rules
+
+- Do **not** connect real money or place real orders unless the project owner explicitly approves it.
+- Do **not** put API keys, passwords, OTPs, broker secrets, PAN/account numbers, or other credentials into source code or config files.
+- Do **not** open, print, or expose `.env` secrets.
+- Do **not** tune strategy settings until the system has demonstrated behavior on fake/demo data.
+- Existing risk limits, audit checks, and the OpenAlgo bridge must not be changed without explicit approval.
+- After code changes, run:
+  `python -m pytest -q tests`
+- If a change breaks the existing test suite, investigate and revert the change rather than silently leaving the project broken.
+- Explain code changes in plain English.
+- Real broker/API integration is currently not part of the approved workflow.
+
+## Current Repository
+
+- Repository: `Himanshu-PRO01/TradeALGO`
+- Default branch: `main`
+- Main Streamlit entry point: `Trading_Desk.py`
+- Legacy entry point: `dashboard.py`
+- UI pages live under `pages/`.
+- Shared UI styling lives in `algobot/ui.py`.
+
+---
+
+## Activity: Feedback System Added
+
+**Source:** Earlier ChatGPT work on the uploaded algobot project zip.
+
+### Changes made
+
+Added a persistent feedback workflow so trading/software feedback can be captured and later turned into reports:
+
+- Added `algobot/feedback.py`
+  - SQLite-backed `FeedbackStore`
+  - Feedback categories, severity, and status handling
+  - Validation
+  - PDF export using ReportLab
+- Added a Streamlit Feedback page.
+- Added ReportLab to `requirements.txt` when needed.
+- Added feedback documentation to the README.
+- Added feedback tests covering saving/listing, validation, status changes, and PDF output.
+
+### Important test note
+
+At the time this work was performed, only the newly added feedback tests were run successfully. The complete existing test suite was **not** run in that session, so no claim was made that all existing tests passed.
+
+### Current repository status
+
+The GitHub repository now contains the feedback functionality as:
+- `algobot/feedback.py`
+- `pages/8_Feedback.py`
+- related tests/documentation
+
+---
+
+## Activity: GitHub Repository Inspection
+
+**Date:** 2026-09-25
+
+ChatGPT inspected the repository tree and confirmed:
+
+- `Trading_Desk.py` is the main Streamlit front page.
+- `pages/1_Position_size.py` through `pages/8_Feedback.py` exist.
+- `.streamlit/config.toml` exists.
+- `requirements.txt` exists.
+- `tests/` contains the project's automated test suite.
+- `algobot/openalgo_bridge.py` exists.
+- `algobot/risk.py` and `algobot/audit.py` exist.
+- The current front page explicitly presents the application as a practice/research tool and shows **NO LIVE ORDERS**.
+- The front page says it does not place orders or ask for broker keys.
+
+No broker credentials were accessed or added.
+
+---
+
+## Activity: UI Polish Commit #1
+
+**Date:** 2026-09-25
+
+### File changed
+
+`algobot/ui.py`
+
+### Intended change
+
+Polish the shared Streamlit trading-desk UI without changing trading logic.
+
+The change added:
+- More visual depth to the app background.
+- Improved sidebar spacing.
+- Rounded form controls.
+- Button hover interaction.
+- Reusable hero-section styling.
+- Reusable section-header styling.
+- Reusable navigation-card styling.
+
+### Commit
+
+`d1409898f5a828c09d8c7bd28b067cd71ff1e7cb`
+
+### Follow-up correction
+
+The first UI commit contained a CSS interpolation issue because literal template placeholders were written into the generated CSS. This was immediately corrected in a second commit.
+
+---
+
+## Activity: UI Polish Commit #2 / Correction
+
+**Date:** 2026-09-25
+
+### File changed
+
+`algobot/ui.py`
+
+### Change
+
+Replaced the accidental literal CSS placeholders with the actual theme values used by the existing project palette.
+
+### Commit
+
+`ad5df28df9eecb5f080d101df63b2d935fcebd8f`
+
+This is the latest ChatGPT-created commit recorded in this file.
+
+### Testing status
+
+The GitHub connector was used to inspect and update the repository, but it did **not** run the local Python test suite.
+
+Therefore:
+
+> **Do not assume the full test suite passed after the UI commits.**
+
+Run:
+
+```bash
+python -m pytest -q tests
+```
+
+before making further UI or code changes.
+
+---
+
+## Important Existing Project Context
+
+The project is intended to evolve toward a trading research/backtesting/paper-trading system before any real execution.
+
+The architecture discussed with the project owner separates:
+
+1. **AI research/development layer**
+   - Helps turn trading ideas into precise rules.
+   - Helps write/test strategy code.
+   - Reviews backtest results.
+   - Does not independently decide live trades.
+
+2. **Deterministic trading engine**
+   - Market data
+   - Indicators
+   - Strategy calculations
+   - Position sizing
+   - Risk controls
+   - Portfolio state
+   - Execution adapters
+   - Logging/audit
+
+3. **Testing stages**
+   - Strategy capture
+   - Historical backtesting
+   - Reality checks
+   - Paper/fake-money practice
+   - Only much later, if explicitly approved, broker execution
+
+### Strategy information still requiring precise definition
+
+The brother's questionnaire and code screenshots supplied earlier indicate that the strategy includes concepts such as:
+
+- 15-minute timeframe
+- Previous-week highs/lows and swing levels
+- Price touching a level plus confirmation
+- Options, generally buying 1–2 strikes OTM
+- Current weekly expiry
+- Fixed index-point stop beyond the level
+- Trading windows around 09:30–11:00 and 13:00–15:15
+- Avoiding major news
+- Defined daily/monthly risk limits
+
+However, several rules were still discretionary or incomplete, including exact swing-high/low definition, exact confirmation condition, exact profit-taking logic, exact position sizing, and some option/strike handling.
+
+**Agents must not invent these missing rules.**
+
+---
+
+## Brother's Legacy Python Code: Review Notes
+
+Earlier screenshots showed a Python trading script using a broker SDK pattern.
+
+Observed behavior included:
+
+- A `paper_trade` switch.
+- A `push_order()` function capable of placing market orders through a broker SDK when paper mode is disabled.
+- Time-based exit handling.
+- Strike adjustment logic around approximately +50/-50 strike movement.
+- Threading around strike changes.
+
+The complete strategy was not established from screenshots alone.
+
+A particularly important inconsistency was noted:
+
+- The questionnaire said **only buy options**.
+- One example trade showed a **CE sell**.
+- The code supported generic BUY/SELL transactions.
+
+Agents should ask for the complete strategy/code and clarification before encoding this as a deterministic strategy. Do not assume whether the sell example was an opening short, an exit, or another operation.
+
+---
+
+## Handover Instructions for Future Agents
+
+Before changing code:
+
+1. Read this file.
+2. Inspect the current repository state rather than relying only on old notes.
+3. Check recent commits/diffs.
+4. Preserve the safety rules above.
+5. Do not expose or request secrets.
+6. Make the smallest change needed.
+7. Run `python -m pytest -q tests`.
+8. Record the change, commit, and test result in this file.
+9. If tests were not run, explicitly say so.
+10. Never claim a test passed unless it was actually executed.
+
+### Log format for future entries
+
+Use this structure:
+
+```markdown
+## Activity: <short title>
+
+**Date:** YYYY-MM-DD
+
+### Files changed
+- `path/to/file.py`
+
+### What changed
+- ...
+
+### Why
+- ...
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: PASS / FAIL / NOT RUN
+- Details: ...
+
+### Commit
+- `<commit SHA>`
+
+### Notes / follow-up
+- ...
+```
+
+---
+
+## Last Updated
+
+**2026-09-25**
+
+Latest recorded ChatGPT commit:
+`ad5df28df9eecb5f080d101df63b2d935fcebd8f`
