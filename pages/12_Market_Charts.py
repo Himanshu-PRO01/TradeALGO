@@ -19,17 +19,17 @@ ui.header(
 
 st.info(
     "LIVE MARKET DATA · NO LIVE ORDERS. "
-    "The chart is supplied by TradingView's embeddable widget; no broker API key is required for this chart."
+    "The chart is supplied by TradingView's embeddable widget; no broker API key is required for this chart. "
+    "NIFTY/BANKNIFTY use continuous futures symbols here because some spot symbols are restricted in embedded widgets."
 )
 
 left, right = st.columns([1, 2])
 with left:
     symbol = st.selectbox(
-        "Starting symbol",
+        "Starting symbol (widget-supported feed)",
         [
-            "NSE:NIFTY",
-            "NSE:BANKNIFTY",
-            "NSE:FINNIFTY",
+            "NSE:NIFTY1!",
+            "NSE:BANKNIFTY1!",
             "NSE:RELIANCE",
             "NSE:HDFCBANK",
             "NSE:ICICIBANK",
@@ -54,7 +54,7 @@ chart_config = {
     "style": "1",
     "withdateranges": True,
     "hide_side_toolbar": False,
-    "allow_symbol_change": True,
+    "allow_symbol_change": False,
     "save_image": True,
     "hide_volume": False,
     "details": True,
