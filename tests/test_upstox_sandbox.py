@@ -106,6 +106,7 @@ def test_sdk_client_is_explicitly_sandbox_only(monkeypatch):
         Configuration=FakeConfiguration,
         ApiClient=FakeApiClient,
         OrderApi=FakeOrderApi,
+        OrderApiV3=FakeOrderApi,
     )
     monkeypatch.setitem(sys.modules, "upstox_client", fake_sdk)
 
@@ -129,4 +130,13 @@ def test_order_validation_rejects_invalid_price_and_disclosed_quantity():
     assert fake.calls == []
 
 
-def test_sdk_uses_v2_api_version_header():
+def test_clean_token_strips_quotes_bearer_and_whitespace():
+    from algobot.upstox_sandbox import clean_token
+
+    assert clean_token("  eyJabc123  \n") == "eyJabc123"
+    assert clean_token('"eyJabc123"') == "eyJabc123"
+    assert clean_token("Bearer eyJabc123") == "eyJabc123"
+    assert clean_token("bearer eyJabc123") == "eyJabc123"
+    assert clean_token(None) is None
+    assert clean_token("") is None
+    assert clean_token('   ') is None

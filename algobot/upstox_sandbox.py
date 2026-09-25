@@ -19,9 +19,44 @@ class UpstoxSandboxError(RuntimeError):
     """A sandbox request failed or configuration is incomplete."""
 
 
+def clean_token(raw: Optional[str]) -> Optional[str]:
+    """Normalize a pasted token: strip whitespace/newlines, surrounding
+    quotes, and an accidentally-included 'Bearer ' prefix.
+
+    Streamlit secrets are pasted by hand, and every one of these mistakes
+    produces a token that *looks* present (so the UI shows "detected") but
+    still gets a 401 from Upstox because the literal string sent no longer
+    matches the token they generated.
+    """
+    if raw is None:
+        return None
+    token = str(raw).strip()
+    # Strip a matching pair of surrounding quotes, e.g. token = '"eyJ..."'
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in ("'", '"'):
+        token = token[1:-1].strip()
+    # Strip an accidentally pasted "Bearer " prefix (case-insensitive).
+    if token[:7].lower() == "bearer ":
+        token = token[7:].strip()
+    return token or None
+
+
+def token_preview(token: Optional[str]) -> str:
+    """A safe-to-display preview: length plus first/last few characters.
+
+    Never returns enough of the token to reconstruct it, but is enough for
+    a human to eyeball that it matches the token shown on the Upstox
+    sandbox app page (right length, right prefix) and has no stray
+    whitespace/quotes baked in.
+    """
+    if not token:
+        return "(none)"
+    if len(token) <= 8:
+        return f"{len(token)} chars"
+    return f"{token[:4]}…{token[-4:]} ({len(token)} chars)"
+
+
 def sandbox_token() -> Optional[str]:
-    token = os.environ.get(SANDBOX_TOKEN_ENV)
-    return token.strip() if token else None
+    return clean_token(os.environ.get(SANDBOX_TOKEN_ENV))
 
 
 def _post(path: str, token: str, payload: dict, timeout: float = 20.0,

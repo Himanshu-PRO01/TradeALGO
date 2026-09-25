@@ -1,7 +1,13 @@
 """Upstox Sandbox page: API testing without live orders."""
 import streamlit as st
 from algobot import ui
-from algobot.upstox_sandbox import UpstoxSandboxClient, UpstoxSandboxError, sandbox_token
+from algobot.upstox_sandbox import (
+    UpstoxSandboxClient,
+    UpstoxSandboxError,
+    clean_token,
+    sandbox_token,
+    token_preview,
+)
 
 ui.setup("Upstox Sandbox", "🧪")
 ui.header(
@@ -21,13 +27,38 @@ token_source = "environment" if token else ""
 if not token:
     try:
         secret_value = st.secrets.get("UPSTOX_SANDBOX_ACCESS_TOKEN")
-        token = str(secret_value).strip() if secret_value else None
+        token = clean_token(secret_value)
         token_source = "Streamlit Secrets" if token else ""
     except Exception:
         token = None
 
 if token:
     st.success(f"✅ Sandbox token detected privately ({token_source}). Token value is never shown.")
+    st.caption(
+        f"Preview: `{token_preview(token)}` — check this matches the token's length/prefix "
+        "shown on the Upstox sandbox app page. A 401 despite 'detected' almost always means "
+        "this string is technically present but wrong."
+    )
+    with st.expander("Still getting 401 Unauthorized? Check these in order"):
+        st.markdown(
+            "1. **Wrong kind of token.** A sandbox 401 usually means a *live* Upstox "
+            "access token (from the normal OAuth login flow) was pasted here. Sandbox "
+            "calls only accept a token generated from the **Sandbox** section of "
+            "[your Upstox app](https://account.upstox.com/developer/apps) — open the "
+            "sandbox app there and click **Generate** to get a sandbox-only token.\n"
+            "2. **Expired token.** Upstox sandbox tokens are valid for 30 days only, "
+            "with no refresh — generate a new one if it's older than that.\n"
+            "3. **Secrets not reloaded.** On Streamlit Community Cloud, saving a secret "
+            "does not hot-reload the running app — reboot the app from the Streamlit "
+            "dashboard (Manage app → ⋮ → Reboot) after editing secrets.\n"
+            "4. **Pasted with quotes/`Bearer `/newline.** e.g. "
+            '`UPSTOX_SANDBOX_ACCESS_TOKEN = "eyJ...\\n"` in `secrets.toml`. This app now '
+            "strips quotes, a leading `Bearer `, and surrounding whitespace automatically, "
+            "so if the preview above still looks off, re-copy the token fresh from Upstox.\n"
+            "5. **Different Upstox app / API key.** The sandbox token is tied to the "
+            "specific sandbox app it was generated under — confirm you generated it under "
+            "the same app whose sandbox mode you're testing, not a separate live app."
+        )
 else:
     st.warning(
         "No sandbox token detected. Add UPSTOX_SANDBOX_ACCESS_TOKEN to Streamlit Secrets "
