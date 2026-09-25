@@ -106,15 +106,18 @@ if b4.button("Finish and review", key="pr_finish", width="stretch"):
 for kind_, message_ in st.session_state.pop("practice_flash", []):
     getattr(st, kind_)(message_)
 
-today_bars = sess.revealed()[sess.revealed().index.date == sess.now.date()]
+revealed = sess.revealed()
+today_bars = revealed[revealed.index.date == sess.now.date()]
 day_open = float(today_bars["open"].iloc[0])
 change = sess.spot - day_open
 gate = check_gate(sess.journal, sess.now.date(), sess.s.max_trades_per_day, sess.s.max_daily_loss)
-equity_change = sess.equity() - sess.s.capital
+equity = sess.equity()
+unrealized = sess.unrealized()
+equity_change = equity - sess.s.capital
 ui.ticker([("NIFTY (fake)", f"{sess.spot:,.1f}", ui.tone(change)),
            ("Change today", f"{change:+,.1f} ({change / day_open * 100:+.2f}%)", ui.tone(change)),
            ("Time", f"{sess.now:%d %b %H:%M}", None), ("Days to expiry", f"{sess.dte():.2f}", "warn" if sess.dte() < 1 else None),
-           ("Account", ui.inr(sess.equity()), ui.tone(equity_change)), ("Open P&L", ui.inr(sess.unrealized(), sign=True), ui.tone(sess.unrealized())),
+           ("Account", ui.inr(equity), ui.tone(equity_change)), ("Open P&L", ui.inr(unrealized, sign=True), ui.tone(unrealized)),
            ("Trades today", f"{gate.trades_opened_today}/{sess.s.max_trades_per_day}", "warn" if not gate.allowed else None)])
 
 # ----------------------------------------------------------------------- chart and order ticket
@@ -179,12 +182,13 @@ with ticket_col:
 
 with chart_col:
     window = st.slider("Bars shown", 30, 300, 100, key="pr_window")
-    ui.show_chart(candlestick(sess.revealed(), trades=pd.DataFrame(markers) if markers else None,
+    ui.show_chart(candlestick(revealed, trades=pd.DataFrame(markers) if markers else None,
                               hlines={"day open": day_open}, height=330, max_bars=int(window)))
     entry_line = sess.position["entry_price"] if sess.position else None
     stop_line = sess.position["stop"] if sess.position else None
     st.caption(f"Option price: {sel_kind} {sel_strike}")
-    ui.show_chart(premium_line(sess.premium_history(sel_kind, sel_strike, last=int(window)), entry_line, stop_line))
+    premium = sess.premium_history(sel_kind, sel_strike, last=int(window))
+    ui.show_chart(premium_line(premium, entry_line, stop_line))
 
 tab_chain, tab_blotter, tab_rules = st.tabs(["Option chain", "Blotter", "My rules today"])
 with tab_chain:
