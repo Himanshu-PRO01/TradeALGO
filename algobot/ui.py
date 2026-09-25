@@ -20,7 +20,12 @@ CSS = f"""
 .block-container {{ padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }}
 h1, h2, h3 {{ letter-spacing: -0.01em; }}
 [data-testid="stSidebar"] {{ background: {PANEL}; border-right: 1px solid {BORDER}; }}
-[data-testid="stSidebarNav"] a {{ border-radius: 8px; }}
+[data-testid="stSidebarNav"] {{ display:none; }}
+.ab-menu-head {{ padding:4px 6px 12px; border-bottom:1px solid {BORDER}; margin-bottom:10px; }}
+.ab-menu-brand {{ font-weight:900; letter-spacing:.12em; font-size:1rem; }}
+.ab-menu-brand span {{ color:{UP}; }}
+.ab-menu-status {{ color:{MUTED}; font-size:.72rem; margin-top:4px; }}
+.ab-menu-section {{ color:{MUTED}; font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:14px 6px 5px; }}
 
 /* metric cards */
 [data-testid="stMetric"] {{ background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px; padding: 12px 16px; }}
@@ -97,10 +102,48 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 """
 
 
+def _menu() -> None:
+    """Trader-friendly sidebar navigation shared by every page."""
+    with st.sidebar:
+        st.markdown(
+            f'<div class="ab-menu-head"><div class="ab-menu-brand">ALGO<span>BOT</span></div>'
+            f'<div class="ab-menu-status">TRADING DESK · {"HOSTED" if is_hosted() else "LOCAL"} · LIVE OFF</div></div>',
+            unsafe_allow_html=True,
+        )
+        sections = [
+            ("Trade Desk", [
+                ("🏠", "Trading Desk", "Trading_Desk.py"),
+                ("🧮", "Position Size", "pages/1_Position_size.py"),
+                ("📒", "Journal & Report", "pages/2_Journal_and_report.py"),
+            ]),
+            ("Practice", [
+                ("🎯", "Practice Room", "pages/3_Practice_room.py"),
+                ("⏳", "Option Breakeven & Ruin", "pages/4_Option_breakeven_and_ruin.py"),
+            ]),
+            ("Research", [
+                ("📊", "Backtest", "pages/5_Backtest.py"),
+                ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
+                ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+                ("💬", "Feedback", "pages/8_Feedback.py"),
+                ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
+                ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+            ]),
+            ("Execution", [
+                ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
+            ]),
+        ]
+        for section, links in sections:
+            st.markdown(f'<div class="ab-menu-section">{escape(section)}</div>', unsafe_allow_html=True)
+            for icon_, label, path in links:
+                st.page_link(path, label=f"{icon_}  {label}", use_container_width=True)
+        st.caption("🔒 Live orders are locked · fake money only")
+
+
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="expanded")
     st.markdown(CSS, unsafe_allow_html=True)
+    _menu()
     password_gate()
 
 
