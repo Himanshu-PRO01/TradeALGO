@@ -568,3 +568,31 @@ Latest recorded ChatGPT commit:
 ### Notes / follow-up
 - After Streamlit finishes deploying this commit, hard-refresh the app and open the sidebar.
 - The Trading Desk/Home item should no longer point at `Trading_Desk.py`.
+
+## Activity: Move Backtest settings onto the page
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/5_Backtest.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Moved Price Data, Trade Size & Safety, and Costs controls from the sidebar into the main Backtest page.
+- Used page columns inside the sections to make the controls easier to scan.
+- Kept all existing widget keys, defaults, configuration construction, and backtest behavior unchanged.
+- Updated the CSV upload helper text to refer to the page instead of the sidebar.
+
+### Why
+- The sidebar is now used as navigation, so Backtest configuration belongs on the Backtest page itself.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: GitHub connector only; no local test runner is available in this session.
+
+### Commit
+- `d994bfe4bc301f6ddda90321d1e5d3a29ed6b790`
+
+### Notes
+- No trading, risk, broker, OpenAlgo, or live-order logic was changed.
