@@ -78,7 +78,11 @@ if st.button("🤖 Run Auto Tester", type="primary", key="auto_run"):
         base_cfg["strategy"]["stop_loss_pct"], base_cfg["strategy"]["target_pct"],
     )
 
+    # The list is registered in session_state before the loop starts (not after it finishes),
+    # and every candidate is appended to that same object, so switching pages mid-run keeps
+    # whatever was already tested instead of losing the whole run.
     rows = []
+    st.session_state["auto_report"] = rows
     progress = st.progress(0, text="Testing candidates...")
     for i, (combo, stop_loss, target) in enumerate(candidates, start=1):
         cfg = make_candidate(base_cfg, selected, combo, stop_loss, target, i)
@@ -94,16 +98,16 @@ if st.button("🤖 Run Auto Tester", type="primary", key="auto_run"):
             "worst_drawdown_Rs": round(float(by_regime["worst_drawdown"].min()), 2),
             "risk_rules_ok": not bool(report.integrity),
         })
+        st.session_state["auto_lessons"] = summarize_auto_test(rows)
         progress.progress(i / len(candidates), text=f"Testing candidate {i}/{len(candidates)}")
     progress.empty()
-    st.session_state["auto_report"] = rows
-    st.session_state["auto_lessons"] = summarize_auto_test(rows)
 
 rows = st.session_state.get("auto_report")
 if rows:
     import pandas as pd
     result = pd.DataFrame(rows)
     st.subheader("2. Candidate results")
+    st.caption("Results are saved as each candidate finishes -- it's safe to switch pages and come back.")
     ui.show_table(result.sort_values(["risk_rules_ok", "avg_result_Rs"], ascending=[False, False]).head(25))
     shortlist = research_shortlist(rows)
     if shortlist:
