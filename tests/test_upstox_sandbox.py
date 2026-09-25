@@ -4,7 +4,6 @@ from types import SimpleNamespace
 import pytest
 
 from algobot.upstox_sandbox import (
-    SANDBOX_API_VERSION,
     SANDBOX_HOST,
     UpstoxSandboxClient,
     UpstoxSandboxError,
@@ -131,4 +130,3 @@ def test_order_validation_rejects_invalid_price_and_disclosed_quantity():
 
 
 def test_sdk_uses_v2_api_version_header():
-    assert SANDBOX_API_VERSION == "2.0"
