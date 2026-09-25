@@ -6,14 +6,14 @@ from algobot.config import validate_config
 from algobot.data import validate_bars
 from algobot.lab import format_lab, null_test, run_lab
 from algobot.lookahead import LeakyStrategy
-from algobot.strategy import REGISTRY
+from algobot.strategy import REGIMES, REGISTRY
 from algobot.worlds import REGIMES, generate_mixed_world, generate_world, get_regime
 
 
 def lag1(df):
     r = np.log(df["close"]).diff()
     same_day = df.index.normalize() == pd.Series(df.index.normalize(), index=df.index).shift(1)
-    r = r[same_day.to_numpy()].dropna().to_numpy()
+    r = r[same_day].dropna().to_numpy()
     return float(np.corrcoef(r[:-1], r[1:])[0, 1])
 
 
@@ -23,12 +23,12 @@ def test_worlds_are_valid_reproducible_and_seeded():
     assert not a["close"].equals(c["close"])
     assert len(a) == 5 * 75 and a.index[0].strftime("%H:%M") == "09:15"
     for name in REGIMES:
-        validate_bars(generate_world(name, 6, 3, 24500.0))                     # every world is clean data
+        validate_bars(generate_world(name, 6, 3, 24500.0))
 
 
 def test_market_personalities_really_differ():
-    assert lag1(generate_world("trend", 40, 1)) > 0.25              # moves continue
-    assert lag1(generate_world("mean_reversion", 40, 1)) < -0.25    # moves reverse
+    assert lag1(generate_world("trend", 40, 1)) > 0.25
+    assert lag1(generate_world("mean_reversion", 40, 1)) < -0.25
     assert abs(lag1(generate_world("noise", 40, 1))) < 0.1
     quiet = generate_world("chop", 20, 1)["close"].pct_change().abs().mean()
     wild = generate_world("volatile", 20, 1)["close"].pct_change().abs().mean()
@@ -49,9 +49,9 @@ def test_mixed_world_changes_character_and_stays_continuous():
     assert df.index.is_monotonic_increasing and not df.index.duplicated().any()
     validate_bars(df)
     for (_, _, last), (_, first, _) in zip(segments, segments[1:]):
-        assert first > last                                           # segments follow each other in time
+        assert first > last
     closes = df["close"]
-    assert (closes.pct_change().abs().dropna() < 0.2).all()           # no teleporting between segments
+    assert (closes.pct_change().abs().dropna() < 0.2).all()
 
 
 def test_bad_world_requests_are_refused():
@@ -61,7 +61,6 @@ def test_bad_world_requests_are_refused():
         generate_world("noise", 0, 1)
 
 
-# ---------------------------------------------------------------------------- lab
 CFG = validate_config({
     "name": "lab_demo", "capital": 100000,
     "strategy": {"name": "sma_crossover", "params": {"fast": 5, "slow": 20}, "quantity": 10, "allow_short": True,
@@ -89,7 +88,7 @@ def test_lab_notices_when_risk_rules_are_broken():
     tight = validate_config({
         "capital": 100000, "strategy": {"name": "sma_crossover", "params": {"fast": 3, "slow": 10}, "quantity": 200,
                                         "allow_short": True},
-        "risk": {"max_daily_loss": 1}})                                # a Rs 1 limit: any real loss breaks 2x
+        "risk": {"max_daily_loss": 1}})
     rep = run_lab(tight, ["volatile"], worlds_per_regime=3, days=6, control_worlds=0)
     assert any("double the daily limit" in v for v in rep.integrity)
     assert "RISK RULES BROKEN" in format_lab(rep)
