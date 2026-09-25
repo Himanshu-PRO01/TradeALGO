@@ -3,6 +3,9 @@
 import streamlit as st
 
 from algobot import ui
+from algobot.execution_policy import require_live_disabled
+
+require_live_disabled()
 
 ui.setup("Live Trading", "🔴")
 ui.header(
