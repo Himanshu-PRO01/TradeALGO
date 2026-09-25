@@ -87,3 +87,18 @@ def test_position_size_page_shows_the_gate_from_the_journal(tmp_path, monkeypatc
     j.close_db()
     at = page("1_Position_size.py", monkeypatch, db)
     assert any("BLOCKED" in e.value and "already opened today" in e.value for e in at.error)
+
+
+def test_strategy_scanner_page_runs_end_to_end_on_sample_data():
+    at = page("15_Strategy_Scanner.py")
+    assert not at.exception
+    at.radio(key=None if not at.radio else at.radio[0].key).set_value("Generate sample data").run() \
+        if at.radio else None
+    # Keep the run small so the smoke test is fast.
+    if at.slider:
+        for s in at.slider:
+            if s.label and "combo" in s.label.lower():
+                s.set_value(2)
+    if at.button:
+        at.button[0].click().run()
+    assert not at.exception

@@ -390,6 +390,8 @@ def _menu() -> None:
                 ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
+                ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
+                ("📈", "Live Markets", "pages/16_Live_Markets.py"),
                 ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
             ]),
             ("Execution", [
