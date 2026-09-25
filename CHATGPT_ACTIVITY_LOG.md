@@ -451,3 +451,32 @@ Latest recorded ChatGPT commit:
 ### Notes / follow-up
 - The next safe step is to take the saved rule set into the existing backtest/reality-check flow.
 - Actual broker order execution should be a separate reviewed change after historical testing and paper trading.
+
+
+## Activity: Make Practice Market Start Action Visible
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/3_Practice_room.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Added a prominent **🎯 Start a new market** button in the main Practice Room page, not only inside the sidebar.
+- The main button uses the same selected market, seed, days, account, option and risk settings already shown in the sidebar.
+- Starting a market still uses fake money only.
+
+### Why
+- The existing start control was easy to miss because it lived only in the sidebar.
+- The main page now makes the practice-session starting action obvious.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for this change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `914f9bcd67d0e34c4d92de8afafe2dcae8735027`
+
+### Notes / follow-up
+- Refresh Streamlit after the commit deploys. The **Start a new market** action should now be visible directly in the Practice Room.
