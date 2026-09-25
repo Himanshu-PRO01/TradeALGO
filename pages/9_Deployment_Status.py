@@ -1,7 +1,6 @@
 """Deployment status page: make it obvious whether this copy is running on Streamlit."""
 
 import os
-from datetime import datetime, timezone
 
 import streamlit as st
 
@@ -15,7 +14,16 @@ ui.header(
     mode="system:Deployment",
 )
 
-hosted = is_hosted()
+configured_hosted = is_hosted()
+try:
+    app_url = st.context.url
+except Exception:
+    app_url = ""
+
+# Streamlit Community Cloud apps normally use a *.streamlit.app URL.
+# Keep ALGOBOT_HOSTED as a fallback for custom domains and other hosted setups.
+hosted_by_url = ".streamlit.app" in app_url.lower()
+hosted = configured_hosted or hosted_by_url
 
 if hosted:
     st.success("🟢 DEPLOYED — this page is running in hosted mode (Streamlit).")
@@ -28,7 +36,7 @@ with left:
     st.markdown("### Current app")
     st.metric("Environment", "DEPLOYED / STREAMLIT" if hosted else "LOCAL")
     st.caption(
-        "Hosted mode is controlled by the ALGOBOT_HOSTED setting. "
+        "Deployment is detected from the Streamlit app URL or ALGOBOT_HOSTED. "
         "This page does not connect to a broker or place orders."
     )
 
@@ -46,13 +54,16 @@ with right:
         st.code("Not reported by hosting environment", language="text")
         st.caption("The hosting environment did not expose a Git commit variable to this app.")
 
+if app_url:
+    st.caption(f"App URL: {app_url}")
+
 st.divider()
 
 st.markdown("### What this tells you")
 ui.check_row(
     "PASS" if hosted else "WARN",
     "Hosted copy detected" if hosted else "Local copy detected",
-    "If you opened this page from your Streamlit web address, the deployed app is the copy you are viewing.",
+    "The app URL is used as a deployment signal; an explicit hosted setting is also accepted.",
 )
 ui.check_row(
     "PASS",
