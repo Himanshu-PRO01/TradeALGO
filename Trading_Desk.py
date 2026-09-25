@@ -40,16 +40,17 @@ with chart_controls[1]:
 with chart_controls[2]:
     dashboard_height = st.slider(
         "Chart height",
-        min_value=400,
-        max_value=900,
-        value=620,
+        min_value=500,
+        max_value=1200,
+        value=900,
         step=20,
-        help="Drag this to make the dashboard chart smaller or larger.",
+        help="Drag this to make the dashboard chart smaller or larger. 900–1200 px is recommended for detailed viewing.",
         key="dashboard_chart_height",
     )
 
 dashboard_chart_config = {
-    "autosize": True,
+    "autosize": False,
+    "height": dashboard_height,
     "symbol": dashboard_symbol,
     "interval": dashboard_interval,
     "timezone": "exchange",
@@ -67,8 +68,8 @@ dashboard_chart_config = {
 }
 
 dashboard_chart_html = f"""
-<div class="tradingview-widget-container" style="height:{dashboard_height}px;width:100%">
-  <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%">
+  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%"></div>
   <div class="tradingview-widget-copyright"
        style="font-size:11px;text-align:center;padding-top:4px;">
     <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
