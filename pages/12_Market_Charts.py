@@ -102,4 +102,3 @@ st.caption(
     "A broker API connection is a separate integration and should remain server-side."
 )
 ui.footer_note("Real-market chart for research. No broker connection and no live order execution.")
-"""
