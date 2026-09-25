@@ -184,7 +184,7 @@ st.markdown("### 4. What we are testing")
 ui.check_row(
     "PASS",
     "Sandbox endpoint only",
-    "The client is hard-coded to sandbox.upstox.com and has no live-host switch.",
+    "The client uses Upstox's official SDK with Configuration(sandbox=True); there is no live-host switch.",
 )
 ui.check_row(
     "PASS",
