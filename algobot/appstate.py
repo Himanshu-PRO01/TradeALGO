@@ -23,6 +23,7 @@ import streamlit as st
 
 from .experiments import ExperimentLog
 from .journal import Journal
+from .paper_trading import PaperLog
 
 
 def _secret(name: str):
@@ -96,6 +97,23 @@ def experiments_scope():
         yield log
     else:
         log = ExperimentLog(os.environ.get("ALGOBOT_EXPERIMENTS", "experiments.db"))
+        try:
+            yield log
+        finally:
+            log.close_db()
+
+
+@contextmanager
+def paper_scope():
+    """The paper-trading log for this visitor: a file locally, or an in-session store when hosted."""
+    if is_hosted():
+        log = st.session_state.get("_ab_paper_log")
+        if log is None:
+            log = PaperLog(":memory:", check_same_thread=False)
+            st.session_state["_ab_paper_log"] = log
+        yield log
+    else:
+        log = PaperLog(os.environ.get("ALGOBOT_PAPER_LOG", "paper_trades.db"))
         try:
             yield log
         finally:
