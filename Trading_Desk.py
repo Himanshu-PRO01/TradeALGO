@@ -1,5 +1,8 @@
 """Front page of the trading desk. Start it with:  streamlit run Trading_Desk.py"""
+import json
+
 import streamlit as st
+import streamlit.components.v1 as components
 
 from algobot import ui
 from algobot.appstate import is_hosted, storage_note
@@ -11,6 +14,78 @@ ui.header("Trading Desk", "Size it, log it, practise it, test it. A workshop for
 ui.ticker([("Live orders", "OFF", "up"), ("Broker", "not connected", None),
            ("Mode", "hosted" if is_hosted() else "local", None), ("Fake markets", "7 kinds", None),
            ("Journal", "in this browser tab" if is_hosted() else "on this computer", None)])
+
+st.markdown("### 📈 Market Chart")
+st.caption("Real market visualization for research. No broker connection and no live orders.")
+
+chart_controls = st.columns([2, 2, 3])
+with chart_controls[0]:
+    dashboard_symbol = st.selectbox(
+        "Symbol",
+        ["NSE:NIFTY", "NSE:BANKNIFTY", "NSE:FINNIFTY", "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
+        index=0,
+        key="dashboard_chart_symbol",
+    )
+with chart_controls[1]:
+    dashboard_interval = st.selectbox(
+        "Timeframe",
+        ["1", "5", "15", "30", "60", "D", "W"],
+        index=2,
+        format_func=lambda x: {
+            "1": "1 minute", "5": "5 minutes", "15": "15 minutes",
+            "30": "30 minutes", "60": "1 hour", "D": "1 day", "W": "1 week"
+        }[x],
+        key="dashboard_chart_interval",
+    )
+with chart_controls[2]:
+    dashboard_height = st.slider(
+        "Chart height",
+        min_value=400,
+        max_value=900,
+        value=620,
+        step=20,
+        help="Drag this to make the dashboard chart smaller or larger.",
+        key="dashboard_chart_height",
+    )
+
+dashboard_chart_config = {
+    "autosize": True,
+    "symbol": dashboard_symbol,
+    "interval": dashboard_interval,
+    "timezone": "exchange",
+    "theme": "dark",
+    "style": "1",
+    "withdateranges": True,
+    "hide_side_toolbar": False,
+    "allow_symbol_change": True,
+    "save_image": True,
+    "hide_volume": False,
+    "details": True,
+    "calendar": False,
+    "support_host": "https://www.tradingview.com",
+    "studies": ["MASimple@tv-basicstudies", "RSI@tv-basicstudies"],
+}
+
+dashboard_chart_html = f"""
+<div class="tradingview-widget-container" style="height:{dashboard_height}px;width:100%">
+  <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+  <div class="tradingview-widget-copyright"
+       style="font-size:11px;text-align:center;padding-top:4px;">
+    <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
+      Charts by TradingView
+    </a>
+  </div>
+  <script type="text/javascript"
+          src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+          async>
+    {json.dumps(dashboard_chart_config)}
+  </script>
+</div>
+"""
+
+components.html(dashboard_chart_html, height=dashboard_height + 15, scrolling=False)
+st.caption("Chart size is controlled by the height slider above. Use Market Charts for the full research chart page.")
+
 
 a, b, c = st.columns(3)
 with a:
