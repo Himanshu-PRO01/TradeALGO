@@ -96,41 +96,36 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .ab-menu-status {{ color:{MUTED}; font-size:.72rem; margin-top:4px; }}
 .ab-menu-section {{ color:{MUTED}; font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:14px 6px 5px; }}
 
-/* larger glassy sidebar navigation */
+/* lightweight sidebar navigation -- flat surfaces only, no blur/shadow stacking,
+   so the menu stays smooth to scroll and repaint on low-end and mobile devices */
 [data-testid="stSidebar"] [data-testid="stPageLink"] {{
-    margin: 7px 0;
+    margin: 3px 0;
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a {{
-    min-height: 50px;
-    padding: 11px 14px !important;
-    border: 1px solid rgba(255,255,255,.09);
-    border-radius: 14px;
-    background: rgba(255,255,255,.045);
-    box-shadow: 0 8px 24px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.055);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    font-size: .96rem;
-    font-weight: 650;
+    min-height: 44px;
+    padding: 9px 12px !important;
+    border: 1px solid transparent;
+    border-left: 2px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    font-size: .93rem;
+    font-weight: 600;
     letter-spacing: .01em;
-    transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    transition: background-color .12s ease, border-color .12s ease;
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {{
-    background: rgba(255,255,255,.085);
-    border-color: rgba(59,130,246,.42);
-    box-shadow: 0 10px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08);
-    transform: translateX(2px);
+    background: rgba(255,255,255,.055);
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {{
-    background: linear-gradient(135deg, rgba(59,130,246,.20), rgba(22,199,132,.10));
-    border-color: rgba(59,130,246,.48);
-    box-shadow: 0 10px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.09);
+    background: rgba(59,130,246,.12);
+    border-left: 2px solid {BLUE};
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a p {{
-    font-size: .96rem;
-    font-weight: 650;
+    font-size: .93rem;
+    font-weight: 600;
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a span {{
-    font-size: 1.15rem;
+    font-size: 1.05rem;
 }}
 
 
@@ -386,13 +381,16 @@ def _menu() -> None:
                 ("📊", "Backtest", "pages/5_Backtest.py"),
                 ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
                 ("🧪", "Test Lab", "pages/7_Test_lab.py"),
-                ("💬", "Feedback", "pages/8_Feedback.py"),
-                ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
+            ]),
+            ("Automation", [
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
-                ("📈", "Live Markets", "pages/16_Live_Markets.py"),
+                ("📝", "Paper Trading", "pages/16_Paper_Trading.py"),
                 ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
+            ]),
+            ("More", [
+                ("💬", "Feedback", "pages/8_Feedback.py"),
             ]),
             ("Execution", [
                 ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
