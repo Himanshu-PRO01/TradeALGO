@@ -94,7 +94,10 @@ if st.button("🔬 Run Strategy Scanner", type="primary"):
     candidates = build_scanner_candidates(
         base_cfg, template_keys, int(max_per_template), stop_values or [0.5], target_values or [1.0],
     )
+    # Registered in session_state before the loop runs, then appended to in place, so a
+    # candidate list already in progress survives a page switch instead of disappearing.
     rows = []
+    st.session_state["scanner_rows"] = rows
     progress = st.progress(0, text="Testing strategies...")
     for i, cfg in enumerate(candidates, start=1):
         try:
@@ -126,7 +129,6 @@ if st.button("🔬 Run Strategy Scanner", type="primary"):
         if i % max(1, len(candidates) // 50) == 0 or i == len(candidates):
             progress.progress(i / len(candidates), text=f"Testing candidate {i}/{len(candidates)}")
     progress.empty()
-    st.session_state["scanner_rows"] = rows
 
 rows = st.session_state.get("scanner_rows")
 if rows:
@@ -148,7 +150,9 @@ if rows:
         st.info(
             f"**{best['family']}** ({best['params']}) — {best['trades']} trades, "
             f"{best['return_pct']}% return, {best['win_rate_pct']}% win rate, "
-            f"max drawdown {best['max_drawdown_pct']}%, score {best['score']}.\n\n"
+            f"max drawdown {best['max_drawdown_pct']}%, score {best['score']}.
+
+"
             "This is the top of a leaderboard on THIS data set, not a proven edge. "
             "A strategy that tops a scan can still be overfit to this exact period."
         )
