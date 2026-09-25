@@ -110,7 +110,7 @@ if rows:
         st.subheader("Research suggestion")
         suggested = shortlist[0]
         st.info(
-            f"Current research candidate to investigate first: candidate {suggested[\"candidate\"]}. "
+            f"Current research candidate to investigate first: candidate {suggested['candidate']}. "
             "This is a test-result shortlist, not a guarantee and not an automatic strategy change."
         )
     lessons = learning_summary()
