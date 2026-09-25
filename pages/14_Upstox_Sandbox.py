@@ -11,6 +11,12 @@ ui.header("Upstox Sandbox",
 st.info("🟢 SANDBOX ONLY · This page uses only Upstox's sandbox endpoint. No live order endpoint is available here.")
 
 token=sandbox_token()
+# Streamlit Cloud secrets are read only at runtime and never shown.
+if not token:
+    try:
+        token=st.secrets.get("UPSTOX_SANDBOX_ACCESS_TOKEN")
+    except Exception:
+        token=None
 if token:
     st.success("Sandbox token detected privately. It is not displayed.")
 else:
