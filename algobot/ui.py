@@ -337,7 +337,7 @@ def _menu() -> None:
 
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
-    st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="auto")
+    st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
     _menu()
     password_gate()
