@@ -129,6 +129,7 @@ def _menu() -> None:
                 ("💬", "Feedback", "pages/8_Feedback.py"),
                 ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+                ("📈", "Market Charts", "pages/12_Market_Charts.py"),
             ]),
             ("Execution", [
                 ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
