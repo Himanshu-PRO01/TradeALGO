@@ -11,9 +11,78 @@ from typing import Iterable, Optional
 
 import streamlit as st
 
+try:
+    import streamlit.components.v2 as _components_v2
+except ImportError:  # Older Streamlit versions simply skip the gesture.
+    _components_v2 = None
+
 from . import __version__
 from .appstate import is_hosted, password_gate
 from .palette import BG, BLUE, BORDER, DOWN, MUTED, PANEL, TEXT, UP, WARN
+
+
+_SWIPE_MENU_COMPONENT = None
+
+
+def _swipe_menu_component():
+    """Install a tiny mobile edge-swipe listener without changing trading logic."""
+    global _SWIPE_MENU_COMPONENT
+    if _components_v2 is None:
+        return None
+    if _SWIPE_MENU_COMPONENT is None:
+        _SWIPE_MENU_COMPONENT = _components_v2.component(
+            name="algobot_mobile_swipe_menu",
+            html="",
+            css="",
+            js="""
+            export default function() {
+                let startX = 0;
+                let startY = 0;
+
+                const onStart = (event) => {
+                    if (window.matchMedia("(min-width: 769px)").matches) return;
+                    if (!event.touches || event.touches.length !== 1) return;
+                    startX = event.touches[0].clientX;
+                    startY = event.touches[0].clientY;
+                };
+
+                const onEnd = (event) => {
+                    if (window.matchMedia("(min-width: 769px)").matches) return;
+                    if (!event.changedTouches || event.changedTouches.length !== 1) return;
+
+                    const endX = event.changedTouches[0].clientX;
+                    const endY = event.changedTouches[0].clientY;
+                    const deltaX = endX - startX;
+                    const deltaY = Math.abs(endY - startY);
+
+                    // Only a deliberate right-swipe from the left screen edge opens the menu.
+                    if (startX > 28 || deltaX < 60 || deltaY > 70) return;
+
+                    const sidebar =
+                        document.querySelector('[data-testid="stSidebar"]') ||
+                        document.querySelector("section.stSidebar");
+
+                    const isOpen = sidebar?.getAttribute("aria-expanded") === "true";
+                    if (isOpen) return;
+
+                    const button =
+                        document.querySelector('[data-testid="stSidebarCollapseButton"] button') ||
+                        document.querySelector('button[aria-label*="sidebar" i]');
+
+                    if (button) button.click();
+                };
+
+                document.addEventListener("touchstart", onStart, {passive: true});
+                document.addEventListener("touchend", onEnd, {passive: true});
+
+                return () => {
+                    document.removeEventListener("touchstart", onStart);
+                    document.removeEventListener("touchend", onEnd);
+                };
+            }
+            """,
+        )
+    return _SWIPE_MENU_COMPONENT
 
 CSS = f"""
 <style>
@@ -340,6 +409,9 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
     _menu()
+    swipe_component = _swipe_menu_component()
+    if swipe_component is not None:
+        swipe_component(key="algobot_mobile_swipe_menu")
     password_gate()
 
 
