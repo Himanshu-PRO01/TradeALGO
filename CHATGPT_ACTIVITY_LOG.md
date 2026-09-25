@@ -305,3 +305,27 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - Next efficiency work should target measured hot paths such as repeated option-pricing calculations and stress-lab generation, while preserving existing trading/risk behavior.
+
+## Activity: Efficiency Pass — Step 2 (Practice option-pricing cache)
+
+**Date:** 2026-09-25
+
+### Files changed
+- `algobot/practice.py`
+
+### What changed
+- Added a session-local cache for deterministic Black-Scholes option mid prices.
+- Cache keys include timestamp, option type, strike, spot and DTE, so cached values are reused only when the pricing inputs are identical.
+- This specifically reduces repeated pricing work caused by Streamlit reruns and by the same option being displayed in multiple UI elements.
+
+### Safety
+- No trading rules, risk limits, fills, spreads, charges, or broker/execution code were changed.
+- The cached value is exactly the same calculation result that was previously returned.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for the change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `d00af62ed484e4aebb972d4ac711b3c64ec338d8`
