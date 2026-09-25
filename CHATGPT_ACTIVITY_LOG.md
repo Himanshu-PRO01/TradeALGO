@@ -637,3 +637,27 @@ Latest recorded ChatGPT commit:
 
 ### Notes
 - This uses TradingView's embeddable widget rather than the restricted Advanced Charts library. TradingView documents the widget as a ready-to-embed real-time chart with its own supplied market data. citeturn0search0turn0search3
+
+
+## Activity: Fix Market Charts Syntax Error
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/12_Market_Charts.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Removed an accidental trailing triple-quoted string from the new Market Charts page.
+- The extra quote caused the Streamlit deployment to fail during Python AST parsing with a SyntaxError.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: GitHub connector only; no local test runner available in this session.
+
+### Commit
+- `4e9ca931f32f90e62ea55ffa5f2fbe4d44e5125d`
+
+### Notes
+- This was a syntax-only fix. No trading, risk, broker, OpenAlgo, or live-order logic was changed.
