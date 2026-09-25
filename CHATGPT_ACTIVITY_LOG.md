@@ -480,3 +480,35 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - Refresh Streamlit after the commit deploys. The **Start a new market** action should now be visible directly in the Practice Room.
+
+
+## Activity: Trader-Friendly Menu UI
+
+**Date:** 2026-09-25
+
+### Files changed
+- `algobot/ui.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Replaced the default Streamlit page-list appearance with a grouped trader-friendly sidebar menu.
+- Added sections for **Trade Desk**, **Practice**, **Research**, and **Execution**.
+- Added clear icons and direct links for Position Size, Journal, Practice Room, Backtest, Reality Check, Strategy Builder and Live Trading.
+- Added a compact status header showing hosted/local state and that live trading is off.
+- Added a persistent safety note at the bottom of the menu.
+- Kept the existing page content and trading/risk logic unchanged.
+
+### Why
+- The previous menu was a plain page list and made the workflow harder to scan.
+- The new layout follows a trader workflow: prepare → practise → research → execution.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for this UI-only change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `868975d6dcb305a83892818302337419392e3a71`
+
+### Notes / follow-up
+- Refresh the Streamlit app after deployment to see the new sidebar.
