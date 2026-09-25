@@ -81,13 +81,16 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
                 color=alt.Color("kind:N", scale=alt.Scale(domain=["entry", "win", "loss"], range=[BLUE, UP, DOWN]), legend=None),
                 tooltip=["note:N"]))
 
-    price_chart = alt.layer(*layers).properties(height=height)
+    price_chart = alt.layer(*layers).properties(height=height, width="container")
     if not volume or "volume" not in d.columns or float(d["volume"].sum()) == 0.0:
-        return _style(price_chart)
+        return _style(price_chart.interactive())
     vol = alt.Chart(d).mark_bar(opacity=0.5).encode(
         x=alt.X("bar:Q", axis=alt.Axis(labels=False, ticks=False, title=None), scale=alt.Scale(domain=[-1, len(d)], nice=False)),
-        y=alt.Y("volume:Q", title=None, axis=alt.Axis(labels=False, ticks=False)), color=colour).properties(height=60)
-    return _style(alt.vconcat(price_chart, vol, spacing=2))
+        y=alt.Y("volume:Q", title=None, axis=alt.Axis(labels=False, ticks=False)), color=colour).properties(height=60, width="container")
+    # resolve_scale(x="shared") keeps the price and volume panels lined up while zoomed or
+    # panned; .interactive() turns on scroll-to-zoom and click-drag-to-pan like a real charting app.
+    combo = alt.vconcat(price_chart, vol, spacing=2).resolve_scale(x="shared", y="independent")
+    return _style(combo.interactive())
 
 
 def equity_drawdown(equity: pd.Series, height: int = 300):
@@ -133,7 +136,7 @@ def premium_line(series: pd.Series, entry: Optional[float] = None, stop: Optiona
     for value, colour in ((entry, BLUE), (stop, DOWN)):
         if value:
             layers.append(alt.Chart(pd.DataFrame({"y": [float(value)]})).mark_rule(color=colour, strokeDash=[5, 4]).encode(y="y:Q"))
-    return _style(alt.layer(*layers).properties(height=height))
+    return _style(alt.layer(*layers).properties(height=height, width="container").interactive())
 
 
 def payoff_chart(curve: pd.DataFrame, breakeven_move: Optional[float] = None, height: int = 280):
