@@ -417,3 +417,37 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - Refresh the Streamlit app after the new commit deploys.
+
+
+## Activity: Strategy Builder + Locked Live Trading Controls
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/10_Strategy_Builder.py`
+- `pages/11_Live_Trading.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Added a **Strategy Builder** page for converting a trading idea into explicit, deterministic entry, confirmation, stop, take-profit, skip-trade, and position-sizing rules.
+- Added JSON export so a rule set can be reviewed and later used as the input to backtesting.
+- Added a **Live Trading** page as a visible future control surface.
+- Live order execution remains locked: the page has disabled live controls and does not add any broker order function.
+- Existing OpenAlgo bridge, risk controls, and audit behavior were not changed.
+
+### Why
+- The strategy needs to be written precisely before it can be tested reliably.
+- The project should have a clear place for the future live phase without accidentally enabling real-money orders.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for these changes; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commits
+- Strategy Builder: `bcc094cc3a8cef2addb1e24fe9ac82f1cb39c00d`
+- Live Trading controls: `9f827fe7507b5df50d22ffe619a54bcd09d8d4db`
+
+### Notes / follow-up
+- The next safe step is to take the saved rule set into the existing backtest/reality-check flow.
+- Actual broker order execution should be a separate reviewed change after historical testing and paper trading.
