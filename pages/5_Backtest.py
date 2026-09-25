@@ -31,6 +31,19 @@ ui.setup("Backtest", "📊")
 ui.header("Backtest", "Test a rule on past prices with your real costs and risk limits. A backtest is a filter, not a promise: "
           "the Reality check page tries to break it.", mode="backtest:Backtest · past prices")
 
+with st.expander("New here? Read this first", expanded=True):
+    st.markdown(
+        "A **backtest** replays a trading rule against prices that already happened, as if it had been "
+        "trading for real — but with pretend money, so nothing here can lose you anything.\n\n"
+        "**The path through this page:**\n"
+        "1. Leave the settings below on their defaults for now, or adjust them later.\n"
+        "2. Pick or write a strategy in **1. Strategy**.\n"
+        "3. Press **Run backtest** at the bottom.\n"
+        "4. Read the **Results** — did it make money, how many trades, how big were the losses.\n\n"
+        "A good-looking result here is only step one. Before trusting any of it, open the **Reality check** "
+        "page — it tries to poke holes in the result the way real markets eventually do."
+    )
+
 
 @st.cache_data(show_spinner=False)
 def sample_data(days: int):
@@ -55,38 +68,65 @@ with st.expander("1. Price data", expanded=True):
     source = st.radio("Where do the prices come from?", ["Sample data (random, for testing)", "Upload a CSV file"], key="data_source")
     days = st.slider("Days of sample data", 10, 120, 60, key="sample_days")
     uploaded = st.file_uploader("CSV with datetime, open, high, low, close (volume optional)", type=["csv"], key="csv")
-with st.expander("2. Trade size and safety", expanded=True):
+with st.expander("2. Trade size and safety"):
+    st.caption("The defaults here are sensible for a first test — you don't have to change anything to continue.")
     c1, c2, c3 = st.columns(3)
-    capital = c1.number_input("Account size (Rs)", min_value=1000, value=100000, step=1000, key="capital")
-    quantity = c2.number_input("Shares per trade", min_value=1, value=10, step=1, key="quantity")
-    allow_short = c3.checkbox("Allow short selling", value=False, key="allow_short")
+    capital = c1.number_input("Account size (Rs)", min_value=1000, value=100000, step=1000, key="capital",
+                              help="The pretend account balance the backtest starts with.")
+    quantity = c2.number_input("Shares per trade", min_value=1, value=10, step=1, key="quantity",
+                               help="How many shares/units to buy or sell each time the rule fires.")
+    allow_short = c3.checkbox("Allow short selling", value=False, key="allow_short",
+                              help="Short selling means betting the price will fall. Leave this off if you only want to buy low and sell high.")
     c1, c2, c3 = st.columns(3)
-    stop_pct = c1.number_input("Stop-loss % (0 = none)", min_value=0.0, value=0.5, step=0.1, key="stop_pct")
-    target_pct = c2.number_input("Profit target % (0 = none)", min_value=0.0, value=1.0, step=0.1, key="target_pct")
-    max_loss = c3.number_input("Stop trading for the day after losing (Rs, 0 = no limit)", min_value=0, value=2000, step=100, key="max_loss")
+    stop_pct = c1.number_input("Stop-loss % (0 = none)", min_value=0.0, value=0.5, step=0.1, key="stop_pct",
+                               help="Automatically exit if the price moves against you by this percent, to cap the loss on one trade.")
+    target_pct = c2.number_input("Profit target % (0 = none)", min_value=0.0, value=1.0, step=0.1, key="target_pct",
+                                 help="Automatically take profit once the price moves in your favour by this percent.")
+    max_loss = c3.number_input("Stop trading for the day after losing (Rs, 0 = no limit)", min_value=0, value=2000, step=100, key="max_loss",
+                               help="A daily 'enough for today' brake, so one bad day can't run away.")
     c1, c2, c3 = st.columns(3)
-    max_trades = c1.number_input("Max trades per day (0 = no limit)", min_value=0, value=6, step=1, key="max_trades")
-    max_position = c2.number_input("Largest single position (Rs, 0 = no limit)", min_value=0, value=50000, step=1000, key="max_position")
-    t_start = c3.text_input("No trades before (HH:MM)", "09:20", key="t_start")
+    max_trades = c1.number_input("Max trades per day (0 = no limit)", min_value=0, value=6, step=1, key="max_trades",
+                                 help="Caps how many times the rule is allowed to trade in a single day.")
+    max_position = c2.number_input("Largest single position (Rs, 0 = no limit)", min_value=0, value=50000, step=1000, key="max_position",
+                                   help="The most the strategy can put into one trade at a time.")
+    t_start = c3.text_input("No trades before (HH:MM)", "09:20", key="t_start",
+                            help="Skip the noisy first few minutes after the market opens.")
     c1, c2 = st.columns(2)
-    t_last = c1.text_input("No new trades after (HH:MM)", "14:45", key="t_last")
-    t_off = c2.text_input("Close everything at (HH:MM)", "15:15", key="t_off")
-with st.expander("3. Costs (example values: check your broker's charge calculator)"):
+    t_last = c1.text_input("No new trades after (HH:MM)", "14:45", key="t_last",
+                           help="Stop opening brand-new trades this late in the day.")
+    t_off = c2.text_input("Close everything at (HH:MM)", "15:15", key="t_off",
+                          help="Force any open position shut before the market closes for the day.")
+with st.expander("3. Costs (the defaults are typical discount-broker charges for India — check your own broker's charge calculator to be exact)"):
+    st.caption("Every real trade has small, unavoidable charges. Including them here keeps the result honest — skip this section if you're not sure, the defaults are realistic.")
     c1, c2, c3 = st.columns(3)
-    brokerage_pct = c1.number_input("Brokerage % of order value", min_value=0.0, value=0.03, step=0.01, format="%.4f", key="c_brokerage")
-    brokerage_cap = c2.number_input("Brokerage cap per order (Rs, 0 = no cap)", min_value=0.0, value=20.0, key="c_cap")
-    stt_sell = c3.number_input("STT % on sells", min_value=0.0, value=0.025, format="%.4f", key="c_stt_sell")
+    brokerage_pct = c1.number_input("Brokerage % of order value", min_value=0.0, value=0.03, step=0.01, format="%.4f", key="c_brokerage",
+                                    help="What your broker charges to place an order, as a percent of the trade's value.")
+    brokerage_cap = c2.number_input("Brokerage cap per order (Rs, 0 = no cap)", min_value=0.0, value=20.0, key="c_cap",
+                                    help="Most discount brokers never charge more than this per order, however large the trade.")
+    stt_sell = c3.number_input("STT % on sells", min_value=0.0, value=0.025, format="%.4f", key="c_stt_sell",
+                               help="Securities Transaction Tax — a fixed government tax on trades, not something your broker controls.")
     c1, c2, c3 = st.columns(3)
-    stt_buy = c1.number_input("STT % on buys", min_value=0.0, value=0.0, format="%.4f", key="c_stt_buy")
-    exch = c2.number_input("Exchange charges %", min_value=0.0, value=0.003, format="%.5f", key="c_exch")
-    sebi = c3.number_input("SEBI fee %", min_value=0.0, value=0.0001, format="%.5f", key="c_sebi")
+    stt_buy = c1.number_input("STT % on buys", min_value=0.0, value=0.0, format="%.4f", key="c_stt_buy",
+                              help="Same government tax as STT on sells, but for the buy side (usually zero for intraday equity).")
+    exch = c2.number_input("Exchange charges %", min_value=0.0, value=0.003, format="%.5f", key="c_exch",
+                           help="A small transaction fee the stock exchange (NSE/BSE) itself charges on every trade.")
+    sebi = c3.number_input("SEBI fee %", min_value=0.0, value=0.0001, format="%.5f", key="c_sebi",
+                           help="A tiny fee that funds the market regulator, SEBI, charged on every trade.")
     c1, c2, c3 = st.columns(3)
-    stamp = c1.number_input("Stamp duty % on buys", min_value=0.0, value=0.003, format="%.4f", key="c_stamp")
-    gst = c2.number_input("GST % (on brokerage and fees)", min_value=0.0, value=18.0, key="c_gst")
-    slippage = c3.number_input("Slippage (bps, 1 bps = 0.01%)", min_value=0.0, value=2.0, key="c_slip")
+    stamp = c1.number_input("Stamp duty % on buys", min_value=0.0, value=0.003, format="%.4f", key="c_stamp",
+                            help="A small state government tax charged when you buy, not when you sell.")
+    gst = c2.number_input("GST % (on brokerage and fees)", min_value=0.0, value=18.0, key="c_gst",
+                          help="Goods and Services Tax, charged on top of the brokerage and fees above (18% is the standard rate).")
+    slippage = c3.number_input("Slippage (bps, 1 bps = 0.01%)", min_value=0.0, value=2.0, key="c_slip",
+                               help="The gap between the price you expected and the price you actually got, because the market moved while your order went through.")
 
 st.markdown("#### 1. Strategy")
-kind = st.radio("Type", ["Rules (write conditions)", "SMA crossover (demo)"], horizontal=True, key="strategy_kind")
+st.caption("A strategy is just the rule for when to buy and when to sell. Not sure where to start? Try "
+          "'SMA crossover (demo)' first — no writing required.")
+kind = st.radio("Type", ["Rules (write conditions)", "SMA crossover (demo)"], horizontal=True, key="strategy_kind",
+                help="'Rules' lets you (or an AI, or your developer) write exact entry/exit conditions. "
+                     "'SMA crossover (demo)' is a ready-made simple strategy: buy when a short-term average "
+                     "crosses above a longer-term one.")
 if kind.startswith("Rules"):
     strategy_name = "rules"
     rules_text = st.text_area("Strategy rules (edit, or paste what an AI wrote)", DEFAULT_RULES, height=230, key="rules_text")
@@ -182,6 +222,15 @@ if result is not None:
     if st.session_state.get("used_sample"):
         st.warning("This used random sample data. The numbers say nothing about real markets.")
     m = result.metrics
+    if m["trades"] == 0:
+        st.info("In short: the rule never fired — it took zero trades on this data, so there's nothing yet to judge.")
+    elif m["net_pnl"] > 0:
+        st.success(f"In short: on this data, this strategy would have made {ui.inr(m['net_pnl'])} over "
+                   f"{m['trades']} trades. That's on past prices with pretend money — it is not a promise "
+                   "about the future. Check Reality check next before trusting it.")
+    else:
+        st.warning(f"In short: on this data, this strategy would have lost {ui.inr(abs(m['net_pnl']))} over "
+                   f"{m['trades']} trades. Worth adjusting the rule, or trying a different idea, before going further.")
     a, b, c, d, e = st.columns(5)
     a.metric("Net profit / loss (Rs)", f"{m['net_pnl']:,.0f}", f"{m['return_pct']:+.2f}%")
     b.metric("Return", f"{m['return_pct']:.2f}%")
@@ -206,6 +255,8 @@ if result is not None:
             ui.show_chart(candlestick(prices_now, trades=result.trades, height=360, max_bars=int(window)))
             st.caption("Blue triangle: entry (up = long, down = short). Green cross: winning exit. Red cross: losing exit.")
     with tab_equity:
+        st.caption("Top: the pretend account balance over time. Bottom: the drawdown — how far below its "
+                  "last peak the balance dipped. A big drawdown means it takes a strong stomach to hold on.")
         ui.show_chart(equity_drawdown(result.equity))
     with tab_trades:
         if len(result.trades):
