@@ -72,6 +72,13 @@ class UpstoxSandboxClient:
         order_type=order_type.upper()
         if order_type not in {"MARKET","LIMIT","SL","SL-M"}: raise UpstoxSandboxError("Unsupported order type.")
         if int(disclosed_quantity)<0: raise UpstoxSandboxError("Disclosed quantity cannot be negative.")
+        if int(disclosed_quantity) > int(quantity): raise UpstoxSandboxError("Disclosed quantity cannot exceed quantity.")
+        product = product.upper()
+        if product not in {"I","D","MTF"}: raise UpstoxSandboxError("Product must be I, D, or MTF.")
+        validity = validity.upper()
+        if validity not in {"DAY","IOC"}: raise UpstoxSandboxError("Validity must be DAY or IOC.")
+        if order_type == "LIMIT" and float(price) <= 0: raise UpstoxSandboxError("Limit price must be greater than zero.")
+        if order_type in {"SL","SL-M"} and float(trigger_price) <= 0: raise UpstoxSandboxError("Trigger price must be greater than zero for stop orders.")
         payload={"quantity":int(quantity),"product":product,"validity":validity,"price":float(price),
                  "instrument_token":instrument_token.strip(),"order_type":order_type,
                  "transaction_type":transaction_type,"disclosed_quantity":int(disclosed_quantity),
