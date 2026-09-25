@@ -3,6 +3,7 @@ import os
 import streamlit as st
 
 from algobot import ui
+from algobot.learning import learning_summary, research_shortlist, summarize_auto_test
 from algobot.auto_tester import build_candidate_grid, build_period_values, estimate_candidate_count, make_candidate
 from algobot.config import ConfigError, load_config, validate_config
 from algobot.lab import run_lab
@@ -96,6 +97,7 @@ if st.button("🤖 Run Auto Tester", type="primary", key="auto_run"):
         progress.progress(i / len(candidates), text=f"Testing candidate {i}/{len(candidates)}")
     progress.empty()
     st.session_state["auto_report"] = rows
+    st.session_state["auto_lessons"] = summarize_auto_test(rows)
 
 rows = st.session_state.get("auto_report")
 if rows:
