@@ -104,6 +104,8 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
+    # Streamlit uses dashboard.py as the deployed entrypoint; keep Home tied to it.
+    home_page = "dashboard.py"
     with st.sidebar:
         st.markdown(
             f'<div class="ab-menu-head"><div class="ab-menu-brand">ALGO<span>BOT</span></div>'
@@ -112,7 +114,7 @@ def _menu() -> None:
         )
         sections = [
             ("Trade Desk", [
-                ("🏠", "Trading Desk", "dashboard.py"),
+                ("🏠", "Trading Desk", home_page),
                 ("🧮", "Position Size", "pages/1_Position_size.py"),
                 ("📒", "Journal & Report", "pages/2_Journal_and_report.py"),
             ]),
