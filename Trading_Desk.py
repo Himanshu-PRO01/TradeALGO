@@ -39,8 +39,8 @@ st.caption("Real market visualization for research. No broker connection and no 
 chart_controls = st.columns([2, 2, 3])
 with chart_controls[0]:
     dashboard_symbol = st.selectbox(
-        "Symbol",
-        ["NSE:NIFTY", "NSE:BANKNIFTY", "NSE:FINNIFTY", "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
+        "Symbol (widget-supported feed)",
+        ["NSE:NIFTY1!", "NSE:BANKNIFTY1!", "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
         index=0,
         key="dashboard_chart_symbol",
     )
@@ -76,7 +76,7 @@ dashboard_chart_config = {
     "style": "1",
     "withdateranges": True,
     "hide_side_toolbar": False,
-    "allow_symbol_change": True,
+    "allow_symbol_change": False,
     "save_image": True,
     "hide_volume": False,
     "details": True,
@@ -103,7 +103,7 @@ dashboard_chart_html = f"""
 """
 
 components.html(dashboard_chart_html, height=dashboard_height + 15, scrolling=False)
-st.caption("Chart size is controlled by the height slider above. Use Market Charts for the full research chart page.")
+st.caption("NIFTY and BANKNIFTY use TradingView continuous futures symbols here because some spot symbols are restricted in embedded widgets. Use Market Charts for the full research chart page.")
 
 
 st.markdown("### A 10-minute tour")
