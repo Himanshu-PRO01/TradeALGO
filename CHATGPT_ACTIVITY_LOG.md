@@ -329,3 +329,34 @@ Latest recorded ChatGPT commit:
 
 ### Commit
 - `d00af62ed484e4aebb972d4ac711b3c64ec338d8`
+
+
+## Activity: Deployment Status Menu Page
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/9_Deployment_Status.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Added a new Streamlit menu page named **Deployment Status**.
+- The page clearly shows **DEPLOYED — hosted mode (Streamlit)** when the hosted setting is active.
+- It shows **LOCAL** when running locally.
+- It also displays a Git commit/build identifier when the hosting environment exposes one.
+- Added safety/status checks confirming that deployment does not enable live orders.
+
+### Why
+- Streamlit's deployment process is not always obvious from inside the application.
+- This gives the project owner a visible menu item to check whether the copy currently being viewed is the hosted Streamlit version.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for the change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `eb09dea3ed5711fe3c95270f13aea96491d31d87`
+
+### Notes / follow-up
+- After Streamlit updates from GitHub, open **Deployment Status** and refresh the page to check the hosted/local state and any build commit exposed by the hosting environment.
