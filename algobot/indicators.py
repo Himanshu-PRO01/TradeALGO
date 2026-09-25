@@ -10,11 +10,12 @@ import numpy as np
 import pandas as pd
 
 from .config import ConfigError
-from .levels import LEVEL_TYPES, SWING_TYPES, compute_level
+from .levels import LEVEL_TYPES, SWING_TYPES, OPENING_RANGE_TYPES, compute_level
 
 BASE_COLUMNS = ("open", "high", "low", "close", "volume")
 INDICATOR_TYPES = ("sma", "ema", "rsi", "atr", "highest", "lowest", "vwap") + LEVEL_TYPES
-NEEDS_NO_PERIOD = ("vwap",) + tuple(k for k in LEVEL_TYPES if k not in SWING_TYPES)
+_NEEDS_PERIOD = SWING_TYPES + OPENING_RANGE_TYPES
+NEEDS_NO_PERIOD = ("vwap",) + tuple(k for k in LEVEL_TYPES if k not in _NEEDS_PERIOD)
 
 
 def sma(s: pd.Series, n: int) -> pd.Series:

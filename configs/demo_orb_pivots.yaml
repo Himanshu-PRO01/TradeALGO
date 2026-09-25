@@ -1,0 +1,53 @@
+# DEMO ONLY: opening-range breakout filtered by pivot points. It is NOT the
+# brother's strategy (his exact rules are still to be written down precisely)
+# and it is not a trading recommendation. It trades the index-style price
+# series, not options.
+#
+# opening_range_high / opening_range_low: highest/lowest of the first
+# `period` MINUTES of each day. Blank while that window is still forming,
+# then frozen for the rest of the day once it closes.
+# pivot / pivot_r1 / pivot_r2 / pivot_r3 / pivot_s1 / pivot_s2 / pivot_s3:
+# classic floor-trader pivot points from the previous day's high/low/close
+# (no period needed).
+name: demo_orb_pivots
+capital: 100000
+
+data:
+  path: data/sample_5min.csv
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: orh, type: opening_range_high, period: 15}
+      - {name: orl, type: opening_range_low, period: 15}
+      - {name: piv, type: pivot}
+      - {name: r1, type: pivot_r1}
+      - {name: s1, type: pivot_s1}
+    # Only take the opening-range breakout in the direction pivot already favors.
+    entry_long:  "close > orh and close_prev <= orh_prev and close > piv"
+    exit_long:   "close < orh or close >= r1"
+    entry_short: "close < orl and close_prev >= orl_prev and close < piv"
+    exit_short:  "close > orl or close <= s1"
+  quantity: 10
+  allow_short: true
+  stop_loss_pct: 0.5
+  target_pct: 1.0
+
+risk:
+  max_daily_loss: 2000
+  max_trades_per_day: 4
+  max_position_value: 50000
+  trading_start: "09:20"
+  no_new_entries_after: "14:45"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2
