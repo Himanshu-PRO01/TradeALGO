@@ -360,3 +360,33 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - After Streamlit updates from GitHub, open **Deployment Status** and refresh the page to check the hosted/local state and any build commit exposed by the hosting environment.
+
+
+## Activity: Fix Deployment Detection
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/9_Deployment_Status.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Deployment Status no longer relies only on `ALGOBOT_HOSTED`.
+- It now checks the current Streamlit app URL through `st.context.url`.
+- A `*.streamlit.app` URL is treated as Streamlit Community Cloud hosting.
+- `ALGOBOT_HOSTED` remains a fallback for custom hosted domains.
+
+### Why
+- The first version showed LOCAL on the deployed app because the custom hosted flag was not configured.
+- Streamlit documents `st.context.url` as the current browser URL, so the page can use the actual URL being viewed as an additional deployment signal. citeturn1search0
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for the change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `89cda1fcfb6c18d3a93b478674e5202b169359f2`
+
+### Notes / follow-up
+- Refresh the Streamlit app and open **Deployment Status**. It should now show **DEPLOYED / STREAMLIT** when accessed through the normal `.streamlit.app` address.
