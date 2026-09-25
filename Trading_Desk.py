@@ -15,7 +15,23 @@ ui.ticker([("Live orders", "OFF", "up"), ("Broker", "not connected", None),
            ("Mode", "hosted" if is_hosted() else "local", None), ("Fake markets", "7 kinds", None),
            ("Journal", "in this browser tab" if is_hosted() else "on this computer", None)])
 
-st.markdown("### 📈 Market Chart")
+a, b, c = st.columns(3)
+with a:
+    st.markdown(ui.card("Before a trade", "How many lots fit your loss limit, and are today's limits still open? "
+                        "Then write the trade down.", "🧮"), unsafe_allow_html=True)
+    st.page_link("pages/1_Position_size.py", label="Position size", icon="🧮")
+    st.page_link("pages/2_Journal_and_report.py", label="Journal and daily report", icon="📒")
+with b:
+    st.markdown(ui.card("Practise", "Buy and sell Nifty options with fake money in a fake market. Feel time decay "
+                        "and spread without paying for the lesson.", "🎯"), unsafe_allow_html=True)
+    st.page_link("pages/3_Practice_room.py", label="Practice room", icon="🎯")
+    st.page_link("pages/4_Option_breakeven_and_ruin.py", label="Option breakeven and ruin", icon="⏳")
+with c:
+    st.markdown(ui.card("Research", "Test a rule on past prices, then try to break it before real money does.", "🔬"),
+                unsafe_allow_html=True)
+    st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
+    st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
+    st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")st.markdown("### 📈 Market Chart")
 st.caption("Real market visualization for research. No broker connection and no live orders.")
 
 chart_controls = st.columns([2, 2, 3])
@@ -40,11 +56,11 @@ with chart_controls[1]:
 with chart_controls[2]:
     dashboard_height = st.slider(
         "Chart height",
-        min_value=500,
-        max_value=1200,
-        value=900,
+        min_value=600,
+        max_value=1400,
+        value=1000,
         step=20,
-        help="Drag this to make the dashboard chart smaller or larger. 900–1200 px is recommended for detailed viewing.",
+        help="Drag this to make the dashboard chart smaller or larger. 1000–1400 px is recommended for detailed viewing.",
         key="dashboard_chart_height",
     )
 
@@ -68,8 +84,8 @@ dashboard_chart_config = {
 }
 
 dashboard_chart_html = f"""
-<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%">
-  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%"></div>
+<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden">
+  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden"></div>
   <div class="tradingview-widget-copyright"
        style="font-size:11px;text-align:center;padding-top:4px;">
     <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
@@ -87,24 +103,6 @@ dashboard_chart_html = f"""
 components.html(dashboard_chart_html, height=dashboard_height + 15, scrolling=False)
 st.caption("Chart size is controlled by the height slider above. Use Market Charts for the full research chart page.")
 
-
-a, b, c = st.columns(3)
-with a:
-    st.markdown(ui.card("Before a trade", "How many lots fit your loss limit, and are today's limits still open? "
-                        "Then write the trade down.", "🧮"), unsafe_allow_html=True)
-    st.page_link("pages/1_Position_size.py", label="Position size", icon="🧮")
-    st.page_link("pages/2_Journal_and_report.py", label="Journal and daily report", icon="📒")
-with b:
-    st.markdown(ui.card("Practise", "Buy and sell Nifty options with fake money in a fake market. Feel time decay "
-                        "and spread without paying for the lesson.", "🎯"), unsafe_allow_html=True)
-    st.page_link("pages/3_Practice_room.py", label="Practice room", icon="🎯")
-    st.page_link("pages/4_Option_breakeven_and_ruin.py", label="Option breakeven and ruin", icon="⏳")
-with c:
-    st.markdown(ui.card("Research", "Test a rule on past prices, then try to break it before real money does.", "🔬"),
-                unsafe_allow_html=True)
-    st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
-    st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
-    st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
 
 st.markdown("### A 10-minute tour")
 st.markdown("""
