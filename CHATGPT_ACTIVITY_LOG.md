@@ -538,3 +538,33 @@ Latest recorded ChatGPT commit:
 
 ### Notes
 - Refresh the Streamlit app after deployment. The sidebar should load without the StreamlitPageNotFoundError.
+
+
+## Activity: Force sidebar routing fix into a fresh deployment
+
+**Date:** 2026-09-25
+
+### Files changed
+- `algobot/ui.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Kept the Trading Desk/Home sidebar target explicitly tied to `dashboard.py`, the deployed Streamlit entrypoint.
+- Removed ambiguity from the Home route by defining the entrypoint path once inside the menu.
+- No trading, risk, broker, OpenAlgo, or live-order logic was changed.
+
+### Why
+- The deployed app was still reporting `StreamlitPageNotFoundError: Trading_Desk.py`, which means the running copy was using an older Home route.
+- This fresh commit gives Streamlit Community Cloud a new commit to deploy while making the intended entrypoint route explicit.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector can update the repository but cannot run the local Python test suite in this session. Do not assume the full suite passed.
+
+### Commit
+- 81f5efd6f3103a5840f8b92f62c8cb7ac813cb86
+
+### Notes / follow-up
+- After Streamlit finishes deploying this commit, hard-refresh the app and open the sidebar.
+- The Trading Desk/Home item should no longer point at `Trading_Desk.py`.
