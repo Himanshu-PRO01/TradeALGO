@@ -63,6 +63,31 @@ with st.sidebar:
         st.session_state["practice_report"] = None
         st.session_state["practice_report_data"] = None
 
+# Also expose the main action outside the sidebar so it is easy to find on the menu page.
+st.markdown("### Start a new practice market")
+st.caption("Choose the market settings in the sidebar, then start a fresh fake-money market here.")
+if st.button("🎯 Start a new market", type="primary", key="pr_start_main", width="stretch"):
+    rng = np.random.default_rng(int(seed))
+    if regime_choice.startswith("random"):
+        name = list(REGIMES)[int(rng.integers(0, len(REGIMES)))]
+        bars, note = generate_world(name, int(days), int(seed), 24500.0), f"The market was: {name}. {REGIMES[name].description}"
+    elif regime_choice.startswith("mixed"):
+        bars, segments = generate_mixed_world(int(days), int(seed), 24500.0, segment_days=(1, 2))
+        note = "The market changed character: " + "; ".join(f"{a} ({b:%d %b} to {c:%d %b})" for a, b, c in segments)
+    else:
+        bars, note = generate_world(regime_choice, int(days), int(seed), 24500.0), f"The market was: {regime_choice}. {REGIMES[regime_choice].description}"
+    settings = PracticeSettings(capital=float(capital), iv_pct=float(iv), days_to_expiry=float(dte),
+                                spread_points=float(spread), charges_per_order=float(charges),
+                                max_loss_per_trade=float(max_loss), max_trades_per_day=int(max_trades),
+                                max_daily_loss=float(max_daily))
+    st.session_state["practice"] = PracticeSession(bars, settings)
+    st.session_state["practice_note"] = note
+    st.session_state["practice_report"] = None
+    st.session_state["practice_report_data"] = None
+    st.rerun()
+
+st.divider()
+
 sess = st.session_state.get("practice")
 if sess is None:
     st.markdown(ui.card("Start here", "Press 'Start a new market' in the sidebar. Leave the market on 'random (hidden)' so "
