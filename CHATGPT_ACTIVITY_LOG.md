@@ -390,3 +390,30 @@ Latest recorded ChatGPT commit:
 
 ### Notes / follow-up
 - Refresh the Streamlit app and open **Deployment Status**. It should now show **DEPLOYED / STREAMLIT** when accessed through the normal `.streamlit.app` address.
+
+
+## Activity: Fix UI CSS NameError
+
+**Date:** 2026-09-25
+
+### Files changed
+- `algobot/ui.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Fixed the CSS added during the UI polish so literal CSS braces are escaped correctly inside the Python f-string.
+- This removes the `NameError` raised while importing `algobot.ui`.
+
+### Why
+- Streamlit was failing before the Deployment Status page could load because Python interpreted CSS inside the f-string as expressions.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for the hotfix; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `1280767adef2dc6674b3612dec571cc8ac1f57c9`
+
+### Notes / follow-up
+- Refresh the Streamlit app after the new commit deploys.
