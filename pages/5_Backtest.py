@@ -47,39 +47,44 @@ def colour_pnl(value):
     return ""
 
 
-# ------------------------------------------------------------------ sidebar
-with st.sidebar:
-    with st.expander("1. Price data", expanded=True):
-        source = st.radio("Where do the prices come from?", ["Sample data (random, for testing)", "Upload a CSV file"],
-                          key="data_source")
-        days = st.slider("Days of sample data", 10, 120, 60, key="sample_days")
-        uploaded = st.file_uploader("CSV with datetime, open, high, low, close (volume optional)", type=["csv"], key="csv")
-    with st.expander("2. Trade size and safety", expanded=True):
-        capital = st.number_input("Account size (Rs)", min_value=1000, value=100000, step=1000, key="capital")
-        quantity = st.number_input("Shares per trade", min_value=1, value=10, step=1, key="quantity")
-        allow_short = st.checkbox("Allow short selling", value=False, key="allow_short")
-        stop_pct = st.number_input("Stop-loss % (0 = none)", min_value=0.0, value=0.5, step=0.1, key="stop_pct")
-        target_pct = st.number_input("Profit target % (0 = none)", min_value=0.0, value=1.0, step=0.1, key="target_pct")
-        max_loss = st.number_input("Stop trading for the day after losing (Rs, 0 = no limit)", min_value=0, value=2000,
-                                   step=100, key="max_loss")
-        max_trades = st.number_input("Max trades per day (0 = no limit)", min_value=0, value=6, step=1, key="max_trades")
-        max_position = st.number_input("Largest single position (Rs, 0 = no limit)", min_value=0, value=50000, step=1000,
-                                       key="max_position")
-        t_start = st.text_input("No trades before (HH:MM)", "09:20", key="t_start")
-        t_last = st.text_input("No new trades after (HH:MM)", "14:45", key="t_last")
-        t_off = st.text_input("Close everything at (HH:MM)", "15:15", key="t_off")
-    with st.expander("3. Costs (example values: check your broker's charge calculator)"):
-        brokerage_pct = st.number_input("Brokerage % of order value", min_value=0.0, value=0.03, step=0.01, format="%.4f", key="c_brokerage")
-        brokerage_cap = st.number_input("Brokerage cap per order (Rs, 0 = no cap)", min_value=0.0, value=20.0, key="c_cap")
-        stt_sell = st.number_input("STT % on sells", min_value=0.0, value=0.025, format="%.4f", key="c_stt_sell")
-        stt_buy = st.number_input("STT % on buys", min_value=0.0, value=0.0, format="%.4f", key="c_stt_buy")
-        exch = st.number_input("Exchange charges %", min_value=0.0, value=0.003, format="%.5f", key="c_exch")
-        sebi = st.number_input("SEBI fee %", min_value=0.0, value=0.0001, format="%.5f", key="c_sebi")
-        stamp = st.number_input("Stamp duty % on buys", min_value=0.0, value=0.003, format="%.4f", key="c_stamp")
-        gst = st.number_input("GST % (on brokerage and fees)", min_value=0.0, value=18.0, key="c_gst")
-        slippage = st.number_input("Slippage (bps, 1 bps = 0.01%)", min_value=0.0, value=2.0, key="c_slip")
-
 # --------------------------------------------------------------------- strategy
+# ------------------------------------------------------------------ backtest settings
+st.markdown("### Backtest settings")
+st.caption("Set the test inputs here. The sidebar is reserved for navigation.")
+with st.expander("1. Price data", expanded=True):
+    source = st.radio("Where do the prices come from?", ["Sample data (random, for testing)", "Upload a CSV file"], key="data_source")
+    days = st.slider("Days of sample data", 10, 120, 60, key="sample_days")
+    uploaded = st.file_uploader("CSV with datetime, open, high, low, close (volume optional)", type=["csv"], key="csv")
+with st.expander("2. Trade size and safety", expanded=True):
+    c1, c2, c3 = st.columns(3)
+    capital = c1.number_input("Account size (Rs)", min_value=1000, value=100000, step=1000, key="capital")
+    quantity = c2.number_input("Shares per trade", min_value=1, value=10, step=1, key="quantity")
+    allow_short = c3.checkbox("Allow short selling", value=False, key="allow_short")
+    c1, c2, c3 = st.columns(3)
+    stop_pct = c1.number_input("Stop-loss % (0 = none)", min_value=0.0, value=0.5, step=0.1, key="stop_pct")
+    target_pct = c2.number_input("Profit target % (0 = none)", min_value=0.0, value=1.0, step=0.1, key="target_pct")
+    max_loss = c3.number_input("Stop trading for the day after losing (Rs, 0 = no limit)", min_value=0, value=2000, step=100, key="max_loss")
+    c1, c2, c3 = st.columns(3)
+    max_trades = c1.number_input("Max trades per day (0 = no limit)", min_value=0, value=6, step=1, key="max_trades")
+    max_position = c2.number_input("Largest single position (Rs, 0 = no limit)", min_value=0, value=50000, step=1000, key="max_position")
+    t_start = c3.text_input("No trades before (HH:MM)", "09:20", key="t_start")
+    c1, c2 = st.columns(2)
+    t_last = c1.text_input("No new trades after (HH:MM)", "14:45", key="t_last")
+    t_off = c2.text_input("Close everything at (HH:MM)", "15:15", key="t_off")
+with st.expander("3. Costs (example values: check your broker's charge calculator)"):
+    c1, c2, c3 = st.columns(3)
+    brokerage_pct = c1.number_input("Brokerage % of order value", min_value=0.0, value=0.03, step=0.01, format="%.4f", key="c_brokerage")
+    brokerage_cap = c2.number_input("Brokerage cap per order (Rs, 0 = no cap)", min_value=0.0, value=20.0, key="c_cap")
+    stt_sell = c3.number_input("STT % on sells", min_value=0.0, value=0.025, format="%.4f", key="c_stt_sell")
+    c1, c2, c3 = st.columns(3)
+    stt_buy = c1.number_input("STT % on buys", min_value=0.0, value=0.0, format="%.4f", key="c_stt_buy")
+    exch = c2.number_input("Exchange charges %", min_value=0.0, value=0.003, format="%.5f", key="c_exch")
+    sebi = c3.number_input("SEBI fee %", min_value=0.0, value=0.0001, format="%.5f", key="c_sebi")
+    c1, c2, c3 = st.columns(3)
+    stamp = c1.number_input("Stamp duty % on buys", min_value=0.0, value=0.003, format="%.4f", key="c_stamp")
+    gst = c2.number_input("GST % (on brokerage and fees)", min_value=0.0, value=18.0, key="c_gst")
+    slippage = c3.number_input("Slippage (bps, 1 bps = 0.01%)", min_value=0.0, value=2.0, key="c_slip")
+
 st.markdown("#### 1. Strategy")
 kind = st.radio("Type", ["Rules (write conditions)", "SMA crossover (demo)"], horizontal=True, key="strategy_kind")
 if kind.startswith("Rules"):
@@ -128,7 +133,7 @@ def load_prices():
     if source.startswith("Sample"):
         return sample_data(days)
     if uploaded is None:
-        st.info("Upload a CSV file in the sidebar, or switch to the sample data.")
+        st.info("Upload a CSV file above, or switch to the sample data.")
         return None
     return load_csv(io.BytesIO(uploaded.getvalue()))
 
