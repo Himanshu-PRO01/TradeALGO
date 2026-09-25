@@ -277,3 +277,31 @@ Use this structure:
 
 Latest recorded ChatGPT commit:
 `ad5df28df9eecb5f080d101df63b2d935fcebd8f`
+
+## Activity: Practice Room Efficiency Pass — Step 1
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/3_Practice_room.py`
+
+### What changed
+- Reused the already-revealed practice bars instead of calling `sess.revealed()` twice during each Streamlit rerun.
+- Reused the calculated account equity instead of recalculating `sess.equity()` for the ticker.
+- Reused the calculated unrealized P&L instead of calculating `sess.unrealized()` twice.
+- Calculated the option premium history once per rerun before rendering its chart.
+
+### Why
+- Streamlit reruns the page after interactive actions. These small changes remove duplicate work from the practice-room hot path without changing trading rules, pricing, risk limits, or order behavior.
+- This is intentionally a low-risk first efficiency pass. Larger performance changes should be measured before being introduced.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector was used for the change; no local test runner was available in this session. Do not assume the full suite passed.
+
+### Commit
+- `7834990661bcae1acb77277af06d35a0a0ccffab`
+
+### Notes / follow-up
+- Next efficiency work should target measured hot paths such as repeated option-pricing calculations and stress-lab generation, while preserving existing trading/risk behavior.
