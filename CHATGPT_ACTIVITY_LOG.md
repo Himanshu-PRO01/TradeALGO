@@ -596,3 +596,44 @@ Latest recorded ChatGPT commit:
 
 ### Notes
 - No trading, risk, broker, OpenAlgo, or live-order logic was changed.
+
+
+## Activity: Real-Market TradingView Chart Page
+
+**Date:** 2026-09-25
+
+### Files changed
+- `pages/12_Market_Charts.py`
+- `algobot/ui.py`
+- `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Added a **Market Charts** research page using TradingView's official embeddable Advanced Chart widget.
+- Added selectable starting symbols including NIFTY, BANK NIFTY, FINNIFTY and several NSE stocks.
+- Added selectable timeframes including 1m, 5m, 15m, 30m, 1h, daily and weekly.
+- Enabled symbol changes, volume, drawing toolbar, date ranges, and basic moving-average/RSI studies in the embedded chart.
+- Added the page to the Research section of the shared sidebar.
+- The page is explicitly market-data/visualization only and does not connect to a broker account or place orders.
+
+### Why
+- The project now has a real-market chart surface that can be used alongside Backtest, Strategy Builder and Reality Check.
+- TradingView's current widget documentation states that its embeddable widgets include built-in market data, so this first chart connection does not require us to handle a broker API key in the frontend. citeturn0search9turn0search0
+- A future broker data/API adapter can be added separately, server-side, if the project later needs broker-native candles or streaming data.
+
+### Safety
+- No broker credentials were added.
+- No API keys were requested or exposed.
+- No OpenAlgo, risk, audit, or live-order code was changed.
+- The live trading page remains locked.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: The GitHub connector can update the repository but cannot run the local Python test suite in this session. Do not assume the full suite passed.
+
+### Commits
+- Market Charts page: `2bcbacda398ffd2807f5cf18d0d96b04732bfea7`
+- Sidebar menu: `71ced4aa59a92fdeac604c1ff60d6487ded7052a`
+
+### Notes
+- This uses TradingView's embeddable widget rather than the restricted Advanced Charts library. TradingView documents the widget as a ready-to-embed real-time chart with its own supplied market data. citeturn0search0turn0search3
