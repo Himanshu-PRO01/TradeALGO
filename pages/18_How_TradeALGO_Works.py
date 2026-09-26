@@ -1,4 +1,4 @@
-"""Plain-English guide to how TradeALGO turns a strategy idea into a tested, controlled trading workflow."""
+"""Brother-friendly guide to using TradeALGO from idea to controlled execution."""
 
 import streamlit as st
 
@@ -6,21 +6,49 @@ from algobot import ui
 
 ui.setup("How TradeALGO Works", "🗺️")
 ui.header(
-    "How TradeALGO Works",
-    "A simple map from your trading idea to testing, paper trading, and controlled execution.",
+    "How TradeALGO Works — Start Here",
+    "This page explains exactly what you and your brother need to do, in order.",
     mode="guide:How it works",
 )
 
 ui.banner(
-    "Start with the strategy. TradeALGO helps make the rules precise, test them, and only then move toward execution.",
-    tone="info",
+    "Bhai ke liye simple rule: pehle strategy ko exact rules mein likho → test karo → paper/sandbox mein rehearse karo → tabhi execution.",
+    tone="success",
 )
 
-# Flowchart
+st.markdown("## 👋 Bhai, website par tumhe kya karna hai?")
+
+st.markdown(
+    """
+    <div style="border:1px solid #334155;border-radius:16px;padding:20px;background:#0f172a;margin:12px 0 20px;">
+      <div style="font-size:18px;font-weight:750;margin-bottom:10px;">Tumhara main kaam strategy ko clearly define karna hai.</div>
+      <ol style="color:#cbd5e1;line-height:1.8;margin-bottom:0;">
+        <li>Apna setup explain karo.</li>
+        <li>Entry aur confirmation ko exact rule banao.</li>
+        <li>Stop-loss, target, quantity aur skip conditions fix karo.</li>
+        <li>Strategy Builder mein rules likho.</li>
+        <li>Backtest se historical result dekho.</li>
+        <li>Auto Tester se controlled variations test karo.</li>
+        <li>Reality Check mein risk aur robustness dekho.</li>
+        <li>Paper/Sandbox mein execution rehearse karo.</li>
+        <li>Sab clear hone ke baad hi execution layer/OpenAlgo ko use karo.</li>
+      </ol>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown("## 🎬 1-minute walkthrough")
+
+st.caption(
+    "Flow ko left-to-right samjho. Har stage ka output agle stage ka input hai. "
+    "Abhi is repo mein dedicated MP4 video file available nahi hai, isliye neeche same walkthrough ko interactive form mein diya gaya hai."
+)
+
 st.markdown(
     """
     <style>
-    .flow-wrap { display:flex; flex-direction:column; gap:10px; margin:18px 0 26px; }
+    .flow-wrap { display:flex; flex-direction:column; gap:10px; margin:16px 0 24px; }
     .flow-row { display:flex; align-items:stretch; gap:12px; }
     .flow-card {
         flex:1; border:1px solid #334155; border-radius:14px; padding:16px;
@@ -42,127 +70,68 @@ st.markdown(
     }
     .flow-live strong { color:#86efac; font-size:17px; }
     .flow-live span { display:block; color:#bbf7d0; margin-top:4px; font-size:13px; }
-    @media (max-width: 760px) {
-        .flow-row { flex-direction:column; }
-    }
+    @media (max-width: 760px) { .flow-row { flex-direction:column; } }
     </style>
-
     <div class="flow-wrap">
       <div class="flow-row">
-        <div class="flow-card">
-          <div class="num">01</div>
-          <div class="title">Idea</div>
-          <div class="body">Describe what you see in the market and when you want to trade.</div>
-        </div>
-        <div class="flow-card">
-          <div class="num">02</div>
-          <div class="title">Strategy Builder</div>
-          <div class="body">Turn the idea into exact entry, confirmation, stop, target, skip and sizing rules.</div>
-        </div>
-        <div class="flow-card">
-          <div class="num">03</div>
-          <div class="title">Backtest</div>
-          <div class="body">Run the written rules on historical data and inspect trades, costs and drawdown.</div>
-        </div>
+        <div class="flow-card"><div class="num">01</div><div class="title">Idea</div><div class="body">Market setup aur trade ka reason define karo.</div></div>
+        <div class="flow-card"><div class="num">02</div><div class="title">Strategy Builder</div><div class="body">Idea ko exact entry, confirmation, stop, target, skip aur sizing rules mein badlo.</div></div>
+        <div class="flow-card"><div class="num">03</div><div class="title">Backtest</div><div class="body">Historical data par written rules ko test karo.</div></div>
       </div>
-
       <div class="flow-arrow">↓</div>
-
       <div class="flow-row">
-        <div class="flow-card">
-          <div class="num">04</div>
-          <div class="title">Auto Tester</div>
-          <div class="body">Test controlled variations without letting the learning layer rewrite the strategy or risk rules.</div>
-        </div>
-        <div class="flow-card">
-          <div class="num">05</div>
-          <div class="title">Reality Check</div>
-          <div class="body">Review robustness, risk limits, sample quality and whether the evidence supports the next test stage.</div>
-        </div>
-        <div class="flow-card">
-          <div class="num">06</div>
-          <div class="title">Paper / Sandbox</div>
-          <div class="body">Rehearse signals and execution without putting real money at risk.</div>
-        </div>
+        <div class="flow-card"><div class="num">04</div><div class="title">Auto Tester</div><div class="body">Controlled parameter variations test karo; strategy ko silently rewrite nahi kiya jata.</div></div>
+        <div class="flow-card"><div class="num">05</div><div class="title">Reality Check</div><div class="body">Risk, robustness, sample quality aur next-stage readiness review karo.</div></div>
+        <div class="flow-card"><div class="num">06</div><div class="title">Paper / Sandbox</div><div class="body">Fake-money rehearsal se signal aur execution workflow check karo.</div></div>
       </div>
-
       <div class="flow-arrow">↓</div>
-
-      <div class="flow-gate">
-        <strong>Safety Gate</strong>
-        <span>Risk checks → persistent kill switch → execution mode → human confirmation</span>
-      </div>
-
+      <div class="flow-gate"><strong>SAFETY GATE</strong><span>Risk checks → persistent kill switch → execution mode → human confirmation</span></div>
       <div class="flow-arrow">↓</div>
-
       <div class="flow-row">
-        <div class="flow-live">
-          <strong>07 · OpenAlgo</strong>
-          <span>Execution bridge that receives an approved order and routes it to the connected broker.</span>
-        </div>
-        <div class="flow-live">
-          <strong>08 · Broker</strong>
-          <span>Upstox or another supported broker handles the actual market order.</span>
-        </div>
+        <div class="flow-live"><strong>07 · OpenAlgo</strong><span>Approved order ko execution bridge ke through broker tak bhejne ka infrastructure.</span></div>
+        <div class="flow-live"><strong>08 · Broker</strong><span>Connected broker actual market order handle karta hai.</span></div>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown("## How to make a strategy")
+st.markdown("## ✅ Tumhe kis order mein kaam karna hai")
 
-steps = [
-    (
-        "1. Define the market",
-        "Choose the instrument, timeframe and trading hours.",
-        "Example: NIFTY, 15-minute chart, trade only during your defined sessions.",
-    ),
-    (
-        "2. Define the setup",
-        "Write the exact condition that creates a possible trade.",
-        "Example: price reaches a previous-week high/low or another explicitly defined level.",
-    ),
-    (
-        "3. Define confirmation",
-        "State exactly what must happen before entry. Avoid words like 'looks strong'.",
-        "Example: a measurable candle, volume or indicator condition.",
-    ),
-    (
-        "4. Define the order",
-        "Specify direction, option type, strike selection, expiry and quantity.",
-        "Every choice must be explicit enough that two people would make the same decision.",
-    ),
-    (
-        "5. Define risk",
-        "Write the stop-loss, position size, daily loss limit and monthly loss limit.",
-        "These become testable risk constraints rather than decisions made after entry.",
-    ),
-    (
-        "6. Define the exit",
-        "Turn the profit-taking idea into a measurable rule.",
-        "If the rule is 'I decide as it happens', it cannot be reproduced reliably in a backtest.",
-    ),
-    (
-        "7. Define when NOT to trade",
-        "List news conditions, time windows and other skip rules.",
-        "A skip condition is part of the strategy, not an optional note.",
-    ),
+todo = [
+    ("1", "Strategy Builder", "Strategy ke saare rules likho. Agar koi rule subjective hai, usko exact banao."),
+    ("2", "Backtest", "Historical result, trades, drawdown aur assumptions dekho."),
+    ("3", "Auto Tester", "Controlled variations test karo; result ko evidence samjho, guarantee nahi."),
+    ("4", "Reality Check", "Risk limits aur robustness review karo."),
+    ("5", "Paper Trading / Sandbox", "Real money ke bina workflow rehearse karo."),
+    ("6", "OpenAlgo / execution", "Sirf approved order ko execution infrastructure tak le jao."),
 ]
+for n, name, job in todo:
+    with st.expander(f"{n}. {name}", expanded=(n == "1")):
+        st.write(job)
 
-for title, body, example in steps:
-    with st.expander(title, expanded=False):
-        st.write(body)
-        st.caption(example)
+st.markdown("## 🧩 Strategy banane ke 7 sawaal")
+
+questions = [
+    ("1. Market", "Kya trade karna hai? NIFTY/BANKNIFTY/stock? Kaunsa timeframe? Kaunse trading hours?"),
+    ("2. Setup", "Kaunsa exact level/setup trade ko possible banata hai?"),
+    ("3. Confirmation", "Entry se pehle exactly kya confirm hona chahiye?"),
+    ("4. Order", "BUY/SELL, CE/PE, strike, expiry aur quantity ka exact rule kya hai?"),
+    ("5. Risk", "Stop-loss aur max daily/monthly loss kya hai?"),
+    ("6. Exit", "Profit kaise book hoga? Exact measurable rule kya hai?"),
+    ("7. Skip", "Kab trade nahi karna hai — news, time, volatility ya koi aur condition?"),
+]
+for title, text in questions:
+    ui.check_row("TODO", title, text)
 
 st.divider()
-st.markdown("## Your brother's current strategy — what we know")
+st.markdown("## 📌 Tumhare bhai ki current strategy — jo already known hai")
 
 known = [
     ("Holding period", "Usually same day; sometimes overnight."),
     ("Timeframe", "15 minutes."),
     ("Levels", "Previous-week high/low, swing highs/lows, and manually drawn TradingView lines."),
-    ("Entry idea", "Price touches a level plus an additional confirmation such as volume or an indicator."),
+    ("Entry idea", "Price touches a level plus additional confirmation such as volume or an indicator."),
     ("Options", "Only buy; typically 1–2 strikes OTM; current weekly expiry."),
     ("Typical premium", "About ₹150."),
     ("Stop", "Fixed number of index points beyond the level."),
@@ -170,53 +139,56 @@ known = [
     ("Skip", "Big news."),
     ("Risk limits", "₹500 per day and ₹2,000 per month."),
 ]
-
 for label, value in known:
     ui.check_row("PASS", label, value)
 
-st.markdown("### Rules still needed before a deterministic backtest")
+st.markdown("### ❗ Backtest se pehle ye rules exact karne hain")
+
 missing = [
-    "Exact definition of a swing high / swing low.",
-    "Exact confirmation indicator or volume condition.",
+    "Swing high / swing low ki exact definition.",
+    "Confirmation indicator ya volume condition.",
     "Exact stop distance in index points.",
     "Exact profit-taking / exit rule.",
-    "Position sizing and lot-selection rule.",
-    "Exact definition of a manually drawn TradingView level.",
-    "Whether the OTM choice is always 1 strike, always 2 strikes, or rule-based.",
+    "Position sizing aur lot-selection rule.",
+    "Manually drawn TradingView level ki exact definition.",
+    "1 OTM vs 2 OTM ka fixed/rule-based choice.",
     "Expiry-day handling.",
-    "Clarification of the recorded 21 Sep NIFTY 23500 CE 'sell' trade: opening short, exit, or hedge.",
+    "21 Sep NIFTY 23500 CE 'sell' trade: opening short, exit, ya hedge?",
 ]
-
 for item in missing:
     ui.check_row("TODO", "Rule to specify", item)
 
 st.divider()
-st.markdown("## What each part of TradeALGO does")
+st.markdown("## 🛠️ Website ke pages ka kaam")
 
 roles = [
-    ("Strategy Builder", "Writes the strategy as explicit rules.", "Does not place orders."),
-    ("Backtest", "Checks the rules against historical data.", "Shows results and assumptions."),
-    ("Auto Tester", "Tests controlled parameter variations.", "Does not rewrite the strategy by itself."),
-    ("Reality Check", "Reviews evidence and risk readiness.", "Does not approve live trading automatically."),
-    ("Paper Trading", "Rehearses the workflow with fake money.", "No real broker order."),
-    ("OpenAlgo", "Execution infrastructure.", "Receives an approved order; it is not the strategy owner."),
-    ("Live Trading", "Controlled execution.", "Requires explicit live mode, kill switch clear and human confirmation."),
+    ("Strategy Builder", "Strategy ko explicit rules mein likhna.", "Orders place nahi karta."),
+    ("Backtest", "Historical data par rules test karna.", "Results aur assumptions dikhata hai."),
+    ("Auto Tester", "Controlled variations test karna.", "Khud se strategy/risk rules rewrite nahi karta."),
+    ("Reality Check", "Evidence aur risk readiness review karna.", "Live approval automatically nahi deta."),
+    ("Paper Trading", "Fake-money rehearsal.", "Real broker order nahi."),
+    ("Upstox Sandbox", "Sandbox broker flow test karna.", "Sandbox-only environment."),
+    ("OpenAlgo", "Execution infrastructure.", "Strategy ka owner nahi; approved order receive karta hai."),
+    ("Live Trading", "Controlled live execution.", "Explicit live mode + kill switch clear + human confirmation required."),
 ]
-
 for name, job, boundary in roles:
     with st.expander(name):
-        st.write(f"**Job:** {job}")
+        st.write(f"**Kaam:** {job}")
         st.write(f"**Boundary:** {boundary}")
 
 st.divider()
-st.markdown("## The simple rule")
-
 ui.banner(
-    "Strategy first → test → reality check → paper/sandbox → safety gate → OpenAlgo → broker.",
+    "STRATEGY FIRST → BACKTEST → AUTO TEST → REALITY CHECK → PAPER/SANDBOX → SAFETY GATE → OPENALGO → BROKER",
     tone="success",
 )
 
-st.page_link("pages/10_Strategy_Builder.py", label="Start building the strategy", icon="🧠")
-st.page_link("pages/5_Backtest.py", label="Backtest a written strategy", icon="📊")
+st.markdown("## 🚀 Start here")
+st.page_link("pages/10_Strategy_Builder.py", label="Open Strategy Builder", icon="🧠")
+st.page_link("pages/5_Backtest.py", label="Open Backtest", icon="📊")
+st.page_link("pages/13_Auto_Tester.py", label="Open Auto Tester", icon="🧪")
+st.page_link("pages/6_Reality_check.py", label="Open Reality Check", icon="🛡️")
+st.page_link("pages/16_Paper_Trading.py", label="Open Paper Trading", icon="📝")
+st.page_link("pages/14_Upstox_Sandbox.py", label="Open Upstox Sandbox", icon="🧰")
+st.page_link("pages/11_Live_Trading.py", label="Open Live Trading", icon="⚡")
 
 ui.footer_note()
