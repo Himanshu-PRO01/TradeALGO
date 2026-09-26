@@ -126,16 +126,6 @@ with rehearsal_scope() as log:
         cached_ohlc.clear()
         st.rerun()
 
-    state = log.get_state(run_key)
-    st.subheader("Current state")
-    if state["status"] == "open":
-        st.markdown(ui.card(f"Sandbox position open: {state['side']}",
-                             f"Entered at {state['entry_time']} · sandbox order {state['order_id']}.", "🟢"),
-                    unsafe_allow_html=True)
-    else:
-        st.markdown(ui.card("Flat", "No sandbox position currently tracked for this instrument.", "⚪"),
-                    unsafe_allow_html=True)
-
     if enabled and not ks_status["halted"]:
         result = evaluate(base_cfg, df)
         open_snapshot, _closed = split_open_and_closed(result)
@@ -145,6 +135,19 @@ with rehearsal_scope() as log:
             (st.success if "FAILED" not in m else st.error)(m)
     elif not enabled:
         st.warning("Not armed -- tick the checkbox above to let this page place sandbox orders.")
+
+    # Read state AFTER step() above, which may have just flipped flat -> open (or
+    # vice versa) on this very rerun -- reading it before step() showed the stale
+    # pre-order status even on the run where an order was just placed.
+    state = log.get_state(run_key)
+    st.subheader("Current state")
+    if state["status"] == "open":
+        st.markdown(ui.card(f"Sandbox position open: {state['side']}",
+                             f"Entered at {state['entry_time']} · sandbox order {state['order_id']}.", "🟢"),
+                    unsafe_allow_html=True)
+    else:
+        st.markdown(ui.card("Flat", "No sandbox position currently tracked for this instrument.", "⚪"),
+                    unsafe_allow_html=True)
 
     st.subheader("Order history for this instrument")
     hist = log.history(run_key)
