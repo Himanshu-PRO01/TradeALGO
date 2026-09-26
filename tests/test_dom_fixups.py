@@ -2,29 +2,20 @@ from algobot.dom_fixups import fix_password_autocomplete
 
 
 def test_fix_password_autocomplete_runs_without_error(monkeypatch):
-    """Can't execute real JS/DOM in pytest, but this confirms the helper
-    builds valid HTML/JS and calls components.html without raising -- the
-    kind of import/syntax regression that would otherwise only show up
-    live in a browser."""
+    """Verify the current Streamlit iframe-based DOM fixup is invoked."""
     calls = []
 
-    class FakeComponents:
-        def html(self, markup, height=0):
-            calls.append((markup, height))
+    import streamlit as st
 
-    import algobot.dom_fixups as mod
-    monkeypatch.setattr(mod, "__name__", mod.__name__)  # no-op, keeps module identity clear
+    def fake_iframe(markup, height=0):
+        calls.append((markup, height))
 
-    import sys
-    fake_module = FakeComponents()
-    sys.modules["streamlit.components.v1"] = fake_module  # type: ignore
-    try:
-        fix_password_autocomplete()
-    finally:
-        del sys.modules["streamlit.components.v1"]
+    monkeypatch.setattr(st, "iframe", fake_iframe)
+
+    fix_password_autocomplete()
 
     assert len(calls) == 1
     markup, height = calls[0]
     assert "autocomplete" in markup
-    assert "input[type=\"password\"]" in markup
-    assert height == 0
+    assert 'input[type="password"]' in markup
+    assert height == 1
