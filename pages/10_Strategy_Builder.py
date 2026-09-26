@@ -13,7 +13,7 @@ ui.header(
     mode="research:Strategy",
 )
 
-st.info("Build the rule first. The next step is to test it on historical data before considering any live use.")
+ui.banner("Build the rule first. The next step is to test it on historical data before considering any live use.", tone="info")
 
 with st.form("strategy_builder"):
     name = st.text_input("Strategy name", placeholder="Example: Previous-week level reversal")

@@ -91,7 +91,7 @@ def test_sandbox_host_matches_official_sdk_sandbox_host():
 def test_sdk_client_is_explicitly_sandbox_only(monkeypatch):
     class FakeConfiguration:
         def __init__(self, sandbox=False):
-            self.sandbox = sandbox
+            self.host = ""
             self.access_token = ""
 
     class FakeApiClient:
@@ -113,7 +113,7 @@ def test_sdk_client_is_explicitly_sandbox_only(monkeypatch):
     api, sdk = _sdk_order_api(TOKEN)
 
     assert sdk is fake_sdk
-    assert api.api_client.configuration.sandbox is True
+    assert api.api_client.configuration.host == SANDBOX_HOST
     assert api.api_client.configuration.access_token == TOKEN
 
 

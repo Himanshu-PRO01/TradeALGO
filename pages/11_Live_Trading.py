@@ -14,10 +14,21 @@ ui.header(
     mode="execution:Live",
 )
 
-st.error("🔒 LIVE TRADING IS CURRENTLY LOCKED.")
-st.write(
-    "The system has not authorized real-money execution. "
-    "This page can prepare and verify the live-trading checklist, but it cannot place, modify, or cancel a broker order."
+ui.banner("SYSTEM HARD-LOCKED • NO LIVE TRADING", tone="error", icon="🔒")
+st.markdown(
+    """
+    <div style='text-align: center; padding: 30px; background: repeating-linear-gradient(
+        45deg,
+        rgba(255,0,0,0.1),
+        rgba(255,0,0,0.1) 10px,
+        rgba(0,0,0,0.2) 10px,
+        rgba(0,0,0,0.2) 20px
+    ); border: 2px solid #ff4b4b; border-radius: 8px; margin-bottom: 20px;'>
+        <h2 style='color: #ff4b4b; margin: 0;'>VAULT SECURED</h2>
+        <p style='margin-top: 10px;'>The system has not authorized real-money execution. This page can prepare and verify the live-trading checklist, but it cannot place, modify, or cancel a broker order.</p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 st.markdown("### Live-trading checklist")

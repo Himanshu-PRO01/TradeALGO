@@ -28,7 +28,7 @@ if errorlevel 1 (
 )
 echo.
 echo Starting the trading desk. Your browser will open. Close this window to stop it.
-streamlit run dashboard.py
+streamlit run Trading_Desk.py
 pause
 exit /b 0
 

@@ -231,17 +231,17 @@ if result is not None:
     else:
         st.warning(f"In short: on this data, this strategy would have lost {ui.inr(abs(m['net_pnl']))} over "
                    f"{m['trades']} trades. Worth adjusting the rule, or trying a different idea, before going further.")
-    a, b, c, d, e = st.columns(5)
-    a.metric("Net profit / loss (Rs)", f"{m['net_pnl']:,.0f}", f"{m['return_pct']:+.2f}%")
-    b.metric("Return", f"{m['return_pct']:.2f}%")
-    c.metric("Trades", m["trades"])
-    d.metric("Win rate", "n/a" if m["win_rate_pct"] is None else f"{m['win_rate_pct']:.0f}%")
-    e.metric("Worst drop (Rs)", f"{m['max_drawdown']:,.0f}")
-    f, g, h = st.columns(3)
-    f.metric("Before costs (Rs)", f"{m['gross_pnl']:,.0f}")
-    g.metric("Costs paid (Rs)", f"{m['total_costs']:,.0f}")
     pf = m["profit_factor"]
-    h.metric("Profit factor", "n/a" if pf is None else ("infinite" if pf == float("inf") else f"{pf:.2f}"))
+    ui.ticker([
+        ("Net PnL", f"{ui.inr(m['net_pnl'], sign=True)}", ui.tone(m['net_pnl'])),
+        ("Return", f"{m['return_pct']:+.2f}%", ui.tone(m['return_pct'])),
+        ("Trades", m["trades"], None),
+        ("Win rate", "n/a" if m["win_rate_pct"] is None else f"{m['win_rate_pct']:.0f}%", None),
+        ("Worst drop", f"{ui.inr(m['max_drawdown'])}", "error" if m['max_drawdown'] < 0 else None),
+        ("Before costs", f"{ui.inr(m['gross_pnl'], sign=True)}", ui.tone(m['gross_pnl'])),
+        ("Costs paid", f"{ui.inr(m['total_costs'])}", "error" if m['total_costs'] > 0 else None),
+        ("Profit factor", "n/a" if pf is None else ("infinite" if pf == float("inf") else f"{pf:.2f}"), "success" if pf and pf > 1 else ("error" if pf and pf < 1 else None))
+    ])
     tried = st.session_state.get("variants_tried")
     if tried:
         st.caption(f"Variants tried on this data so far: {tried}. The more you try, the more a good-looking result can be luck. "

@@ -22,6 +22,8 @@ ui.header(
     mode="execution:Paper Trading",
 )
 
+ui.banner("PAPER MONEY • NO REAL ORDERS", tone="info", icon="✅")
+
 with kill_switch_scope() as switch:
     ks_status = switch.status()
 

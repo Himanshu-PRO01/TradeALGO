@@ -17,11 +17,20 @@ from algobot.upstox_sandbox import UpstoxSandboxClient, clean_token, sandbox_tok
 ui.setup("Sandbox Rehearsal", "🎬")
 ui.header(
     "Sandbox Rehearsal",
-    "Connects your strategy's own BUY/SELL/EXIT signal -- the same one Paper Trading evaluates -- "
-    "to real Upstox Sandbox orders for one instrument you choose. This exercises the actual order "
-    "code (place, and later exit) against Upstox's sandbox, which fakes the fill but is otherwise "
-    "the real API. No live endpoint, no live token, and no real money is ever reachable from here.",
+    "Connects your strategy's own BUY/SELL/EXIT signal to real Upstox Sandbox orders. "
+    "Exercises the actual order code (place, and later exit) against Upstox's sandbox.",
     mode="execution:Sandbox Rehearsal",
+)
+ui.banner("SANDBOX REHEARSAL • NO REAL MONEY", tone="warning", icon="⚠️")
+
+st.markdown(
+    """
+    <div style='text-align: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 20px;'>
+        <strong>Rehearsal Flow:</strong><br/>
+        📡 Signal ➔ 🛡️ Risk Check ➔ 📦 Sandbox Order ➔ ⚖️ Sandbox Result ➔ 📓 Journal
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 token = sandbox_token()

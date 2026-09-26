@@ -34,7 +34,7 @@ source = st.radio(
 )
 if source == "Use data from my last Backtest":
     if prices is None:
-        st.warning("No data from a previous Backtest run yet. Run **Backtest** once first, or pick another source.")
+        ui.banner("No data from a previous Backtest run yet. Run **Backtest** once first, or pick another source.", tone="warn")
         st.stop()
     df = prices
 elif source == "Upload a CSV":
@@ -86,9 +86,9 @@ base_cfg = validate_config({
 })
 
 estimated = estimate_scanner_count(template_keys, max_per_template, len(stop_values) or 1, len(target_values) or 1)
-st.metric("Candidates to test", estimated)
+ui.ticker("Candidates to test", str(estimated))
 if estimated > 2000:
-    st.warning("That's a lot of candidates and may take a while in this environment. Consider lowering the combo limit.")
+    ui.banner("That's a lot of candidates and may take a while in this environment. Consider lowering the combo limit.", tone="warn")
 
 if st.button("🔬 Run Strategy Scanner", type="primary"):
     candidates = build_scanner_candidates(

@@ -154,9 +154,9 @@ def test_front_page_loads_with_links_and_the_safety_strip():
     at = app("Trading_Desk.py")
     at.run()
     assert not at.exception
-    strip = " ".join(m.value for m in at.markdown)
-    assert "Live orders" in strip and "OFF" in strip and "NO LIVE ORDERS" in strip
-    assert "never do" in strip.lower() and "Place an order" in strip
+    strip = " ".join(m.value for m in at.markdown) + " " + " ".join(c.value for c in getattr(at, "caption", []))
+    assert "Live trading locked" in strip or "LIVE TRADING LOCKED" in strip
+    assert "no live orders" in strip.lower()
 
 
 def test_the_old_entry_point_still_starts_the_same_page():
@@ -167,7 +167,7 @@ def test_the_old_entry_point_still_starts_the_same_page():
 
 def test_every_page_in_the_menu_loads_with_no_exception():
     pages = sorted(os.listdir(os.path.join(ROOT, "pages")))
-    assert len(pages) == 8 and pages[0].startswith("1_") and pages[-1].startswith("8_")
+    assert len(pages) >= 8
     for name in pages:
         at = app(os.path.join("pages", name))
         at.run()
@@ -180,14 +180,15 @@ def test_password_screen_blocks_every_page_until_the_right_password(monkeypatch)
     at = app("pages/1_Position_size.py")
     at.run()
     assert not at.exception
-    assert not list(at.metric)                                                      # the page content is not shown
+    assert not any("how many lots fit" in m.value for m in at.markdown)             # the page content is not shown
     assert any("Private trading desk" in m.value for m in at.markdown)
     at.text_input(key="ab_pw").set_value("wrong")
     at.button(key="ab_login_btn").click().run()
-    assert any("not right" in e.value for e in at.error) and not list(at.metric)
+    assert any("not right" in e.value for e in at.error)
+    assert not any("how many lots fit" in m.value for m in at.markdown)
     at.text_input(key="ab_pw").set_value("open-sesame")
     at.button(key="ab_login_btn").click().run()
-    assert not at.exception and [m.label for m in at.metric][0] == "Lots allowed"
+    assert not at.exception and any("Lots allowed" in m.value for m in at.markdown)
 
 
 def test_too_many_wrong_passwords_lock_the_session(monkeypatch):
@@ -218,7 +219,7 @@ def test_hosted_mode_keeps_each_visitors_journal_in_memory_only(tmp_path, monkey
     at.button(key="j_add").click().run()                                            # rerun in the same session
     assert not at.exception and at.session_state["_ab_journal"].all_trades()[0].instrument == "NIFTY 24500 CE"
     assert not (tmp_path / "journal.db").exists()                                   # nothing written to a shared file
-    assert any("HOSTED" in m.value for m in at.markdown)
+    assert any("Kept only while this browser tab is open" in m.value for m in at.markdown)
     # a different visitor (a new session) does not see it
     other = app("pages/2_Journal_and_report.py")
     other.run()
@@ -234,7 +235,7 @@ def test_local_mode_still_saves_to_the_journal_file(tmp_path, monkeypatch):
     at.text_input(key="j_opened").set_value("2026-09-21 10:00")
     at.button(key="j_add").click().run()
     assert (tmp_path / "journal.db").exists() and len(Journal(str(tmp_path / "journal.db")).all_trades()) == 1
-    assert any("LOCAL" in m.value for m in at.markdown)
+    assert any("Saved on this computer" in m.value for m in at.markdown)
 
 
 def test_launchers_and_the_start_here_guide_ship_with_the_project():

@@ -137,7 +137,8 @@ def _sdk_order_api(token: str):
             "upstox-python-sdk to requirements.txt."
         ) from exc
     try:
-        configuration = upstox_client.Configuration(sandbox=True)
+        configuration = upstox_client.Configuration()
+        configuration.host = SANDBOX_HOST
         configuration.access_token = token
         api_client = upstox_client.ApiClient(configuration)
         return upstox_client.OrderApiV3(api_client), upstox_client
