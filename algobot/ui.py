@@ -267,6 +267,7 @@ def _menu() -> None:
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
+                ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
                 ("💬", "Feedback", "pages/8_Feedback.py"),
                 ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
             ]),
