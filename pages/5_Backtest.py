@@ -242,6 +242,13 @@ if result is not None:
     g.metric("Costs paid (Rs)", f"{m['total_costs']:,.0f}")
     pf = m["profit_factor"]
     h.metric("Profit factor", "n/a" if pf is None else ("infinite" if pf == float("inf") else f"{pf:.2f}"))
+    i, j, k, l = st.columns(4)
+    i.metric("Avg win (Rs)", "n/a" if m["avg_win"] is None else f"{m['avg_win']:,.0f}")
+    j.metric("Avg loss (Rs)", "n/a" if m["avg_loss"] is None else f"{m['avg_loss']:,.0f}")
+    k.metric("Longest win streak", m["max_win_streak"])
+    l.metric("Longest loss streak", m["max_loss_streak"])
+    st.caption(f"Time in market: {m['exposure_pct']:.1f}% of the tested window had an open position "
+               "(the rest was flat, waiting for a signal).")
     tried = st.session_state.get("variants_tried")
     if tried:
         st.caption(f"Variants tried on this data so far: {tried}. The more you try, the more a good-looking result can be luck. "
