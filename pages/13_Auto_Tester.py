@@ -133,4 +133,5 @@ if rows:
         "4. Paper trade before considering live execution."
     )
 
+ui.workflow_nav("auto", complete=st.session_state.get("auto_report") is not None)
 ui.footer_note("Auto Tester uses fake-market stress testing. It never places orders or connects to a broker.")
