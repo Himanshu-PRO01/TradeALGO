@@ -30,8 +30,7 @@ prices = st.session_state.get("last_prices")
 if raw is None or prices is None:
     st.info("Run a backtest on the Backtest page first. This page checks the strategy and prices used in your last run.")
     ui.workflow_nav("reality", complete=st.session_state.get("audit_report") is not None)
-ui.workflow_nav("reality", complete=st.session_state.get("audit_report") is not None)
-ui.footer_note()
+    ui.footer_note()
     st.stop()
 
 try:
