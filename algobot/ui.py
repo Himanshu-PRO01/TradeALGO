@@ -5,6 +5,7 @@ Colours come from palette.py so the CSS and the charts always agree: green is po
 """
 from __future__ import annotations
 
+import os
 import pathlib
 import sys
 from html import escape
