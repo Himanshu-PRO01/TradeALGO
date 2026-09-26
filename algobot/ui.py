@@ -450,14 +450,19 @@ def workflow_nav(current: str, complete: bool = True) -> None:
     total = len(WORKFLOW_STEPS)
     st.markdown(f"### Workflow · Step {step_no} of {total}")
     st.progress(step_no / total)
-    if idx < total - 1:
-        next_key, next_name, next_path = WORKFLOW_STEPS[idx + 1]
-        st.page_link(next_path, label=f"➡️ Next: {next_name}", icon="➡️", use_container_width=True)
-    else:
-        st.success("✅ Workflow complete. You have reached Live Trading. Use the live page only after all required checks are satisfied.")
-    if idx > 0:
-        prev_key, prev_name, prev_path = WORKFLOW_STEPS[idx - 1]
-        st.page_link(prev_path, label=f"⬅️ Previous: {prev_name}", icon="⬅️", use_container_width=True)
+    prev = WORKFLOW_STEPS[idx - 1] if idx > 0 else None
+    next_step = WORKFLOW_STEPS[idx + 1] if idx < total - 1 else None
+    prev_col, next_col = st.columns(2)
+    with prev_col:
+        if prev:
+            prev_key, prev_name, prev_path = prev
+            st.page_link(prev_path, label=f"⬅️ Previous: {prev_name}", icon="⬅️", use_container_width=True)
+    with next_col:
+        if next_step:
+            next_key, next_name, next_path = next_step
+            st.page_link(next_path, label=f"Next: {next_name} ➡️", icon="➡️", use_container_width=True)
+        else:
+            st.success("✅ Workflow complete. You have reached Live Trading.")
 
 def footer_note(text: str = "Practice and research tool. Not advice. It never places orders and never asks for broker keys.") -> None:
     st.markdown(f'<p style="color:{MUTED};font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; TradeALGO v{escape(__version__)}</p>',
