@@ -303,28 +303,26 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         mode_text = "RESEARCH MODE"
         mode_tone = "purple"
         
-    status_html = f"""
-    <div class="ab-header">
-        <div class="ab-header-title">
-            <h1>{escape(title)}</h1>
-            <span>{escape(subtitle) if subtitle else 'TradeALGO • Research • Test • Validate'}</span>
-        </div>
-        <div class="ab-header-status">
-            <div class="ab-status-card">
-                <span class="label">SYSTEM</span>
-                <span class="value {escape(mode_tone)}">{escape(mode_text)}</span>
-            </div>
-            <div class="ab-status-card">
-                <span class="label">EXECUTION</span>
-                <span class="value locked">🔒 LOCKED</span>
-            </div>
-            <div class="ab-status-card">
-                <span class="label">BROKER</span>
-                <span class="value">Not Connected</span>
-            </div>
-        </div>
-    </div>
-    """
+    status_html = f"""<div class="ab-header">
+<div class="ab-header-title">
+<h1>{escape(title)}</h1>
+<span>{escape(subtitle) if subtitle else 'TradeALGO • Research • Test • Validate'}</span>
+</div>
+<div class="ab-header-status">
+<div class="ab-status-card">
+<span class="label">SYSTEM</span>
+<span class="value {escape(mode_tone)}">{escape(mode_text)}</span>
+</div>
+<div class="ab-status-card">
+<span class="label">EXECUTION</span>
+<span class="value locked">🔒 LOCKED</span>
+</div>
+<div class="ab-status-card">
+<span class="label">BROKER</span>
+<span class="value">Not Connected</span>
+</div>
+</div>
+</div>"""
     st.markdown(status_html, unsafe_allow_html=True)
 
 def ticker(items: Iterable) -> None:
@@ -332,22 +330,18 @@ def ticker(items: Iterable) -> None:
     cells = ""
     for label, value, t in items:
         tone_class = f" {escape(t)}" if t else ""
-        cells += f"""
-        <div class="ab-kpi">
-            <span class="label">{escape(str(label))}</span>
-            <span class="value{tone_class}">{escape(str(value))}</span>
-        </div>
-        """
+        cells += f"""<div class="ab-kpi">
+<span class="label">{escape(str(label))}</span>
+<span class="value{tone_class}">{escape(str(value))}</span>
+</div>"""
     st.markdown(f'<div class="ab-kpis">{cells}</div>', unsafe_allow_html=True)
 
 def card(title: str, body: str, icon: str = "") -> str:
     """Reusable research card."""
-    return f"""
-    <div class="ab-research-card">
-        <h4>{escape(title)} {escape(icon)}</h4>
-        <p>{escape(body)}</p>
-    </div>
-    """
+    return f"""<div class="ab-research-card">
+<h4>{escape(title)} {escape(icon)}</h4>
+<p>{escape(body)}</p>
+</div>"""
 
 def check_row(status: str, title: str, detail: str) -> None:
     """One audit-style line with a coloured status badge."""
@@ -358,12 +352,10 @@ def check_row(status: str, title: str, detail: str) -> None:
 
 def banner(text: str, tone: str = "info", icon: str = "ℹ️") -> None:
     """Reusable colored banners: safety (red), warning (amber), info (blue)."""
-    st.markdown(f"""
-    <div class="ab-banner {escape(tone)}">
-        <div class="icon">{escape(icon)}</div>
-        <div class="content">{escape(text)}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div class="ab-banner {escape(tone)}">
+<div class="icon">{escape(icon)}</div>
+<div class="content">{escape(text)}</div>
+</div>""", unsafe_allow_html=True)
 
 def learning_memory(observations: dict, confidence: str, action: str) -> None:
     """Reusable learning memory component for Auto Tester."""
