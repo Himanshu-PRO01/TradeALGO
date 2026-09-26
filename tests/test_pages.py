@@ -20,7 +20,8 @@ def page(name, monkeypatch=None, db=None):
 def test_position_size_page_defaults_match_the_brothers_numbers():
     at = page("1_Position_size.py")
     assert not at.exception
-    assert [m.value for m in at.metric][0] == "1"                       # 1 lot fits
+    markdown = " ".join(str(getattr(m, "value", "")) for m in at.markdown)
+    assert "Lots allowed" in markdown and ">1<" in markdown       # 1 lot fits
     assert any("10% of capital" in w.value for w in at.warning)          # Rs 1,000 on Rs 10,000
 
 
@@ -28,7 +29,8 @@ def test_position_size_page_explains_a_trade_that_does_not_fit():
     at = page("1_Position_size.py")
     at.number_input(key="ps_stop").set_value(60.0).run()                 # stop 40 points away
     assert not at.exception
-    assert [m.value for m in at.metric][0] == "0"
+    markdown = " ".join(str(getattr(m, "value", "")) for m in at.markdown)
+    assert "Lots allowed" in markdown and ">0<" in markdown
     assert any("premium points" in w.value for w in at.warning)
 
 
