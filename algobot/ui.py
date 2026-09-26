@@ -450,9 +450,6 @@ def workflow_nav(current: str, complete: bool = True) -> None:
     total = len(WORKFLOW_STEPS)
     st.markdown(f"### Workflow · Step {step_no} of {total}")
     st.progress(step_no / total)
-    if not complete:
-        st.info("Complete this step first. The **Next** button will appear when its required result is saved.")
-        return
     if idx < total - 1:
         next_key, next_name, next_path = WORKFLOW_STEPS[idx + 1]
         st.page_link(next_path, label=f"➡️ Next: {next_name}", icon="➡️", use_container_width=True)
