@@ -1,16 +1,16 @@
+import streamlit as st
+
 from algobot.dom_fixups import fix_password_autocomplete
 
 
 def test_fix_password_autocomplete_runs_without_error(monkeypatch):
-    """Verify the current Streamlit iframe-based DOM fixup is invoked."""
+    """Can't execute real JS/DOM in pytest, but this confirms the helper
+    builds valid HTML/JS and calls st.iframe without raising -- the kind of
+    import/syntax regression that would otherwise only show up live in a
+    browser. st.iframe replaced the deprecated components.v1.html (see
+    dom_fixups.py); st.iframe also rejects height=0, so this pins height=1."""
     calls = []
-
-    import streamlit as st
-
-    def fake_iframe(markup, height=0):
-        calls.append((markup, height))
-
-    monkeypatch.setattr(st, "iframe", fake_iframe)
+    monkeypatch.setattr(st, "iframe", lambda markup, height=0: calls.append((markup, height)))
 
     fix_password_autocomplete()
 

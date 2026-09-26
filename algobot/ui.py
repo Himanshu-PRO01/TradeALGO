@@ -267,6 +267,8 @@ def _menu() -> None:
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
+            ]),
+            ("More", [
                 ("💬", "Feedback", "pages/8_Feedback.py"),
                 ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
             ]),
@@ -274,6 +276,7 @@ def _menu() -> None:
                 ("📝", "Paper Trading", "pages/16_Paper_Trading.py"),
                 ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
                 ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
+                ("📲", "Signal Alerts", "pages/18_Signal_Alerts.py"),
             ]),
             ("Execution", [
                 ("🔴", "Live Trading", "pages/11_Live_Trading.py"),

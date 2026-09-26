@@ -26,6 +26,7 @@ from .journal import Journal
 from .kill_switch import KillSwitch
 from .paper_trading import PaperLog
 from .sandbox_rehearsal import RehearsalLog
+from .signal_alerts import AlertLog
 
 
 def _secret(name: str):
@@ -125,6 +126,18 @@ def rehearsal_scope():
     position is flat and both fire a real (sandbox) entry order -- exactly the duplicate-order
     bug this module exists to prevent."""
     log = RehearsalLog(os.environ.get("ALGOBOT_REHEARSAL_LOG", "sandbox_rehearsal.db"))
+    try:
+        yield log
+    finally:
+        log.close_db()
+
+
+@contextmanager
+def alert_scope():
+    """Also global and persistent, like the kill switch and rehearsal log: two
+    browser tabs must agree on whether an entry alert was already sent for the
+    current position, or the brother gets duplicate WhatsApp pings for one signal."""
+    log = AlertLog(os.environ.get("ALGOBOT_ALERT_LOG", "signal_alerts.db"))
     try:
         yield log
     finally:
