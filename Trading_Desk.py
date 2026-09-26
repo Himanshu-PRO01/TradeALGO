@@ -40,9 +40,14 @@ chart_controls = st.columns([2, 2, 3])
 with chart_controls[0]:
     dashboard_symbol = st.selectbox(
         "Symbol (widget-supported feed)",
-        ["NSE:NIFTY1!", "NSE:BANKNIFTY1!", "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
+        ["NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK", "NSE:NIFTY1!", "NSE:BANKNIFTY1!"],
         index=0,
         key="dashboard_chart_symbol",
+        help="Continuous futures symbols (NIFTY1!/BANKNIFTY1!) often fail with a "
+             "'permission denied' error on TradingView's free anonymous embed -- that's "
+             "a TradingView data-licensing restriction, not a bug here. Equity symbols "
+             "load reliably. For a working NIFTY/Sensex chart with no such restriction, "
+             "use the Live Markets page instead (free delayed data, no TradingView account needed).",
     )
 with chart_controls[1]:
     dashboard_interval = st.selectbox(
@@ -103,7 +108,10 @@ dashboard_chart_html = f"""
 """
 
 components.html(dashboard_chart_html, height=dashboard_height + 15, scrolling=False)
-st.caption("NIFTY and BANKNIFTY use TradingView continuous futures symbols here because some spot symbols are restricted in embedded widgets. Use Market Charts for the full research chart page.")
+st.caption("NIFTY1!/BANKNIFTY1! (continuous futures) sometimes get a 'permission denied' error from "
+           "TradingView's free anonymous embed -- that's a TradingView data-licensing limit, not a bug "
+           "here. Equity symbols above are reliable. For an always-working NIFTY/Sensex/Bank Nifty chart, "
+           "use the **Live Markets** page (free delayed data, no TradingView restriction).")
 
 
 st.markdown("### A 10-minute tour")
