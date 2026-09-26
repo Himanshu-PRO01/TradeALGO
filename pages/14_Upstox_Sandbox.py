@@ -1,6 +1,12 @@
 """Upstox Sandbox page: API testing without live orders."""
+import os
+
 import streamlit as st
+
 from algobot import ui
+from algobot.config import ConfigError, load_config, validate_config
+from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
+from algobot.paper_trading import evaluate, split_open_and_closed
 from algobot.upstox_sandbox import (
     UpstoxSandboxClient,
     UpstoxSandboxError,
@@ -9,6 +15,8 @@ from algobot.upstox_sandbox import (
     sandbox_token,
     token_preview,
 )
+
+SIDE_KEY = "upstox_sandbox_side"
 
 ui.setup("Upstox Sandbox", "🧪")
 ui.header(
@@ -81,7 +89,67 @@ st.caption(
 )
 
 st.divider()
-st.markdown("### 2. Place a sandbox order")
+st.markdown("### 2. Strategy signal (suggestion only)")
+st.caption(
+    "Runs your saved, deterministic strategy (the same demo/rules engine as Backtest and "
+    "Paper Trading) against real, delayed prices and shows what it is currently doing. "
+    "This never places, modifies, or cancels anything -- at most it offers to fill in the "
+    "Side field in the order form below, which you still review and confirm yourself."
+)
+
+_demo_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "demo_rules.yaml"
+)
+_raw = st.session_state.get("last_raw")
+signal_cfg = None
+try:
+    if _raw is not None:
+        signal_cfg = validate_config(_raw)
+        st.caption("Using the strategy from your last Backtest.")
+    else:
+        signal_cfg = load_config(_demo_path)
+        st.caption("Using the demo strategy. Run a Backtest first to check your own strategy here.")
+except ConfigError as exc:
+    st.warning(f"Could not load a strategy to check: {exc}")
+
+sig_c1, sig_c2 = st.columns(2)
+signal_symbol_label = sig_c1.selectbox("Market", list(MARKETS), key="sandbox_signal_symbol")
+signal_interval_label = sig_c2.selectbox(
+    "Timeframe", list(INTERVALS), index=1, key="sandbox_signal_interval"
+)
+
+if signal_cfg is not None and st.button("Check current signal", key="sandbox_check_signal"):
+    try:
+        _ticker = MARKETS[signal_symbol_label]
+        _yf_interval, _yf_period = INTERVALS[signal_interval_label]
+        _signal_df = fetch_ohlc(_ticker, _yf_interval, _yf_period)
+        _result = evaluate(signal_cfg, _signal_df)
+        st.session_state["sandbox_signal_snapshot"], _ = split_open_and_closed(_result)
+    except LiveDataError as exc:
+        st.error(str(exc))
+        st.session_state["sandbox_signal_snapshot"] = None
+
+_snapshot = st.session_state.get("sandbox_signal_snapshot")
+if _snapshot:
+    _side = _snapshot["side"]
+    _suggested = "BUY" if _side == "LONG" else "SELL"
+    st.markdown(
+        ui.card(
+            f"Strategy is currently {_side}",
+            f"Entered at {_snapshot['entry_price']:.2f} on {_snapshot['entry_time']}. "
+            "This comes from delayed data, not a live quote -- check the real price before acting on it.",
+            "🟢" if _side == "LONG" else "🔴",
+        ),
+        unsafe_allow_html=True,
+    )
+    if st.button(f"Prefill Side = {_suggested} below", key="sandbox_use_signal"):
+        st.session_state[SIDE_KEY] = _suggested
+        st.rerun()
+elif "sandbox_signal_snapshot" in st.session_state and _snapshot is None:
+    st.caption("Strategy is flat right now -- no open signal to suggest.")
+
+st.divider()
+st.markdown("### 3. Place a sandbox order")
 st.caption(
     "Use an instrument token supplied by Upstox. Do not guess a NIFTY/BANKNIFTY option token; "
     "the token must match the exact sandbox instrument."
@@ -96,7 +164,7 @@ with st.form("upstox_sandbox_order"):
     c1, c2 = st.columns(2)
     with c1:
         quantity = st.number_input("Quantity", min_value=1, value=1, step=1)
-        transaction_type = st.selectbox("Side", ["BUY", "SELL"])
+        transaction_type = st.selectbox("Side", ["BUY", "SELL"], key=SIDE_KEY)
         product = st.selectbox("Product", ["D", "I", "MTF"], index=0)
     with c2:
         order_type = st.selectbox("Order type", ["MARKET", "LIMIT", "SL", "SL-M"])
@@ -167,7 +235,7 @@ if send:
             st.error(str(exc))
 
 st.divider()
-st.markdown("### 3. Modify or cancel the last sandbox order")
+st.markdown("### 4. Modify or cancel the last sandbox order")
 last_order = st.session_state.get("upstox_sandbox_order_id")
 if last_order:
     st.code(last_order, language="text")
@@ -208,7 +276,7 @@ else:
     st.caption("Place a sandbox order first; its order ID will appear here.")
 
 st.divider()
-st.markdown("### 4. What we are testing")
+st.markdown("### 5. What we are testing")
 ui.check_row(
     "PASS",
     "Sandbox endpoint only",
@@ -230,8 +298,11 @@ ui.check_row(
     "This sandbox page is separate from the existing risk manager and live-trading lock.",
 )
 ui.check_row(
-    "TODO",
+    "PASS",
     "Strategy-to-order wiring",
-    "Only connect approved deterministic strategy signals after the sandbox lifecycle is verified.",
+    "Section 2 runs the same deterministic strategy engine as Backtest/Paper Trading on delayed "
+    "prices and can prefill the Side field only; it cannot submit by itself. Instrument token, "
+    "quantity, order type and the sandbox confirmation checkbox are still entered/ticked by hand "
+    "for every order.",
 )
 ui.footer_note("Upstox Sandbox only. No live orders. Keep the sandbox token private.")

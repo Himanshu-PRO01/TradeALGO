@@ -14,8 +14,9 @@ ui.header(
     mode="execution:Live",
 )
 
-st.error("🔒 LIVE ORDERS ARE LOCKED")
+st.error("🔒 LIVE TRADING IS CURRENTLY LOCKED.")
 st.write(
+    "The system has not authorized real-money execution. "
     "This page can prepare and verify the live-trading checklist, but it cannot place, modify, or cancel a broker order."
 )
 
