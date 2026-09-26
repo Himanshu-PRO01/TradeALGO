@@ -359,6 +359,19 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 """
 
 
+
+WORKFLOW_STEPS = [
+    ("guide", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
+    ("strategy", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+    ("backtest", "Backtest", "pages/5_Backtest.py"),
+    ("auto", "Auto Tester", "pages/13_Auto_Tester.py"),
+    ("reality", "Reality Check", "pages/6_Reality_check.py"),
+    ("paper", "Paper Trading", "pages/16_Paper_Trading.py"),
+    ("sandbox", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
+    ("rehearsal", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
+    ("live", "Live Trading", "pages/11_Live_Trading.py"),
+]
+
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
     # dashboard.py is the registered Streamlit entrypoint on Cloud AND locally
@@ -372,6 +385,9 @@ def _menu() -> None:
             unsafe_allow_html=True,
         )
         sections = [
+            ("Start Here", [
+                ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
+            ]),
             ("Trade Desk", [
                 ("🏠", "Trading Desk", home_page),
                 ("🧮", "Position Size", "pages/1_Position_size.py"),
@@ -484,6 +500,39 @@ def show_table(frame, **kwargs) -> None:
     except TypeError:
         st.dataframe(frame, use_container_width=True, **kwargs)
 
+
+
+def workflow_nav(current_key: str, complete: bool = False) -> None:
+    """Render the chronological workflow with free navigation; completion never blocks Next."""
+    index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
+    total = len(WORKFLOW_STEPS)
+    parts = []
+    for i, (_, name, _) in enumerate(WORKFLOW_STEPS):
+        cls = "ta-workflow-step active" if i == index else "ta-workflow-step"
+        parts.append(
+            f'<div class="{cls}"><div class="num">{i+1:02d}</div><div class="name">{escape(name)}</div></div>'
+        )
+        if i < total - 1:
+            parts.append('<div class="ta-workflow-arrow">→</div>')
+    st.markdown(
+        '<div class="ta-workflow"><div class="ta-workflow-track">'
+        + "".join(parts)
+        + '</div><div class="ta-flow-note">'
+        + f'Step {index+1} of {total} · Next is always available — completion status is informational only.'
+        + '</div></div>',
+        unsafe_allow_html=True,
+    )
+    prev_step = WORKFLOW_STEPS[index - 1] if index > 0 else None
+    next_step = WORKFLOW_STEPS[index + 1] if index < total - 1 else None
+    left, right = st.columns(2)
+    with left:
+        if prev_step:
+            st.page_link(prev_step[2], label=f"⬅️ Previous: {prev_step[1]}", icon="⬅️", use_container_width=True)
+    with right:
+        if next_step:
+            st.page_link(next_step[2], label=f"Next: {next_step[1]} ➡️", icon="➡️", use_container_width=True)
+        else:
+            st.success("✅ Workflow complete — you have reached Live Trading.")
 
 def footer_note(text: str = "Practice and research tool. Not advice. It never places orders and never asks for broker keys.") -> None:
     st.markdown(f'<p style="color:{MUTED};font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; algobot v{escape(__version__)}</p>',
