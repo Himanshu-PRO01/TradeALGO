@@ -462,6 +462,20 @@ WORKFLOW_STEPS = [
     ("live", "Live Trading", "pages/11_Live_Trading.py"),
 ]
 
+def page_link(path: str, label: str, icon: str | None = None, use_container_width: bool = True) -> None:
+    """Render an internal link, with an AppTest-safe fallback for unregistered pages."""
+    try:
+        st.page_link(path, label=label, icon=icon, use_container_width=use_container_width)
+    except Exception as exc:
+        # Streamlit AppTest can execute a page outside the main navigation registry.
+        # Keep the UI testable without changing normal Cloud/local navigation.
+        if exc.__class__.__name__ == "StreamlitPageNotFoundError":
+            href = path.replace(" ", "%20")
+            st.markdown(f'<a href="/{href}" target="_self">{escape(label)}</a>', unsafe_allow_html=True)
+        else:
+            raise
+
+
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
     # dashboard.py is the registered Streamlit entrypoint on Cloud AND locally
@@ -510,7 +524,7 @@ def _menu() -> None:
         for section, links in sections:
             st.markdown(f'<div class="ab-menu-section">{escape(section)}</div>', unsafe_allow_html=True)
             for icon_, label, path in links:
-                st.page_link(path, label=f"{icon_}  {label}", use_container_width=True)
+                page_link(path, label=f"{icon_}  {label}", use_container_width=True)
         st.caption("🔒 Live orders are locked · fake money only")
 
 
@@ -654,7 +668,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
     left, right = st.columns(2)
     with left:
         if prev_step:
-            st.page_link(
+            page_link(
                 prev_step[2],
                 label=f"⬅️  Previous: {prev_step[1]}",
                 icon="⬅️",
@@ -662,7 +676,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
             )
     with right:
         if next_step:
-            st.page_link(
+            page_link(
                 next_step[2],
                 label=f"Next: {next_step[1]}  ➡️",
                 icon="➡️",
