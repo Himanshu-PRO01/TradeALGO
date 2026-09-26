@@ -355,6 +355,96 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     border-radius:12px; padding:10px 14px; margin-bottom:8px; }}
 .ab-check .txt b {{ display:block; }}
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
+
+/* guided workflow */
+.ta-workflow {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 14px 0 20px;
+    padding: 16px;
+    border: 1px solid #263242;
+    border-radius: 18px;
+    background: linear-gradient(180deg,#111923 0%,#0d131b 100%);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.ta-workflow-track {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-width: 1160px;
+}
+.ta-workflow-step {
+    flex: 1 1 0;
+    min-width: 112px;
+    min-height: 92px;
+    box-sizing: border-box;
+    padding: 12px 10px;
+    border: 1px solid #2b3849;
+    border-radius: 14px;
+    background: #151d28;
+    text-align: center;
+    transition: transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.ta-workflow-step:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f6;
+}
+.ta-workflow-step.active {
+    border-color: #16c784;
+    background: linear-gradient(180deg,#11271f 0%,#121e1b 100%);
+    box-shadow: inset 0 0 0 1px #16c78422;
+}
+.ta-workflow-step .num {
+    color: #7f8da0;
+    font-size: .67rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+}
+.ta-workflow-step.active .num {
+    color: #16c784;
+}
+.ta-workflow-step .name {
+    margin-top: 7px;
+    color: #f2f5f8;
+    font-size: .78rem;
+    line-height: 1.15;
+    font-weight: 800;
+}
+.ta-workflow-step .desc {
+    margin-top: 7px;
+    color: #8b98a9;
+    font-size: .67rem;
+    line-height: 1.25;
+}
+.ta-workflow-arrow {
+    flex: 0 0 auto;
+    align-self: center;
+    color: #526176;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.ta-flow-note {
+    margin-top: 11px;
+    color: #8b98a9;
+    font-size: .76rem;
+    text-align: center;
+}
+@media (max-width:768px) {
+    .ta-workflow {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 11px;
+    }
+    .ta-workflow-track {
+        min-width: 1020px;
+    }
+    .ta-workflow-step {
+        min-width: 100px;
+        min-height: 86px;
+    }
+}
 </style>
 """
 
@@ -503,22 +593,35 @@ def show_table(frame, **kwargs) -> None:
 
 
 def workflow_nav(current_key: str, complete: bool = False) -> None:
-    """Render the chronological workflow with free navigation; completion never blocks Next."""
+    """Show the full workflow plus always-available previous/next navigation."""
     index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
     total = len(WORKFLOW_STEPS)
+    descriptions = [
+        "Start with the trading idea",
+        "Write measurable rules",
+        "Test historical data",
+        "Test controlled variations",
+        "Challenge the evidence",
+        "Rehearse with fake money",
+        "Test the broker sandbox",
+        "Run the full rehearsal",
+        "Controlled execution",
+    ]
     parts = []
     for i, (_, name, _) in enumerate(WORKFLOW_STEPS):
         cls = "ta-workflow-step active" if i == index else "ta-workflow-step"
         parts.append(
-            f'<div class="{cls}"><div class="num">{i+1:02d}</div><div class="name">{escape(name)}</div></div>'
+            f'<div class="{cls}"><div class="num">STEP {i+1:02d}</div>'
+            f'<div class="name">{escape(name)}</div>'
+            f'<div class="desc">{escape(descriptions[i])}</div></div>'
         )
         if i < total - 1:
-            parts.append('<div class="ta-workflow-arrow">→</div>')
+            parts.append('<div class="ta-workflow-arrow">›</div>')
     st.markdown(
         '<div class="ta-workflow"><div class="ta-workflow-track">'
         + "".join(parts)
         + '</div><div class="ta-flow-note">'
-        + f'Step {index+1} of {total} · Next is always available — completion status is informational only.'
+        + f'Step {index+1} of {total} · scroll sideways on a small screen · navigation is always available'
         + '</div></div>',
         unsafe_allow_html=True,
     )
@@ -527,10 +630,20 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
     left, right = st.columns(2)
     with left:
         if prev_step:
-            st.page_link(prev_step[2], label=f"⬅️ Previous: {prev_step[1]}", icon="⬅️", use_container_width=True)
+            st.page_link(
+                prev_step[2],
+                label=f"⬅️  Previous: {prev_step[1]}",
+                icon="⬅️",
+                use_container_width=True,
+            )
     with right:
         if next_step:
-            st.page_link(next_step[2], label=f"Next: {next_step[1]} ➡️", icon="➡️", use_container_width=True)
+            st.page_link(
+                next_step[2],
+                label=f"Next: {next_step[1]}  ➡️",
+                icon="➡️",
+                use_container_width=True,
+            )
         else:
             st.success("✅ Workflow complete — you have reached Live Trading.")
 
