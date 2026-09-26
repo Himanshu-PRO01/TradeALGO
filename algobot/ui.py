@@ -19,6 +19,7 @@ except ImportError:
 
 from . import __version__
 from .appstate import is_hosted, password_gate
+from .execution_policy import ExecutionMode, get_execution_mode
 from .palette import BG, BLUE, BORDER, DOWN, MUTED, PANEL, TEXT, UP, WARN, PURPLE
 
 
@@ -110,6 +111,7 @@ p, span, div {{ color: {TEXT}; font-size: 0.93rem; }}
 .ab-menu-brand span {{ color:{BLUE}; font-size:0.75rem; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; }}
 .ab-menu-section {{ color:{MUTED}; font-size:.68rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; margin:16px 6px 6px; }}
 .ab-menu-locked {{ margin: 24px 12px 12px; padding: 12px; background: {DOWN}15; border: 1px solid {DOWN}40; border-radius: 8px; color: {DOWN}; font-size: 0.75rem; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; letter-spacing: 0.05em; }}
+.ab-menu-locked.active {{ background: {UP}15; border-color: {UP}40; color: {UP}; }}
 
 [data-testid="stSidebar"] [data-testid="stPageLink"] {{ margin: 2px 0; }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a {{
@@ -225,6 +227,19 @@ p, span, div {{ color: {TEXT}; font-size: 0.93rem; }}
 </style>
 """
 
+def _execution_status() -> tuple[str, str, str]:
+    mode = get_execution_mode()
+    if mode is ExecutionMode.LIVE:
+        return "LIVE", "active", "● LIVE"
+    if mode is ExecutionMode.PAPER:
+        return "PAPER", "research", "● PAPER"
+    if mode is ExecutionMode.SANDBOX:
+        return "SANDBOX", "warning", "● SANDBOX"
+    if mode is ExecutionMode.RESEARCH:
+        return "RESEARCH", "research", "● RESEARCH"
+    return "DISABLED", "locked", "● LIVE DISABLED"
+
+
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
     # dashboard.py is the registered Streamlit entrypoint on Cloud AND locally
@@ -271,7 +286,9 @@ def _menu() -> None:
                 except Exception:
                     pass # Skip missing pages if any
                     
-        st.markdown('<div class="ab-menu-locked">● LIVE TRADING LOCKED</div>', unsafe_allow_html=True)
+        _, _, execution_badge = _execution_status()
+        badge_class = "active" if get_execution_mode() is ExecutionMode.LIVE else ""
+        st.markdown(f'<div class="ab-menu-locked {badge_class}">{escape(execution_badge)}</div>', unsafe_allow_html=True)
 
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
@@ -306,6 +323,10 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         mode_text = "RESEARCH MODE"
         mode_tone = "purple"
         
+    execution_text, execution_tone, _ = _execution_status()
+    openalgo_host = bool(os.environ.get("OPENALGO_HOST"))
+    openalgo_key = bool(os.environ.get("OPENALGO_API_KEY"))
+    broker_text = "Configured" if openalgo_host and openalgo_key else "Not Configured"
     status_html = f"""<div class="ab-header">
 <div class="ab-header-title">
 <h1>{escape(title)}</h1>
@@ -318,11 +339,11 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
 </div>
 <div class="ab-status-card">
 <span class="label">EXECUTION</span>
-<span class="value locked">🔒 LOCKED</span>
+<span class="value {escape(execution_tone)}">{escape(execution_text)}</span>
 </div>
 <div class="ab-status-card">
 <span class="label">BROKER</span>
-<span class="value">Not Connected</span>
+<span class="value">{escape(broker_text)}</span>
 </div>
 </div>
 </div>"""
