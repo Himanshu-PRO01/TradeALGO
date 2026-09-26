@@ -19,9 +19,9 @@ def fix_password_autocomplete() -> None:
     Call this once, right after rendering the password field(s) on a page.
     Harmless no-op if the browser can't reach the parent document.
     """
-    import streamlit.components.v1 as components
+    import streamlit as st
 
-    components.html(
+    st.iframe(
         """
         <script>
         (function () {

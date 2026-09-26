@@ -2,7 +2,6 @@
 import json
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 from algobot import ui
 from algobot.appstate import is_hosted, storage_note
@@ -107,7 +106,7 @@ dashboard_chart_html = f"""
 </div>
 """
 
-components.html(dashboard_chart_html, height=dashboard_height + 15, scrolling=False)
+st.iframe(dashboard_chart_html, height=dashboard_height + 15)
 st.caption("NIFTY1!/BANKNIFTY1! (continuous futures) sometimes get a 'permission denied' error from "
            "TradingView's free anonymous embed -- that's a TradingView data-licensing limit, not a bug "
            "here. Equity symbols above are reliable. For an always-working NIFTY/Sensex/Bank Nifty chart, "
