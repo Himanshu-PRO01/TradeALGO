@@ -1,12 +1,15 @@
 """Front page of the trading desk. Start it with:  streamlit run Trading_Desk.py"""
-import json
 import streamlit as st
 
-from algobot import ui
+from algobot import tradingview, ui
 from algobot.appstate import is_hosted, storage_note
 
 ui.setup("Trading Desk", "🏠")
 ui.header("Trading Desk", "Research • Test • Validate")
+
+# 0. Ticker Tape — scrolling strip of Indian indices + large caps
+ticker_tape_html, ticker_tape_height = tradingview.ticker_tape()
+st.iframe(ticker_tape_html, height=ticker_tape_height + 4)
 
 # 1. Market Selector — India only (NSE)
 chart_controls = st.columns([2, 2, 3])
@@ -49,46 +52,33 @@ ui.ticker([
     ("Max Drawdown", "0%", None)
 ])
 
-# 3. Indian Market Chart — TradingView
-dashboard_chart_config = {
-    "autosize": False,
-    "height": dashboard_height,
-    "symbol": "NSE:NIFTY",
-    "interval": dashboard_interval,
-    "timezone": "exchange",
-    "theme": "dark",
-    "style": "1",
-    "withdateranges": True,
-    "hide_side_toolbar": False,
-    "allow_symbol_change": False,
-    "save_image": True,
-    "hide_volume": False,
-    "details": True,
-    "calendar": False,
-    "support_host": "https://www.tradingview.com",
-    "studies": ["MASimple@tv-basicstudies", "RSI@tv-basicstudies"],
-}
+# 3. Indian Market Workspace — watchlist + chart, then symbol info + news
+st.markdown("### Indian Market Workspace")
+workspace_cols = st.columns([1, 3])
+with workspace_cols[0]:
+    st.markdown("##### Watchlist")
+    watchlist_html, watchlist_height = tradingview.watchlist(height=dashboard_height)
+    st.iframe(watchlist_html, height=watchlist_height + 4)
+with workspace_cols[1]:
+    st.markdown(f"##### {dashboard_symbol.split(':')[1]} Chart")
+    chart_html, chart_height = tradingview.advanced_chart(
+        dashboard_symbol, dashboard_interval, dashboard_height
+    )
+    st.iframe(chart_html, height=chart_height + 4)
+st.caption("Live TradingView visualization of Indian NSE/BSE symbols. Research visualization only; no broker connection or live orders.")
 
-dashboard_chart_html = f"""
-<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden;border-radius:8px;border:1px solid #1E293B;">
-  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden"></div>
-  <div class="tradingview-widget-copyright"
-       style="font-size:11px;text-align:center;padding-top:4px;">
-    <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer" style="color:#94A3B8;">
-      Charts by TradingView
-    </a>
-  </div>
-  <script type="text/javascript"
-          src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
-          async>
-    {json.dumps(dashboard_chart_config)}
-  </script>
-</div>
-"""
-
-st.markdown("### Indian NIFTY 50 Market View")
-st.iframe(dashboard_chart_html, height=dashboard_height + 15)
-st.caption("Live NIFTY 50 visualization from TradingView using the NSE:NIFTY symbol. Research visualization only; no broker connection or live orders.")
+info_cols = st.columns([1, 1])
+with info_cols[0]:
+    st.markdown("##### Symbol Info")
+    symbol_info_html, symbol_info_height = tradingview.symbol_info(dashboard_symbol)
+    st.iframe(symbol_info_html, height=symbol_info_height + 4)
+    st.markdown("##### News")
+    news_html, news_height = tradingview.news_timeline(dashboard_symbol, height=300)
+    st.iframe(news_html, height=news_height + 4)
+with info_cols[1]:
+    st.markdown("##### Indian Market News")
+    market_news_html, market_news_height = tradingview.news_timeline(height=dashboard_height)
+    st.iframe(market_news_html, height=market_news_height + 4)
 
 # 4. Lower Dashboard Panels
 col1, col2 = st.columns(2)
