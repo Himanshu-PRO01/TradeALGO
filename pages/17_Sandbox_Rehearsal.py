@@ -31,6 +31,27 @@ if not token:
     except Exception:
         token = None
 
+# ── Sidebar: allow pasting the token manually ────────────────────────────────
+with st.sidebar:
+    st.markdown("### 🔐 Upstox Sandbox token")
+    manual_token = clean_token(
+        st.text_input(
+            "Paste token here",
+            value="",
+            type="password",
+            placeholder="eyJ0eXAiOiJKV1Qi...",
+            help="Get this from https://sandbox.upstox.com → My Apps → Access Token",
+            key="reh_token_input",
+        )
+    )
+    if manual_token:
+        token = manual_token
+    if token:
+        st.caption(f"✅ Token loaded: `{token_preview(token)}`")
+    else:
+        st.caption("⚠️ No token — paste it above.")
+
+
 with kill_switch_scope() as switch:
     ks_status = switch.status()
     if ks_status["halted"]:
