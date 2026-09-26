@@ -280,4 +280,5 @@ if result is not None:
             for reason, count in result.rejections.items():
                 st.write(f"Entries blocked ({reason}): {count}")
         st.text(summary_text(result))
+ui.workflow_nav("backtest", complete=st.session_state.get("result") is not None)
 ui.footer_note()
