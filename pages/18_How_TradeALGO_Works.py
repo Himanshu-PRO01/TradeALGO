@@ -11,8 +11,6 @@ ui.header(
     mode="research:START HERE",
 )
 
-ui.workflow_nav("guide")
-
 st.markdown(
     """
 <div class="ab-hero">
@@ -28,32 +26,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("### 🧭 The complete workflow")
-
-flow_html = """
-<div class="ta-workflow" style="margin-top:8px">
-  <div class="ta-workflow-track">
-    <div class="ta-workflow-step active"><div class="num">01</div><div class="name">IDEA</div><div class="ta-flow-note">What setup?</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">02</div><div class="name">STRATEGY BUILDER</div><div class="ta-flow-note">Write exact rules</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">03</div><div class="name">BACKTEST</div><div class="ta-flow-note">Test history</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">04</div><div class="name">AUTO TESTER</div><div class="ta-flow-note">Test variations</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">05</div><div class="name">REALITY CHECK</div><div class="ta-flow-note">Challenge evidence</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">06</div><div class="name">PAPER</div><div class="ta-flow-note">Fake money</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">07</div><div class="name">SANDBOX</div><div class="ta-flow-note">Broker rehearsal</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">08</div><div class="name">REHEARSAL</div><div class="ta-flow-note">End-to-end check</div></div>
-    <div class="ta-workflow-arrow">→</div>
-    <div class="ta-workflow-step"><div class="num">09</div><div class="name">LIVE</div><div class="ta-flow-note">Controlled execution</div></div>
-  </div>
-</div>
-"""
-st.markdown(flow_html, unsafe_allow_html=True)
+st.markdown("### 🧭 Your TradeALGO path")
 
 st.info(
     "Important: the Next button is never blocked by a completion banner. "
@@ -144,5 +117,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-ui.workflow_nav("guide")
 ui.footer_note("TradeALGO workflow guide. Research and practice first; execution is a separate controlled stage.")
