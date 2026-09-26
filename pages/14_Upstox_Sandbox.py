@@ -305,4 +305,5 @@ ui.check_row(
     "quantity, order type and the sandbox confirmation checkbox are still entered/ticked by hand "
     "for every order.",
 )
+ui.workflow_nav("sandbox", complete=bool(token))
 ui.footer_note("Upstox Sandbox only. No live orders. Keep the sandbox token private.")
