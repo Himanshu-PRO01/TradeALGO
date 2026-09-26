@@ -169,4 +169,5 @@ with rehearsal_scope() as log:
             log.reset(run_key)
             st.rerun()
 
+ui.workflow_nav("rehearsal")
 ui.footer_note("Sandbox only. No live endpoint or live token is reachable from this page.")
