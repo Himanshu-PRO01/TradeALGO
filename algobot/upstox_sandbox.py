@@ -56,7 +56,15 @@ def token_preview(token: Optional[str]) -> str:
 
 
 def sandbox_token() -> Optional[str]:
-    return clean_token(os.environ.get(SANDBOX_TOKEN_ENV))
+    """Read token from env var or Streamlit secrets (whichever is set)."""
+    raw = os.environ.get(SANDBOX_TOKEN_ENV)
+    if not raw:
+        try:
+            import streamlit as st
+            raw = st.secrets.get(SANDBOX_TOKEN_ENV)
+        except Exception:
+            pass
+    return clean_token(raw)
 
 
 def _post(path: str, token: str, payload: dict, timeout: float = 20.0,
@@ -152,6 +160,16 @@ def _sdk_error(exc: Exception) -> UpstoxSandboxError:
     if isinstance(exc, OSError):
         return UpstoxSandboxError(f"Could not reach Upstox Sandbox: {exc}")
     return UpstoxSandboxError(f"Upstox Sandbox request failed: {exc}")
+
+
+def extract_order_id(response: dict) -> Optional[str]:
+    """Pull the order id out of an Upstox order response, whichever shape it comes back in."""
+    data = response.get("data") or {}
+    order_id = data.get("order_id")
+    if order_id:
+        return order_id
+    order_ids = data.get("order_ids") or []
+    return order_ids[0] if order_ids else None
 
 
 class UpstoxSandboxClient:

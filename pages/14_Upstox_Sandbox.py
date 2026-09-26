@@ -5,6 +5,7 @@ from algobot.upstox_sandbox import (
     UpstoxSandboxClient,
     UpstoxSandboxError,
     clean_token,
+    extract_order_id,
     sandbox_token,
     token_preview,
 )
@@ -158,11 +159,7 @@ if send:
             )
             st.success("Sandbox order request accepted by Upstox.")
             st.json(response)
-            data = response.get("data") or {}
-            order_id = data.get("order_id")
-            if not order_id:
-                order_ids = data.get("order_ids") or []
-                order_id = order_ids[0] if order_ids else None
+            order_id = extract_order_id(response)
             if order_id:
                 st.session_state["upstox_sandbox_order_id"] = order_id
                 st.code(order_id, language="text")

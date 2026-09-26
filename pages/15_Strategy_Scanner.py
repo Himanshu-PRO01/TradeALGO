@@ -150,9 +150,7 @@ if rows:
         st.info(
             f"**{best['family']}** ({best['params']}) — {best['trades']} trades, "
             f"{best['return_pct']}% return, {best['win_rate_pct']}% win rate, "
-            f"max drawdown {best['max_drawdown_pct']}%, score {best['score']}.
-
-"
+            f"max drawdown {best['max_drawdown_pct']}%, score {best['score']}.\n\n"
             "This is the top of a leaderboard on THIS data set, not a proven edge. "
             "A strategy that tops a scan can still be overfit to this exact period."
         )

@@ -7,7 +7,7 @@ import os
 import streamlit as st
 
 from algobot import ui
-from algobot.appstate import paper_scope
+from algobot.appstate import kill_switch_scope, paper_scope
 from algobot.config import ConfigError, load_config, validate_config
 from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
 from algobot.paper_trading import evaluate, log_new_trades, run_key_for, split_open_and_closed
@@ -21,6 +21,34 @@ ui.header(
     "as they actually arrive.",
     mode="execution:Paper Trading",
 )
+
+with kill_switch_scope() as switch:
+    ks_status = switch.status()
+
+    st.subheader("Kill switch")
+    st.caption(
+        "This is the same shared switch that will gate Live Trading once your brother turns that on. "
+        "Proving it stops NEW paper entries correctly here, before it is ever load-bearing for real money."
+    )
+    if ks_status["halted"]:
+        st.error(f"🛑 Trading halted since {ks_status['since']} by {ks_status['by']}. Reason: {ks_status['reason'] or '(none given)'}")
+        if st.button("▶️ Resume trading", key="ks_resume"):
+            switch.resume(by="manual")
+            st.rerun()
+    else:
+        st.success("🟢 Not halted -- new paper entries are being evaluated normally.")
+        with st.form("ks_halt_form"):
+            reason = st.text_input("Reason (shown in the log)", key="ks_halt_reason")
+            halt_now = st.form_submit_button("🛑 Halt everything now")
+        if halt_now:
+            switch.halt(reason or "no reason given", by="manual")
+            st.rerun()
+    with st.expander("Kill switch history"):
+        hist = switch.history()
+        if not hist.empty:
+            ui.show_table(hist)
+        else:
+            st.caption("No halts or resumes recorded yet.")
 
 raw = st.session_state.get("last_raw")
 try:
@@ -62,12 +90,19 @@ except LiveDataError as exc:
     st.error(str(exc))
     st.stop()
 
-result = evaluate(base_cfg, df)
-open_snapshot, closed = split_open_and_closed(result)
 run_key = run_key_for(base_cfg, symbol_label, interval_label)
 
+if ks_status["halted"]:
+    # The kill switch actually blocks here: no new evaluation, no new trades logged --
+    # the same behaviour real order placement will follow once this gates live money.
+    open_snapshot, closed = None, None
+    st.warning("New evaluation is paused while the kill switch is on. Showing history saved before the halt.")
+else:
+    result = evaluate(base_cfg, df)
+    open_snapshot, closed = split_open_and_closed(result)
+
 with paper_scope() as log:
-    added = log_new_trades(log, run_key, symbol_label, closed)
+    added = log_new_trades(log, run_key, symbol_label, closed) if closed is not None else 0
     summary = log.summary(run_key)
     history = log.all_trades(run_key)
 
@@ -79,7 +114,9 @@ with paper_scope() as log:
         st.success(f"{added} newly finished paper trade(s) saved.")
 
     st.subheader("Right now")
-    if open_snapshot:
+    if ks_status["halted"]:
+        st.markdown(ui.card("Status frozen by kill switch", "No new checks are running, so this may be stale. Resume to get a current read.", "⏸️"), unsafe_allow_html=True)
+    elif open_snapshot:
         side = open_snapshot["side"]
         st.markdown(
             ui.card(

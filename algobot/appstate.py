@@ -23,7 +23,9 @@ import streamlit as st
 
 from .experiments import ExperimentLog
 from .journal import Journal
+from .kill_switch import KillSwitch
 from .paper_trading import PaperLog
+from .sandbox_rehearsal import RehearsalLog
 
 
 def _secret(name: str):
@@ -101,6 +103,30 @@ def experiments_scope():
             yield log
         finally:
             log.close_db()
+
+
+@contextmanager
+def kill_switch_scope():
+    """The kill switch is intentionally global and persistent, not scoped per visitor like the
+    journal or paper log -- it is meant to be the one shared 'stop everything' control."""
+    switch = KillSwitch(os.environ.get("ALGOBOT_KILL_SWITCH", "kill_switch.db"))
+    try:
+        yield switch
+    finally:
+        switch.close_db()
+
+
+@contextmanager
+def rehearsal_scope():
+    """Also global and persistent, like the kill switch: if this state were scoped per browser
+    session instead, two people opening two tabs on the same deployment could each think the
+    position is flat and both fire a real (sandbox) entry order -- exactly the duplicate-order
+    bug this module exists to prevent."""
+    log = RehearsalLog(os.environ.get("ALGOBOT_REHEARSAL_LOG", "sandbox_rehearsal.db"))
+    try:
+        yield log
+    finally:
+        log.close_db()
 
 
 @contextmanager
