@@ -94,9 +94,9 @@ html, body, [class*="css"] {{
 }}
 .block-container {{ padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }}
 h1, h2, h3, h4, h5, h6 {{ letter-spacing: -0.01em; color: {TEXT}; }}
-h1 {{ font-size: 1.5rem !important; font-weight: 700; margin-bottom: 0.5rem; }}
-h2 {{ font-size: 1.25rem !important; font-weight: 600; }}
-h3 {{ font-size: 1.1rem !important; font-weight: 600; }}
+h1 {{ font-size: 2rem !important; line-height: 1.2; font-weight: 700; margin-bottom: 0.6rem; }}
+h2 {{ font-size: 1.5rem !important; line-height: 1.25; font-weight: 600; }}
+h3 {{ font-size: 1.25rem !important; line-height: 1.3; font-weight: 600; }}
 p, span, div {{ color: {TEXT}; font-size: 0.93rem; }}
 [data-testid="stSidebar"] {{ background: {PANEL}; border-right: 1px solid {BORDER}; }}
 [data-testid="stSidebarNav"] {{ display:none; }}
@@ -138,8 +138,8 @@ p, span, div {{ color: {TEXT}; font-size: 0.93rem; }}
 /* Top Header */
 .ab-header {{ display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; border-bottom:1px solid {BORDER}; margin-bottom:24px; flex-wrap:wrap; gap:16px; }}
 .ab-header-title {{ display:flex; flex-direction:column; gap:4px; }}
-.ab-header-title h1 {{ margin:0; font-size:1.5rem !important; }}
-.ab-header-title span {{ color:{MUTED}; font-size:0.85rem; }}
+.ab-header-title h1 {{ margin:0; font-size:2rem !important; line-height:1.2; }}
+.ab-header-title span {{ color:{MUTED}; font-size:1rem; line-height:1.4; }}
 .ab-header-status {{ display:flex; gap:12px; flex-wrap:wrap; }}
 .ab-status-card {{ display:flex; flex-direction:column; background:{PANEL}; border:1px solid {BORDER}; border-radius:6px; padding:6px 12px; min-width:110px; }}
 .ab-status-card span.label {{ color:{MUTED}; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }}
@@ -210,7 +210,10 @@ p, span, div {{ color: {TEXT}; font-size: 0.93rem; }}
     .ab-header-status {{ width:100%; justify-content:space-between; overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; }}
     .ab-status-card {{ flex: 0 0 auto; min-width:auto; }}
     .ab-kpis {{ grid-template-columns:repeat(2, 1fr); }}
-    h1 {{ font-size: 1.35rem !important; }}
+    h1 {{ font-size: 1.75rem !important; }}
+    h2 {{ font-size: 1.35rem !important; }}
+    h3 {{ font-size: 1.2rem !important; }}
+    .ab-header-title h1 {{ font-size: 1.75rem !important; }}
     .stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {{ min-height: 44px; }}
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stDateInput input, .stTimeInput input {{ min-height: 44px; font-size:16px !important; }}
     [data-testid="stSidebar"] {{ min-width: min(88vw, 340px); max-width: min(88vw, 340px); }}
