@@ -251,6 +251,9 @@ def _menu() -> None:
             unsafe_allow_html=True,
         )
         sections = [
+            ("Start Here", [
+                ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
+            ]),
             ("Trading", [
                 ("🏠", "Trade Desk", home_page),
                 ("🧮", "Position Size", "pages/1_Position_size.py"),
