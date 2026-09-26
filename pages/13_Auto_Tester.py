@@ -165,4 +165,5 @@ if rows:
         st.markdown(ui.card("Reality Check", "Use out-of-sample periods to test robustness.", "🛡️"), unsafe_allow_html=True)
         st.page_link("pages/6_Reality_check.py", label="Run Reality Check", icon="🛡️")
 
+ui.workflow_nav("auto", complete=st.session_state.get("auto_report") is not None)
 ui.footer_note("Auto Tester uses fake-market stress testing. It never places orders or connects to a broker.")
