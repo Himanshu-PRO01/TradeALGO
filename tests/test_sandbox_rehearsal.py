@@ -1,3 +1,8 @@
+import os
+import tempfile
+import threading
+import time
+
 import pandas as pd
 
 from algobot.config import validate_config
@@ -54,7 +59,7 @@ def test_rehearsal_flips_flat_to_open_on_a_real_entry_signal():
     df = _trending_df()
     result = evaluate(BASE_CFG, df)
     open_snapshot, _closed = split_open_and_closed(result)
-    assert open_snapshot is not None, "fixture should leave the strategy in an open position"
+    assert open_snapshot is not None
 
     log = RehearsalLog(":memory:")
     client = FakeClient()
@@ -77,8 +82,6 @@ def test_rehearsal_does_not_reenter_the_same_still_open_position():
     step(open_snapshot, "k", client, "NSE_FO|TEST", 5, log)
     assert len(client.calls) == 1
 
-    # A second refresh with the SAME open position (identical entry_time) must
-    # not fire a duplicate entry order.
     messages = step(open_snapshot, "k", client, "NSE_FO|TEST", 5, log)
     assert messages == []
     assert len(client.calls) == 1
@@ -92,8 +95,8 @@ def test_rehearsal_stays_flat_with_no_open_signal():
         "close": flat_close, "volume": [1000] * 20,
     }, index=idx)
     result = evaluate(BASE_CFG, df)
-    open_snapshot, _ = split_open_and_closed(result)
-    assert open_snapshot is None  # no crossover on flat prices -> correctly flat
+    open_snapshot, _closed = split_open_and_closed(result)
+    assert open_snapshot is None
 
     log = RehearsalLog(":memory:")
     client = FakeClient()
@@ -101,3 +104,55 @@ def test_rehearsal_stays_flat_with_no_open_signal():
     assert messages == []
     assert client.calls == []
     assert log.get_state("k2")["status"] == "flat"
+
+
+class SlowFakeClient(FakeClient):
+    """Same as FakeClient but sleeps inside place_order, widening the window
+    where two overlapping step() calls could otherwise both see 'flat'."""
+    def __init__(self, delay=0.05):
+        super().__init__()
+        self.delay = delay
+
+    def place_order(self, instrument_token, quantity, transaction_type, order_type="MARKET"):
+        time.sleep(self.delay)
+        return super().place_order(instrument_token, quantity, transaction_type, order_type)
+
+
+def test_concurrent_refreshes_place_exactly_one_entry_order():
+    """Several browser tabs sharing one on-disk rehearsal database must result
+    in exactly one sandbox entry order for the same still-open position."""
+    df = _trending_df()
+    result = evaluate(BASE_CFG, df)
+    open_snapshot, _closed = split_open_and_closed(result)
+    assert open_snapshot is not None
+
+    client = SlowFakeClient(delay=0.05)
+    errors: list[Exception] = []
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        db_path = os.path.join(tmp_dir, "rehearsal.db")
+
+        def worker():
+            try:
+                log = RehearsalLog(db_path, check_same_thread=False)
+                try:
+                    step(open_snapshot, "race_key", client, "NSE_FO|TEST", 5, log)
+                finally:
+                    log.close_db()
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors, f"worker thread(s) raised: {errors}"
+        assert len(client.calls) == 1, f"expected exactly one sandbox order, got {client.calls}"
+
+        final_log = RehearsalLog(db_path, check_same_thread=False)
+        try:
+            assert final_log.get_state("race_key")["status"] == "open"
+        finally:
+            final_log.close_db()
