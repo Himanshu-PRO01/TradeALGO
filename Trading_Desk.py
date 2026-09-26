@@ -8,12 +8,13 @@ from algobot.appstate import is_hosted, storage_note
 ui.setup("Trading Desk", "🏠")
 ui.header("Trading Desk", "Research • Test • Validate")
 
-# 1. Market Selector
+# 1. Market Selector — India only (NSE)
 chart_controls = st.columns([2, 2, 3])
 with chart_controls[0]:
     dashboard_symbol = st.selectbox(
-        "Market",
-        ["NSE:NIFTY1!", "NSE:BANKNIFTY1!", "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
+        "Indian Market",
+        ["NSE:NIFTY", "NSE:BANKNIFTY", "NSE:FINNIFTY", "NSE:MIDCPNIFTY",
+         "NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK"],
         index=0,
         key="dashboard_chart_symbol",
     )
@@ -85,9 +86,9 @@ dashboard_chart_html = f"""
 </div>
 """
 
-st.markdown("### Market View")
+st.markdown("### Indian Market View")
 st.iframe(dashboard_chart_html, height=dashboard_height + 15)
-st.caption("Real market visualization for research. No broker connection and no live orders.")
+st.caption("NSE India market visualization for research. No broker connection and no live orders.")
 
 # 4. Lower Dashboard Panels
 col1, col2 = st.columns(2)
@@ -96,7 +97,7 @@ with col1:
     ui.check_row("PASS", "Data Feed", "Connected to research feed")
     ui.check_row("WARN", "Broker Sync", "Broker not connected")
     ui.check_row("TODO", "Execution", "Live trading locked")
-    
+
 with col2:
     st.markdown("### Risk Status")
     ui.check_row("PASS", "Kill Switch", "Armed")
