@@ -270,7 +270,6 @@ def _menu() -> None:
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
-                ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
                 ("💬", "Feedback", "pages/8_Feedback.py"),
                 ("🚀", "Deployment Status", "pages/9_Deployment_Status.py"),
             ]),
@@ -427,6 +426,41 @@ def show_table(frame, **kwargs) -> None:
         st.dataframe(frame, width="stretch", **kwargs)
     except TypeError:
         st.dataframe(frame, use_container_width=True, **kwargs)
+
+WORKFLOW_STEPS = [
+    ("guide", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
+    ("strategy", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+    ("backtest", "Backtest", "pages/5_Backtest.py"),
+    ("auto", "Auto Tester", "pages/13_Auto_Tester.py"),
+    ("reality", "Reality Check", "pages/6_Reality_check.py"),
+    ("paper", "Paper Trading", "pages/16_Paper_Trading.py"),
+    ("sandbox", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
+    ("rehearsal", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
+    ("live", "Live Trading", "pages/11_Live_Trading.py"),
+]
+
+
+def workflow_nav(current: str, complete: bool = True) -> None:
+    """Show the chronological workflow and a gated Next button on every stage."""
+    keys = [item[0] for item in WORKFLOW_STEPS]
+    if current not in keys:
+        return
+    idx = keys.index(current)
+    step_no = idx + 1
+    total = len(WORKFLOW_STEPS)
+    st.markdown(f"### Workflow · Step {step_no} of {total}")
+    st.progress(step_no / total)
+    if not complete:
+        st.info("Complete this step first. The **Next** button will appear when its required result is saved.")
+        return
+    if idx < total - 1:
+        next_key, next_name, next_path = WORKFLOW_STEPS[idx + 1]
+        st.page_link(next_path, label=f"➡️ Next: {next_name}", icon="➡️", use_container_width=True)
+    else:
+        st.success("✅ Workflow complete. You have reached Live Trading. Use the live page only after all required checks are satisfied.")
+    if idx > 0:
+        prev_key, prev_name, prev_path = WORKFLOW_STEPS[idx - 1]
+        st.page_link(prev_path, label=f"⬅️ Previous: {prev_name}", icon="⬅️", use_container_width=True)
 
 def footer_note(text: str = "Practice and research tool. Not advice. It never places orders and never asks for broker keys.") -> None:
     st.markdown(f'<p style="color:{MUTED};font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; TradeALGO v{escape(__version__)}</p>',
