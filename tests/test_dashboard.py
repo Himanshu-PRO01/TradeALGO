@@ -35,8 +35,8 @@ def test_confirming_unlocks_the_buttons_and_a_backtest_shows_results():
     assert not at.button(key="btn_run").disabled
     at.button(key="btn_run").click().run()
     assert not at.exception
-    labels = [m.label for m in at.metric]
-    assert "Costs paid (Rs)" in labels and "Trades" in labels
+    markdown = " ".join(str(getattr(m, "value", "")) for m in at.markdown)
+    assert "Costs paid" in markdown and "Trades" in markdown
     assert any("random sample data" in w.value for w in at.warning)   # honesty banner
 
 
@@ -81,4 +81,5 @@ def test_sma_demo_mode_runs():
     at.checkbox(key="confirm").check().run()
     at.button(key="btn_run").click().run()
     assert not at.exception
-    assert any(m.label == "Trades" for m in at.metric)
+    markdown = " ".join(str(getattr(m, "value", "")) for m in at.markdown)
+    assert "Trades" in markdown
