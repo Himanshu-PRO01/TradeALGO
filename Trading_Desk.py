@@ -96,7 +96,18 @@ with col2:
 
 st.markdown("---")
 
-# 5. Quick Links / Workflow
+# 5. Start Here + Quick Links / Workflow
+st.markdown("### 🗺️ Start Here — How TradeALGO Works")
+st.markdown(
+    ui.card(
+        "New to TradeALGO?",
+        "Follow the complete workflow from strategy idea → Strategy Builder → Backtest → Auto Tester → Reality Check → Paper/Sandbox → Safety Gate → OpenAlgo → Broker.",
+        "🗺️",
+    ),
+    unsafe_allow_html=True,
+)
+st.page_link("pages/18_How_TradeALGO_Works.py", label="Open How TradeALGO Works", icon="🗺️")
+
 st.markdown("### Research Workflow")
 a, b, c = st.columns(3)
 with a:
