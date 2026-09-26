@@ -174,9 +174,32 @@ def test_telegram_notify_sends_the_documented_fields_and_needs_both_arguments():
         c.telegram_notify("", "hello")
 
 
-def test_the_client_has_no_way_to_place_an_order():
-    names = [n for n in dir(OpenAlgoClient) if not n.startswith("_")]
-    assert not any(word in n.lower() for n in names for word in ("order", "buy", "sell", "place", "cancel", "modify"))
+def test_live_order_requires_explicit_live_mode(monkeypatch, tmp_path):
+    fake = Fake({"/api/v1/placeorder": {"status": "success", "orderid": "123"}})
+    monkeypatch.setenv("TRADEALGO_EXECUTION_MODE", "LIVE")
+    monkeypatch.setenv("TRADEALGO_KILL_SWITCH_DB", str(tmp_path / "kill.sqlite"))
+    response = client(fake).place_order("Test", "SBIN", "NSE", "BUY", "MARKET", "CNC", 1)
+    assert response["orderid"] == "123"
+    path, body = fake.calls[0]
+    assert path == "/api/v1/placeorder"
+    assert body["action"] == "BUY" and body["quantity"] == 1
+
+
+def test_live_order_is_blocked_outside_live_mode(monkeypatch):
+    fake = Fake()
+    monkeypatch.setenv("TRADEALGO_EXECUTION_MODE", "PAPER")
+    with pytest.raises(RuntimeError, match="blocked"):
+        client(fake).place_order("Test", "SBIN", "NSE", "BUY", "MARKET", "CNC", 1)
+    assert fake.calls == []
+
+
+def test_live_order_validates_fields_before_network(monkeypatch, tmp_path):
+    fake = Fake()
+    monkeypatch.setenv("TRADEALGO_EXECUTION_MODE", "LIVE")
+    monkeypatch.setenv("TRADEALGO_KILL_SWITCH_DB", str(tmp_path / "kill.sqlite"))
+    with pytest.raises(OpenAlgoError, match="action"):
+        client(fake).place_order("Test", "SBIN", "NSE", "HOLD", "MARKET", "CNC", 1)
+    assert fake.calls == []
 
 
 # -------------------------------------------------------- .env handling
