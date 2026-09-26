@@ -97,11 +97,11 @@ st.warning(
 st.markdown("### 🚦 Open the next step")
 a, b, c = st.columns(3)
 with a:
-    st.page_link("pages/10_Strategy_Builder.py", label="🧠 Open Strategy Builder", icon="🧠", use_container_width=True)
+    ui.page_link("pages/10_Strategy_Builder.py", label="🧠 Open Strategy Builder", icon="🧠", use_container_width=True)
 with b:
-    st.page_link("pages/5_Backtest.py", label="📊 Open Backtest", icon="📊", use_container_width=True)
+    ui.page_link("pages/5_Backtest.py", label="📊 Open Backtest", icon="📊", use_container_width=True)
 with c:
-    st.page_link("pages/6_Reality_check.py", label="🛡️ Open Reality Check", icon="🛡️", use_container_width=True)
+    ui.page_link("pages/6_Reality_check.py", label="🛡️ Open Reality Check", icon="🛡️", use_container_width=True)
 
 st.markdown("### 🔐 Safety architecture")
 st.markdown(
