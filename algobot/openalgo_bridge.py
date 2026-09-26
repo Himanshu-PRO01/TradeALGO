@@ -170,6 +170,53 @@ class OpenAlgoClient:
             raise OpenAlgoError(f"OpenAlgo did not return a lot size for {symbol} on {exchange}.")
         return int(size)
 
+    # -------------------------------------------------------------- execution
+    def place_order(
+        self,
+        strategy: str,
+        symbol: str,
+        exchange: str,
+        action: str,
+        price_type: str,
+        product: str,
+        quantity: int,
+        price: float = 0,
+        trigger_price: float = 0,
+    ) -> dict:
+        """Place one live-capable OpenAlgo order after the execution gate passes.
+
+        The caller must explicitly enable LIVE mode. The API key is never returned
+        or included in the exception text.
+        """
+        from .execution_policy import require_live_enabled
+
+        require_live_enabled()
+        action = str(action).upper()
+        price_type = str(price_type).upper()
+        product = str(product).upper()
+        if action not in {"BUY", "SELL"}:
+            raise OpenAlgoError("action must be BUY or SELL.")
+        if price_type not in {"MARKET", "LIMIT", "SL", "SL-M"}:
+            raise OpenAlgoError("price_type must be MARKET, LIMIT, SL, or SL-M.")
+        if product not in {"CNC", "MIS", "NRML"}:
+            raise OpenAlgoError("product must be CNC, MIS, or NRML.")
+        if not strategy.strip() or not symbol.strip() or not exchange.strip():
+            raise OpenAlgoError("strategy, symbol, and exchange are required.")
+        if int(quantity) < 1:
+            raise OpenAlgoError("quantity must be at least 1.")
+        if price_type == "LIMIT" and float(price) <= 0:
+            raise OpenAlgoError("LIMIT orders require a positive price.")
+        if price_type == "SL" and (float(price) <= 0 or float(trigger_price) <= 0):
+            raise OpenAlgoError("SL orders require positive price and trigger_price.")
+        if price_type == "SL-M" and float(trigger_price) <= 0:
+            raise OpenAlgoError("SL-M orders require a positive trigger_price.")
+        payload = {
+            "strategy": strategy.strip(), "symbol": symbol.strip(), "exchange": exchange.strip(),
+            "action": action, "price_type": price_type, "product": product, "quantity": int(quantity),
+            "price": float(price), "trigger_price": float(trigger_price),
+        }
+        return self._post("/api/v1/placeorder", payload)
+
     # ---------------------------------------------------------- notifications
     def telegram_notify(self, username: str, message: str, wait_for_delivery: bool = False) -> None:
         """Send a message through OpenAlgo's Telegram bot. The user must already be linked to the bot.
