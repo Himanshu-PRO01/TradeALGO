@@ -357,7 +357,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
 
 /* guided workflow */
-.ta-workflow {
+.ta-workflow {{
     width: 100%;
     box-sizing: border-box;
     margin: 14px 0 20px;
@@ -368,14 +368,14 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-}
-.ta-workflow-track {
+}}
+.ta-workflow-track {{
     display: flex;
     align-items: stretch;
     gap: 8px;
     min-width: 1160px;
-}
-.ta-workflow-step {
+}}
+.ta-workflow-step {{
     flex: 1 1 0;
     min-width: 112px;
     min-height: 92px;
@@ -386,65 +386,65 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     background: #151d28;
     text-align: center;
     transition: transform .15s ease,border-color .15s ease,background .15s ease;
-}
-.ta-workflow-step:hover {
+}}
+.ta-workflow-step:hover {{
     transform: translateY(-2px);
     border-color: #3b82f6;
-}
-.ta-workflow-step.active {
+}}
+.ta-workflow-step.active {{
     border-color: #16c784;
     background: linear-gradient(180deg,#11271f 0%,#121e1b 100%);
     box-shadow: inset 0 0 0 1px #16c78422;
-}
-.ta-workflow-step .num {
+}}
+.ta-workflow-step .num {{
     color: #7f8da0;
     font-size: .67rem;
     font-weight: 900;
     letter-spacing: .12em;
-}
-.ta-workflow-step.active .num {
+}}
+.ta-workflow-step.active .num {{
     color: #16c784;
-}
-.ta-workflow-step .name {
+}}
+.ta-workflow-step .name {{
     margin-top: 7px;
     color: #f2f5f8;
     font-size: .78rem;
     line-height: 1.15;
     font-weight: 800;
-}
-.ta-workflow-step .desc {
+}}
+.ta-workflow-step .desc {{
     margin-top: 7px;
     color: #8b98a9;
     font-size: .67rem;
     line-height: 1.25;
-}
-.ta-workflow-arrow {
+}}
+.ta-workflow-arrow {{
     flex: 0 0 auto;
     align-self: center;
     color: #526176;
     font-size: 1.2rem;
     font-weight: 700;
-}
-.ta-flow-note {
+}}
+.ta-flow-note {{
     margin-top: 11px;
     color: #8b98a9;
     font-size: .76rem;
     text-align: center;
-}
-@media (max-width:768px) {
-    .ta-workflow {
+}}
+@media (max-width:768px) {{
+    .ta-workflow {{
         margin-left: 0;
         margin-right: 0;
         padding: 11px;
-    }
-    .ta-workflow-track {
+    }}
+    .ta-workflow-track {{
         min-width: 1020px;
-    }
-    .ta-workflow-step {
+    }}
+    .ta-workflow-step {{
         min-width: 100px;
         min-height: 86px;
-    }
-}
+    }}
+}}
 </style>
 """
 
