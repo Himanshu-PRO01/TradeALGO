@@ -191,4 +191,5 @@ st.page_link("pages/16_Paper_Trading.py", label="Open Paper Trading", icon="📝
 st.page_link("pages/14_Upstox_Sandbox.py", label="Open Upstox Sandbox", icon="🧰")
 st.page_link("pages/11_Live_Trading.py", label="Open Live Trading", icon="⚡")
 
+ui.workflow_nav("guide")
 ui.footer_note()
