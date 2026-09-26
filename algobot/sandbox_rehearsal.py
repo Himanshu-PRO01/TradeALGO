@@ -107,7 +107,7 @@ def step(open_snapshot: Optional[dict], run_key: str, client: UpstoxSandboxClien
 
     if state["status"] == "flat":
         if open_snapshot is None:
-            return messages  # still flat, nothing to do
+            return messages
         side = open_snapshot["side"]
         transaction_type = "BUY" if side == "LONG" else "SELL"
         entry_time = str(open_snapshot["entry_time"])
@@ -122,10 +122,9 @@ def step(open_snapshot: Optional[dict], run_key: str, client: UpstoxSandboxClien
             messages.append(f"Entry FAILED: {exc}")
         return messages
 
-    # state["status"] == "open"
     still_same_position = open_snapshot is not None and str(open_snapshot["entry_time"]) == state["entry_time"]
     if still_same_position:
-        return messages  # nothing changed, no duplicate order
+        return messages
     transaction_type = "SELL" if state["side"] == "LONG" else "BUY"
     try:
         response = client.place_order(instrument_token, int(quantity), transaction_type, order_type="MARKET")
