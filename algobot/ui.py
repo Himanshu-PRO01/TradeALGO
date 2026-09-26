@@ -361,9 +361,10 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
-    # Detect the actual entrypoint at runtime so the Home link works on both
-    # Streamlit Cloud (which runs dashboard.py) and locally (Trading_Desk.py).
-    home_page = pathlib.Path(sys.argv[0]).name if sys.argv else "Trading_Desk.py"
+    # dashboard.py is the registered Streamlit entrypoint on Cloud AND locally
+    # (run_windows.bat runs `streamlit run dashboard.py`). Trading_Desk.py is
+    # NOT a registered page so st.page_link("Trading_Desk.py") throws on Cloud.
+    home_page = "dashboard.py"
     with st.sidebar:
         st.markdown(
             f'<div class="ab-menu-head"><div class="ab-menu-brand">ALGO<span>BOT</span></div>'
