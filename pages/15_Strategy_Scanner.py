@@ -86,7 +86,7 @@ base_cfg = validate_config({
 })
 
 estimated = estimate_scanner_count(template_keys, max_per_template, len(stop_values) or 1, len(target_values) or 1)
-ui.ticker("Candidates to test", str(estimated))
+ui.ticker([("Candidates to test", str(estimated), "blue")])
 if estimated > 2000:
     ui.banner("That's a lot of candidates and may take a while in this environment. Consider lowering the combo limit.", tone="warn")
 
