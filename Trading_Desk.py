@@ -49,12 +49,46 @@ ui.ticker([
     ("Max Drawdown", "0%", None)
 ])
 
-# 3. Indian Market Chart — Groww
-GROWW_NIFTY_URL = "https://groww.in/charts/indices/nifty"
+# 3. Indian Market Chart — TradingView
+dashboard_chart_config = {
+    "autosize": False,
+    "height": dashboard_height,
+    "symbol": "NSE:NIFTY",
+    "interval": dashboard_interval,
+    "timezone": "exchange",
+    "theme": "dark",
+    "style": "1",
+    "withdateranges": True,
+    "hide_side_toolbar": False,
+    "allow_symbol_change": False,
+    "save_image": True,
+    "hide_volume": False,
+    "details": True,
+    "calendar": False,
+    "support_host": "https://www.tradingview.com",
+    "studies": ["MASimple@tv-basicstudies", "RSI@tv-basicstudies"],
+}
+
+dashboard_chart_html = f"""
+<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden;border-radius:8px;border:1px solid #1E293B;">
+  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden"></div>
+  <div class="tradingview-widget-copyright"
+       style="font-size:11px;text-align:center;padding-top:4px;">
+    <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer" style="color:#94A3B8;">
+      Charts by TradingView
+    </a>
+  </div>
+  <script type="text/javascript"
+          src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+          async>
+    {json.dumps(dashboard_chart_config)}
+  </script>
+</div>
+"""
 
 st.markdown("### Indian NIFTY 50 Market View")
-st.iframe(GROWW_NIFTY_URL, height=dashboard_height + 15)
-st.caption("NIFTY 50 chart from Groww. Research visualization only; no broker connection or live orders.")
+st.iframe(dashboard_chart_html, height=dashboard_height + 15)
+st.caption("Live NIFTY 50 visualization from TradingView using the NSE:NIFTY symbol. Research visualization only; no broker connection or live orders.")
 
 # 4. Lower Dashboard Panels
 col1, col2 = st.columns(2)
