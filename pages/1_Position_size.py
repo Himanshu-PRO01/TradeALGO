@@ -37,11 +37,10 @@ with result_col:
         st.error(str(exc))
         st.stop()
 
-    ui.ticker([
-        ("Lots allowed", result.lots, None),
-        ("You pay (Rs)", f"{result.premium_outlay:,.0f}", None),
-        ("Loss at stop (Rs)", f"{result.loss_if_stopped:,.0f}", None)
-    ])
+    a, b, c = st.columns(3)
+    a.metric("Lots allowed", result.lots)
+    b.metric("You pay (Rs)", f"{result.premium_outlay:,.0f}")
+    c.metric("Loss at stop (Rs)", f"{result.loss_if_stopped:,.0f}")
     for w in result.warnings:
         st.warning(w)
 

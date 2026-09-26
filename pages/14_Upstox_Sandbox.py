@@ -25,8 +25,10 @@ ui.header(
     mode="execution:Sandbox",
 )
 
-ui.banner("UPSTOX SANDBOX • FAKE MONEY ONLY", tone="warning", icon="⚠️")
-st.write("Live trading is locked. This page uses Upstox's sandbox endpoint. No live Upstox endpoint or live credential is used.")
+st.info(
+    "🟢 SANDBOX ONLY · This page uses Upstox's sandbox endpoint. "
+    "No live Upstox endpoint or live credential is used."
+)
 
 # Prefer the process environment, then Streamlit Secrets. Never display the token.
 token = sandbox_token()
@@ -40,7 +42,7 @@ if not token:
         token = None
 
 if token:
-    st.success(f"TOKEN STATUS: token present ({token_source}). Token value is never shown.")
+    st.success(f"✅ Sandbox token detected privately ({token_source}). Token value is never shown.")
     st.caption(
         f"Preview: `{token_preview(token)}` — check this matches the token's length/prefix "
         "shown on the Upstox sandbox app page. A 401 despite 'detected' almost always means "
@@ -67,7 +69,10 @@ if token:
             "the same app whose sandbox mode you're testing, not a separate live app."
         )
 else:
-    st.warning("TOKEN STATUS: token missing. Add UPSTOX_SANDBOX_ACCESS_TOKEN to Streamlit Secrets and refresh the app.")
+    st.warning(
+        "No sandbox token detected. Add UPSTOX_SANDBOX_ACCESS_TOKEN to Streamlit Secrets "
+        "and refresh the app."
+    )
 
 st.markdown("### 1. Sandbox setup")
 st.markdown(
@@ -220,25 +225,14 @@ if send:
                 trigger_price=float(trigger_price),
                 disclosed_quantity=int(disclosed_quantity),
             )
-            st.success("TOKEN STATUS: sandbox request succeeded. Request accepted by Upstox.")
+            st.success("Sandbox order request accepted by Upstox.")
             st.json(response)
             order_id = extract_order_id(response)
             if order_id:
                 st.session_state["upstox_sandbox_order_id"] = order_id
                 st.code(order_id, language="text")
         except UpstoxSandboxError as exc:
-            msg = str(exc)
-            st.error(f"Sandbox Error: {msg}")
-            if "HTTP 401" in msg:
-                st.error("TOKEN STATUS: authentication rejected")
-                st.info(
-                    "**Likely category**: Invalid, mismatched, or expired token.\n\n"
-                    "**How to fix**: Open your Upstox developer console (https://account.upstox.com/developer/apps), "
-                    "go to your Sandbox app, and click **Generate** to get a fresh sandbox-only token. "
-                    "Do NOT paste a live token here."
-                )
-            elif "HTTP" in msg:
-                st.warning(f"TOKEN STATUS: token present, but request failed. Likely category: Upstox validation error.")
+            st.error(str(exc))
 
 st.divider()
 st.markdown("### 4. Modify or cancel the last sandbox order")
@@ -311,5 +305,4 @@ ui.check_row(
     "quantity, order type and the sandbox confirmation checkbox are still entered/ticked by hand "
     "for every order.",
 )
-ui.workflow_nav("sandbox", complete=bool(token))
 ui.footer_note("Upstox Sandbox only. No live orders. Keep the sandbox token private.")
