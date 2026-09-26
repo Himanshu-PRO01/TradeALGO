@@ -2,6 +2,7 @@
 setlocal
 cd /d "%~dp0"
 title Algobot Trading Desk
+rem Main app: Trading_Desk.py (dashboard.py is the compatibility launcher)
 
 set "PY="
 where py >nul 2>nul && set "PY=py -3"
