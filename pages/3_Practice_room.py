@@ -197,6 +197,8 @@ with st.sidebar:
                 st.success(f"Token set: {token_preview(tok)}")
             else:
                 st.info("No token — orders placed in Practice Room only (no Upstox API call).")
+            from algobot.dom_fixups import fix_password_autocomplete
+            fix_password_autocomplete()
 
     if st.button("Start a new market", type="primary", key="pr_start", use_container_width=True):
         if data_source == "⚡ Live (real-time + AI)":

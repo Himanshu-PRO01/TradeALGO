@@ -50,6 +50,8 @@ with st.sidebar:
         st.caption(f"✅ Token loaded: `{token_preview(token)}`")
     else:
         st.caption("⚠️ No token — paste it above.")
+    from algobot.dom_fixups import fix_password_autocomplete
+    fix_password_autocomplete()
 
 
 with kill_switch_scope() as switch:

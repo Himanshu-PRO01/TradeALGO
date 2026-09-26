@@ -61,6 +61,8 @@ def password_gate(max_attempts: int = 5) -> None:
         with st.form("ab_login"):
             entered = st.text_input("Password", type="password", key="ab_pw")
             submitted = st.form_submit_button("Enter", key="ab_login_btn")
+        from .dom_fixups import fix_password_autocomplete
+        fix_password_autocomplete()
         if submitted:
             if hmac.compare_digest(entered.encode("utf-8"), str(password).encode("utf-8")):
                 st.session_state["_ab_authed"] = True
