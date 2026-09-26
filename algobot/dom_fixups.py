@@ -36,5 +36,5 @@ def fix_password_autocomplete() -> None:
         })();
         </script>
         """,
-        height=0,
+        height=1,  # st.iframe (unlike the old components.html) rejects height=0
     )
