@@ -6,6 +6,8 @@ down, loss and sell; amber means caution or practice.
 """
 from __future__ import annotations
 
+import pathlib
+import sys
 from html import escape
 from typing import Iterable, Optional
 
@@ -359,8 +361,9 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 def _menu() -> None:
     """Trader-friendly sidebar navigation shared by every page."""
-    # The entrypoint is Trading_Desk.py — dashboard.py is just a legacy redirect.
-    home_page = "Trading_Desk.py"
+    # Detect the actual entrypoint at runtime so the Home link works on both
+    # Streamlit Cloud (which runs dashboard.py) and locally (Trading_Desk.py).
+    home_page = pathlib.Path(sys.argv[0]).name if sys.argv else "Trading_Desk.py"
     with st.sidebar:
         st.markdown(
             f'<div class="ab-menu-head"><div class="ab-menu-brand">ALGO<span>BOT</span></div>'
