@@ -26,6 +26,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+ui.workflow_nav("guide")
+
 st.markdown("### 🧭 Your TradeALGO path")
 
 st.info(
