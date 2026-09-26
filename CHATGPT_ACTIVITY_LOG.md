@@ -639,6 +639,82 @@ Latest recorded ChatGPT commit:
 - This uses TradingView's embeddable widget rather than the restricted Advanced Charts library. TradingView documents the widget as a ready-to-embed real-time chart with its own supplied market data. citeturn0search0turn0search3
 
 
+## Activity: Fix deprecated st.components.v1.html, add WhatsApp Signal Alerts
+
+**Source:** Claude (Anthropic), working directly in this repo via a git clone in a sandboxed container.
+
+**Date:** 2026-09-26
+
+### Files changed
+- `Trading_Desk.py`, `algobot/dom_fixups.py` -- replaced deprecated
+  `st.components.v1.html` with `st.iframe` (Streamlit removed the former;
+  the app was raising `StreamlitInvalidHeightError` because `st.iframe`
+  also rejects `height=0`, unlike the old API -- fixed by using `height=1`).
+- Added `algobot/whatsapp_alerts.py`, `algobot/signal_alerts.py`,
+  `pages/18_Signal_Alerts.py`, sidebar entry in `algobot/ui.py`,
+  `alert_scope()` in `algobot/appstate.py`.
+- Added `tests/test_whatsapp_alerts.py`, `tests/test_signal_alerts.py`.
+- Fixed `tests/test_dom_fixups.py` (mocked the now-removed
+  `streamlit.components.v1` module; updated to mock `st.iframe`).
+
+### What changed
+- Signal Alerts is a new page that sends a WhatsApp message (via the free,
+  personal-use CallMeBot API) on the same strategy signal Paper Trading and
+  Sandbox Rehearsal evaluate. It mirrors Sandbox Rehearsal's
+  exactly-once-per-signal state machine, but the only side effect is a text
+  message -- **no order of any kind is placed from this page or these
+  modules.** This follows the project owner's explicit request for an
+  alerts path, and matches the brother's stated preference (recorded
+  elsewhere in this project's history) for alerts over full automation --
+  same design principle as the existing read/notification-only OpenAlgo
+  bridge.
+- No trading, risk, broker, or live-order-placement logic was touched.
+
+### Why the project owner was NOT given a live-order-placement feature today
+- The project owner also asked to "unlock live trading" (real Upstox
+  orders, real money) in the same conversation, and said backtest, paper
+  trading, and kill-switch testing were all done.
+- Per this file's own **Project Safety Rules** above ("Do not connect real
+  money or place real orders unless the project owner explicitly
+  approves it") and CODE_REVIEW.md's checklist ("Do not add live order
+  placement until the paper-trading result and broker/compliance setup are
+  independently confirmed"), I did not build or enable that in this
+  session. There is no independent evidence in this repo of a strategy
+  that passed the Reality Check (the one strategy CODE_REVIEW.md documents
+  being run was rated NOT READY), and `LIVE_TRADING_ENABLED` was left
+  `False`. I explained this directly to the project owner and asked to see
+  actual Reality Check / audit output, or a specific non-demo strategy and
+  its results, before building the live-order path.
+- `execution_policy.py` was NOT modified. `pages/11_Live_Trading.py` still
+  calls `require_live_disabled()` and remains a placeholder/checklist page.
+
+### Tests
+- Command: `python -m pytest -q tests`
+- Result: 322 passed, 32 failed.
+- Verified (by running the same command against a fresh clone of
+  `origin/main` at commit `b474641`, before any of today's changes) that
+  all 32 failures pre-exist and are unrelated to this session's changes
+  (e.g. `test_ui_hosting.py::test_every_page_in_the_menu_loads_with_no_exception`
+  hardcodes an 8-page count against a repo that already had 15+ pages
+  before today). One test (`test_dom_fixups.py`) legitimately needed
+  updating for the `st.iframe` migration above and was fixed, not skipped.
+
+### Commits
+- `b04073e` Replace deprecated st.components.v1.html with st.iframe
+- `1c893a5` Fix StreamlitInvalidHeightError: st.iframe rejects height=0
+- `4225eda` Add WhatsApp signal alerts (no order placement)
+
+### Notes / follow-up
+- WhatsApp alerts require `WHATSAPP_RECIPIENTS=+91XXXXXXXXXX:key1,...` in a
+  private `.env` file or Streamlit secret (never in code or Git); see
+  `algobot/whatsapp_alerts.py`'s docstring for the one-time per-phone
+  CallMeBot activation steps.
+- Live order placement remains an open item, gated on the project owner
+  supplying evidence of a strategy that passed the Reality Check (not the
+  documented NOT READY demo strategy) and confirming the broker/compliance
+  setup, per CODE_REVIEW.md's own checklist.
+
+
 ## Activity: Fix Market Charts Syntax Error
 
 **Date:** 2026-09-25
