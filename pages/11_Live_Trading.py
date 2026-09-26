@@ -99,4 +99,5 @@ try:
 finally:
     switch.close_db()
 
+ui.workflow_nav("live")
 ui.footer_note()
