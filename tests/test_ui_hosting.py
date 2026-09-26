@@ -155,8 +155,8 @@ def test_front_page_loads_with_links_and_the_safety_strip():
     at.run()
     assert not at.exception
     strip = " ".join(m.value for m in at.markdown) + " " + " ".join(c.value for c in getattr(at, "caption", []))
-    assert "Live trading locked" in strip or "LIVE TRADING LOCKED" in strip
-    assert "no live orders" in strip.lower()
+    assert "LIVE DISABLED" in strip or "RESEARCH" in strip
+    assert "EXECUTION" in strip
 
 
 def test_the_old_entry_point_still_starts_the_same_page():
