@@ -46,7 +46,12 @@ CREATE TABLE IF NOT EXISTS rehearsal_events (
 
 class RehearsalLog:
     def __init__(self, path: str = ":memory:", check_same_thread: bool = True):
-        self.db = sqlite3.connect(path, check_same_thread=check_same_thread)
+        # A generous busy timeout: step() below holds this connection's write lock
+        # across the sandbox network call on purpose (see step()'s docstring note),
+        # which can take up to UpstoxSandboxClient's own ~20s timeout. 30s here means
+        # a second concurrent refresh waits it out instead of failing with
+        # "database is locked" under completely normal, non-buggy usage.
+        self.db = sqlite3.connect(path, check_same_thread=check_same_thread, timeout=30.0)
         self.db.executescript(SCHEMA)
         self.db.commit()
 
@@ -101,39 +106,61 @@ class RehearsalLog:
 def step(open_snapshot: Optional[dict], run_key: str, client: UpstoxSandboxClient,
          instrument_token: str, quantity: int, log: RehearsalLog) -> list[str]:
     """Compare the strategy's current open/flat status against what we last acted on, and place
-    exactly the one sandbox order needed (an entry, an exit, or nothing) to catch up."""
-    state = log.get_state(run_key)
-    messages: list[str] = []
+    exactly the one sandbox order needed (an entry, an exit, or nothing) to catch up.
 
-    if state["status"] == "flat":
-        if open_snapshot is None:
-            return messages  # still flat, nothing to do
-        side = open_snapshot["side"]
-        transaction_type = "BUY" if side == "LONG" else "SELL"
-        entry_time = str(open_snapshot["entry_time"])
+    Concurrency note: reading the state, deciding, placing the sandbox order and
+    writing the new state are NOT atomic on their own -- two overlapping calls to
+    step() for the same run_key (two browser tabs, or two refreshes racing on a
+    hosted deployment) could otherwise both read "flat", both place an entry
+    order, and only the last write would be remembered. "BEGIN IMMEDIATE" below
+    takes an exclusive write lock on this run_key's whole database for the
+    duration of this function, so a second overlapping call simply waits for the
+    first to finish (and see its result) before it gets to read anything -- which
+    is what actually guarantees "exactly once", not just the busy timeout."""
+    messages: list[str] = []
+    log.db.execute("BEGIN IMMEDIATE")
+    try:
+        state = log.get_state(run_key)
+
+        if state["status"] == "flat":
+            if open_snapshot is None:
+                return messages  # still flat, nothing to do
+            side = open_snapshot["side"]
+            transaction_type = "BUY" if side == "LONG" else "SELL"
+            entry_time = str(open_snapshot["entry_time"])
+            try:
+                response = client.place_order(instrument_token, int(quantity), transaction_type, order_type="MARKET")
+                order_id = extract_order_id(response)
+                log.set_state(run_key, "open", side=side, entry_time=entry_time, order_id=order_id)
+                log.record_event(run_key, "entry", side, transaction_type, instrument_token, quantity, True, str(order_id or ""))
+                messages.append(f"Entered {side}: sandbox order {order_id}")
+            except UpstoxSandboxError as exc:
+                log.record_event(run_key, "entry", side, transaction_type, instrument_token, quantity, False, str(exc))
+                messages.append(f"Entry FAILED: {exc}")
+            return messages
+
+        # state["status"] == "open"
+        still_same_position = open_snapshot is not None and str(open_snapshot["entry_time"]) == state["entry_time"]
+        if still_same_position:
+            return messages  # nothing changed, no duplicate order
+        transaction_type = "SELL" if state["side"] == "LONG" else "BUY"
         try:
             response = client.place_order(instrument_token, int(quantity), transaction_type, order_type="MARKET")
             order_id = extract_order_id(response)
-            log.set_state(run_key, "open", side=side, entry_time=entry_time, order_id=order_id)
-            log.record_event(run_key, "entry", side, transaction_type, instrument_token, quantity, True, str(order_id or ""))
-            messages.append(f"Entered {side}: sandbox order {order_id}")
+            log.record_event(run_key, "exit", state["side"], transaction_type, instrument_token, quantity, True, str(order_id or ""))
+            log.set_state(run_key, "flat")
+            messages.append(f"Exited {state['side']}: sandbox order {order_id}")
         except UpstoxSandboxError as exc:
-            log.record_event(run_key, "entry", side, transaction_type, instrument_token, quantity, False, str(exc))
-            messages.append(f"Entry FAILED: {exc}")
+            log.record_event(run_key, "exit", state["side"], transaction_type, instrument_token, quantity, False, str(exc))
+            messages.append(f"Exit FAILED: {exc}")
         return messages
-
-    # state["status"] == "open"
-    still_same_position = open_snapshot is not None and str(open_snapshot["entry_time"]) == state["entry_time"]
-    if still_same_position:
-        return messages  # nothing changed, no duplicate order
-    transaction_type = "SELL" if state["side"] == "LONG" else "BUY"
-    try:
-        response = client.place_order(instrument_token, int(quantity), transaction_type, order_type="MARKET")
-        order_id = extract_order_id(response)
-        log.record_event(run_key, "exit", state["side"], transaction_type, instrument_token, quantity, True, str(order_id or ""))
-        log.set_state(run_key, "flat")
-        messages.append(f"Exited {state['side']}: sandbox order {order_id}")
-    except UpstoxSandboxError as exc:
-        log.record_event(run_key, "exit", state["side"], transaction_type, instrument_token, quantity, False, str(exc))
-        messages.append(f"Exit FAILED: {exc}")
-    return messages
+    except Exception:
+        if log.db.in_transaction:
+            log.db.rollback()
+        raise
+    finally:
+        # Every return path above ends by calling set_state/record_event (which
+        # commit) except the two early "nothing to do" returns -- this closes
+        # the transaction those leave open, and is a harmless no-op otherwise.
+        if log.db.in_transaction:
+            log.db.commit()
