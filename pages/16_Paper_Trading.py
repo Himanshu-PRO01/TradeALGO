@@ -157,4 +157,5 @@ st.info(
     "own rules against real prices and writes the result down. Real execution stays where it is: "
     "locked in Live Trading."
 )
+ui.workflow_nav("paper")
 ui.footer_note("Paper trading uses delayed, free market data. It never places an order or connects to a broker.")
