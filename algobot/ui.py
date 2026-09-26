@@ -514,11 +514,34 @@ def _menu() -> None:
         st.caption("🔒 Live orders are locked · fake money only")
 
 
+def is_hinglish() -> bool:
+    """Return the user's current UI language preference."""
+    return bool(st.session_state.get("tradealgo_hinglish", False))
+
+
+def language_toggle() -> None:
+    """Compact global English/Hinglish switch shown at the top of every page."""
+    current = is_hinglish()
+    col1, col2, col3 = st.columns([1, 1.2, 8])
+    with col1:
+        st.caption("EN")
+    with col2:
+        value = st.toggle(
+            "Hinglish",
+            value=current,
+            key="tradealgo_hinglish",
+            label_visibility="collapsed",
+        )
+    with col3:
+        st.caption("Hinglish" if value else "English")
+
+
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
     _menu()
+    language_toggle()
     swipe_component = _swipe_menu_component()
     if swipe_component is not None:
         swipe_component(key="algobot_mobile_swipe_menu")
@@ -531,7 +554,8 @@ def pill(text: str, tone: str = "green") -> str:
 
 def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
     """Brand bar with the safety pills, then the page title."""
-    pills = [pill("NO LIVE ORDERS", "green")]
+    lang = "Hinglish" if is_hinglish() else "English"
+    pills = [pill("LIVE ORDERS OFF" if is_hinglish() else "NO LIVE ORDERS", "green")]
     if mode:
         tone = {"practice": "amber", "backtest": "blue", "journal": "green", "research": "blue"}.get(mode.split(":")[0], "blue")
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
