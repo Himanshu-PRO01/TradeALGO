@@ -558,7 +558,12 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     language_toggle()
     swipe_component = _swipe_menu_component()
     if swipe_component is not None:
-        swipe_component(key="algobot_mobile_swipe_menu")
+        try:
+            swipe_component(key="algobot_mobile_swipe_menu")
+        except st.errors.StreamlitAPIException:
+            # Streamlit AppTest does not mount browser-only v2 components.
+            # The gesture is progressive enhancement; page rendering must survive without it.
+            pass
     password_gate()
 
 
