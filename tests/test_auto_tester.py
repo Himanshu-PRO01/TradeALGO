@@ -30,7 +30,7 @@ def test_candidate_grid_is_capped_deterministically():
     )
     assert len(candidates) == 5
     assert candidates[0] == ((5, 5), 0.5, 1.0)
-    assert candidates[-1] == ((5, 15), 0.5, 1.0)
+    assert candidates[-1] == ((5, 10), 0.5, 1.0)
 
 
 def test_estimate_does_not_fake_period_dimension_when_none_selected():
