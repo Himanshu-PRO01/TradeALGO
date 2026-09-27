@@ -639,6 +639,21 @@ Latest recorded ChatGPT commit:
 - This uses TradingView's embeddable widget rather than the restricted Advanced Charts library. TradingView documents the widget as a ready-to-embed real-time chart with its own supplied market data. citeturn0search0turn0search3
 
 
+## Activity: Merge origin/main (live-trading revert) with local WhatsApp alerts/kill-switch/Backtest/guide work
+
+**Source:** Claude (Anthropic).
+
+**Date:** 2026-09-27
+
+`origin/main` had moved substantially (60+ commits) since the last entry, including reverting live-trading entirely: `execution_policy.py` back to hardcoded `LIVE_TRADING_ENABLED = False`, `openalgo_bridge.py`'s `place_order()` removed, `pages/11_Live_Trading.py` back to the placeholder checklist page. Took origin's version of all of that wholesale -- my earlier kill-switch-consistency fix was patching a subsystem that no longer exists, and origin's revert makes it moot (there's only one kill switch again because the second one was deleted along with the feature that created it).
+
+Reconciled: renamed `pages/18_Signal_Alerts.py` -> `pages/20_Signal_Alerts.py` (origin's own new `pages/18_How_TradeALGO_Works.py` took 18 first); placed it and `pages/19_How_to_Build_a_Strategy.py` into origin's current sidebar structure. Kept my `tests/test_dom_fixups.py` over origin's (origin's still mocked the deprecated `components.v1` API and would fail against the current, unchanged `dom_fixups.py`). Also dropped a stale sidebar link to `pages/9_Deployment_Status.py`, which doesn't exist and has no history on either side.
+
+Full suite: 369 passed, 1 failed (pre-existing yfinance network block in this sandbox only, not a real failure). Commit: `ed5e04c`.
+
+**If another session picks this up:** live trading is fully locked again (the original, safe state). Don't re-enable it from within a session -- if the project owner wants to revisit it, that should be its own explicit, reviewed conversation, not something that happens as a side effect of merging.
+
+
 ## Activity: Fix split kill switch (critical), real market data in Backtest, strategy guide page
 
 **Source:** Claude (Anthropic), reviewing work already on `origin/main` (execution_policy LIVE mode, gated OpenAlgo `place_order()`, Live_Trading control page -- authored across several commits, some by the project owner directly, some by another agent) before pushing unrelated local changes.
