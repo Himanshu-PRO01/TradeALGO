@@ -2,6 +2,7 @@
 setlocal
 cd /d "%~dp0"
 title Algobot Trading Desk
+rem Main app: Trading_Desk.py (dashboard.py is the compatibility launcher)
 
 set "PY="
 where py >nul 2>nul && set "PY=py -3"
@@ -28,7 +29,7 @@ if errorlevel 1 (
 )
 echo.
 echo Starting the trading desk. Your browser will open. Close this window to stop it.
-streamlit run Trading_Desk.py
+streamlit run dashboard.py
 pause
 exit /b 0
 

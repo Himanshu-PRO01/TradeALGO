@@ -103,6 +103,51 @@ class PaperLog:
         self.db.execute("DELETE FROM paper_trades WHERE run_key = ?", (run_key,))
         self.db.commit()
 
+    def virtual_ledger(
+        self, run_key: str, starting_capital: float, open_snapshot: Optional[dict] = None
+    ) -> dict:
+        """A virtual-capital view built only from what is actually on record: the
+        stated starting capital, realized P&L from logged closed trades, and (if
+        passed in) the unrealized P&L of a currently-open snapshot from
+        split_open_and_closed(). No margin or leverage is modelled, so
+        available_capital is the same number as virtual_balance for now."""
+        df = self.all_trades(run_key)
+        realized = float(df["net_pnl"].sum()) if not df.empty else 0.0
+        unrealized = float(open_snapshot["net_pnl"]) if open_snapshot else 0.0
+        balance = float(starting_capital) + realized
+        return {
+            "starting_capital": float(starting_capital),
+            "realized_pnl": realized,
+            "unrealized_pnl": unrealized,
+            "virtual_balance": balance,
+            "available_capital": balance,
+            "virtual_equity": balance + unrealized,
+        }
+
+    def equity_curve(self, run_key: str, starting_capital: float) -> pd.DataFrame:
+        """Virtual equity after each logged closed trade (indexed by exit time),
+        with its own running drawdown -- replayed from the trade log, the same
+        way every other view in this class works."""
+        cols = ["exit_time", "equity", "drawdown"]
+        df = self.all_trades(run_key)
+        if df.empty:
+            return pd.DataFrame(columns=cols)
+        out = df[["exit_time", "net_pnl"]].copy()
+        out["exit_time"] = pd.to_datetime(out["exit_time"])
+        out = out.sort_values("exit_time")
+        out["equity"] = float(starting_capital) + out["net_pnl"].cumsum()
+        out["drawdown"] = out["equity"] - out["equity"].cummax()
+        return out[cols].reset_index(drop=True)
+
+    def daily_pnl(self, run_key: str) -> pd.DataFrame:
+        """Net realized P&L grouped by the calendar date each trade closed."""
+        df = self.all_trades(run_key)
+        if df.empty:
+            return pd.DataFrame(columns=["date", "net_pnl"])
+        out = df.copy()
+        out["date"] = pd.to_datetime(out["exit_time"]).dt.date
+        return out.groupby("date", as_index=False)["net_pnl"].sum()
+
 
 def evaluate(cfg: dict, df: pd.DataFrame) -> BacktestResult:
     """Run the existing (real-money-free) backtest engine on whatever price window is available."""
@@ -110,7 +155,7 @@ def evaluate(cfg: dict, df: pd.DataFrame) -> BacktestResult:
 
 
 def split_open_and_closed(result: BacktestResult) -> tuple[Optional[dict], pd.DataFrame]:
-    """The engine always force-closes a still-open position at the last available bar so it can
+    """The engine always force-closes a still-open position at the last bar so it can
     report a result; that manufactured close (exit_reason 'end_of_data') is a snapshot of an open
     position, not a real exit, so it must never be logged as a finished trade."""
     trades = result.trades

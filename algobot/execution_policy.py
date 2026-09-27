@@ -1,64 +1,28 @@
-"""Explicit execution policy for research, paper, sandbox and live modes.
+"""Execution safety policy.
 
-Live execution is available only when the operator deliberately sets
-TRADEALGO_EXECUTION_MODE=LIVE. The persistent kill switch remains a second,
-independent gate. The learning layer cannot change this policy.
+Live trading is deliberately prohibited in this build. Research, backtests,
+paper trading, and Upstox Sandbox may run, but no code path may authorize
+real-money execution. This flag must not be changed by the learning system.
+
+Two independent gates must both be clear before live_trading_allowed() can
+ever return True: this file's own LIVE_TRADING_ENABLED flag (a deliberate,
+code-level decision), and the persistent kill switch (a human-operable
+emergency stop that survives restarts). Flipping the flag alone is never
+enough -- a tripped kill switch still blocks execution.
 """
-import os
-from enum import Enum
-from typing import Optional
-
 from .kill_switch import KillSwitch
 
-
-class ExecutionMode(Enum):
-    RESEARCH = "RESEARCH"
-    PAPER = "PAPER"
-    SANDBOX = "SANDBOX"
-    LIVE_DISABLED = "LIVE_DISABLED"
-    LIVE = "LIVE"
+LIVE_TRADING_ENABLED = False
 
 
-def get_execution_mode() -> ExecutionMode:
-    """Read the execution mode; missing/invalid values fail closed."""
-    mode_str = os.environ.get("TRADEALGO_EXECUTION_MODE", "LIVE_DISABLED").upper()
-    try:
-        return ExecutionMode(mode_str)
-    except ValueError:
-        return ExecutionMode.LIVE_DISABLED
-
-
-def _default_kill_switch() -> KillSwitch:
-    """The SAME kill switch every other page uses (see appstate.kill_switch_scope) --
-    this must stay one shared switch, or halting from Paper Trading / Sandbox
-    Rehearsal would silently fail to stop live orders. Do not give this its own
-    env var or default path."""
-    path = os.environ.get("ALGOBOT_KILL_SWITCH", "kill_switch.db")
-    return KillSwitch(path)
-
-
-def live_trading_allowed(switch: Optional[KillSwitch] = None) -> bool:
-    """Return True only for explicit LIVE mode with no active kill switch."""
-    if get_execution_mode() is not ExecutionMode.LIVE:
+def live_trading_allowed(switch: "KillSwitch | None" = None) -> bool:
+    if not LIVE_TRADING_ENABLED:
         return False
-    if switch is not None:
-        return not switch.status()["halted"]
-    owned = _default_kill_switch()
-    try:
-        return not owned.status()["halted"]
-    finally:
-        owned.close_db()
-
-
-def require_live_enabled(switch: Optional[KillSwitch] = None) -> None:
-    if not live_trading_allowed(switch):
-        raise RuntimeError(
-            "Live execution is blocked. Set TRADEALGO_EXECUTION_MODE=LIVE "
-            "and make sure the persistent kill switch is not halted."
-        )
+    if switch is not None and switch.status()["halted"]:
+        return False
+    return True
 
 
 def require_live_disabled() -> None:
-    """Backward-compatible guard used by older callers; now means 'not live'."""
-    if live_trading_allowed():
-        raise RuntimeError("Live execution is enabled; this caller requires non-live mode.")
+    if LIVE_TRADING_ENABLED:
+        raise RuntimeError("Safety policy violation: live trading must remain disabled.")

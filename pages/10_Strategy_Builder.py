@@ -13,7 +13,7 @@ ui.header(
     mode="research:Strategy",
 )
 
-ui.banner("Build the rule first. The next step is to test it on historical data before considering any live use.", tone="info")
+st.info("Build the rule first. The next step is to test it on historical data before considering any live use.")
 
 with st.form("strategy_builder"):
     name = st.text_input("Strategy name", placeholder="Example: Previous-week level reversal")
@@ -81,4 +81,5 @@ st.divider()
 ui.check_row("PASS", "No broker connection", "The builder only records deterministic rules.")
 ui.check_row("PASS", "No live orders", "Saving or downloading a strategy cannot place an order.")
 ui.check_row("WARN", "Discretionary exits are not testable as written", "Convert 'I decide as it happens' into a measurable rule.")
+ui.workflow_nav("strategy", complete=st.session_state.get("strategy_rules") is not None)
 ui.footer_note()

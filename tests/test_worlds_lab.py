@@ -13,7 +13,7 @@ from algobot.worlds import REGIMES, generate_mixed_world, generate_world, get_re
 def lag1(df):
     r = np.log(df["close"]).diff()
     same_day = df.index.normalize() == pd.Series(df.index.normalize(), index=df.index).shift(1)
-    r = r[same_day.to_numpy()].dropna().to_numpy()
+    r = r[np.asarray(same_day)].dropna().to_numpy()
     return float(np.corrcoef(r[:-1], r[1:])[0, 1])
 
 

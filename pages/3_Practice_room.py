@@ -27,6 +27,7 @@ from algobot.live_data import LiveDataError, fetch_ohlc
 from algobot.options import bs_greeks, bs_price
 from algobot.practice import (PracticeBlocked, PracticeError, PracticeSession,
                                PracticeSettings, format_practice_report)
+from algobot.sizing import NIFTY_LOT_SIZE
 from algobot.upstox_sandbox import (UpstoxSandboxClient, UpstoxSandboxError,
                                      clean_token, token_preview)
 from algobot.worlds import REGIMES, generate_mixed_world, generate_world
@@ -214,7 +215,8 @@ with st.sidebar:
                 st.session_state["live_market"]       = market_label
                 st.session_state["live_strike_step"]  = strike_step
                 st.session_state["live_iv"]           = float(iv)
-                st.session_state["live_dte"]          = float(dte)
+                st.session_state["live_dte_initial"]  = float(dte)
+                st.session_state["live_started_at"]   = datetime.now()
                 st.session_state["live_spread"]       = float(spread)
                 st.session_state["live_charges"]      = float(charges)
                 st.session_state["live_capital"]      = float(capital)
@@ -228,6 +230,7 @@ with st.sidebar:
                 st.session_state["practice"]          = None
                 st.session_state["practice_report"]   = None
                 st.session_state["ai_idea"]           = None
+                st.session_state["ai_checked"]        = False
                 st.rerun()
             except LiveDataError as exc:
                 st.error(str(exc))
@@ -251,7 +254,11 @@ if st.session_state.get("live_bars") is not None:
     ticker_live       = st.session_state["live_ticker"]
     strike_step_live  = st.session_state["live_strike_step"]
     iv_live           = st.session_state["live_iv"]
-    dte_live          = st.session_state["live_dte"]
+    # DTE counts down against real elapsed time, exactly like the fake/historical
+    # modes count it down against simulated bar time -- otherwise premiums would
+    # never show time decay during a live session, which defeats the point.
+    _elapsed_days     = (datetime.now() - st.session_state["live_started_at"]).total_seconds() / 86400.0
+    dte_live          = max(st.session_state["live_dte_initial"] - _elapsed_days, 0.0)
     spread_live       = st.session_state["live_spread"]
     charges_live      = st.session_state["live_charges"]
     capital_live      = st.session_state["live_capital"]
@@ -271,13 +278,18 @@ if st.session_state.get("live_bars") is not None:
             st.session_state["live_bars"]         = bars_live
             st.session_state["live_last_refresh"] = time.time()
             st.session_state["ai_idea"]           = None   # re-run AI on fresh data
+            st.session_state["ai_checked"]        = False
         except LiveDataError:
             bars_live = st.session_state["live_bars"]
     else:
         bars_live = st.session_state["live_bars"]
 
     spot_live  = float(bars_live["close"].iloc[-1])
-    lot_size   = 75   # Nifty default; Bank Nifty is 35 but sandbox uses market orders
+    # Same lot-size constant the fake/historical Practice Room modes use, so numbers
+    # stay consistent across modes. Real lot sizes differ by index and are revised by
+    # NSE from time to time; like the rest of this app, this shows the shape of the
+    # problem, not an exact live lot size for Bank Nifty/Sensex.
+    lot_size   = NIFTY_LOT_SIZE
 
     # ── live ticker ───────────────────────────────────────────────────────────
     today_bars_live = bars_live[bars_live.index.date == bars_live.index[-1].date()]
@@ -298,6 +310,7 @@ if st.session_state.get("live_bars") is not None:
             st.cache_data.clear()
             st.session_state["live_last_refresh"] = 0
             st.session_state["ai_idea"] = None
+            st.session_state["ai_checked"] = False
             st.rerun()
     with col_timer:
         st.caption(f"Auto-refresh in **{time_left}s**")
@@ -330,6 +343,7 @@ if st.session_state.get("live_bars") is not None:
                 charges=charges_live * 2,   # round-trip
             )
             st.session_state["ai_idea"] = ai_idea
+            st.session_state["ai_checked"] = True
 
     if ai_idea is not None:
         with st.container(border=True):
@@ -372,16 +386,10 @@ if st.session_state.get("live_bars") is not None:
                 st.session_state["pr_live_strike"] = ai_idea.strike
                 st.session_state["pr_live_stop"]   = ai_idea.stop
                 st.rerun()
-    elif ai_idea is False:
+    elif st.session_state.get("ai_checked"):
         st.info("No clear edge detected in current market conditions. Wait for a stronger setup.")
     else:
         st.caption("Click 'Analyse market' to get an AI suggestion based on live price action.")
-
-    # mark as False (checked but no idea) vs None (not yet checked)
-    if ai_idea is None and st.session_state.get("ai_idea") is None:
-        pass   # not yet requested
-    elif st.session_state.get("ai_idea") is None and ai_idea is None:
-        st.session_state["ai_idea"] = False
 
     st.divider()
 

@@ -27,6 +27,9 @@ def compute_metrics(trades: pd.DataFrame, equity: pd.Series, capital: float) -> 
         "max_drawdown_pct": 0.0,
         "sharpe_daily": None,
         "days_traded": 0,
+        "max_win_streak": 0,
+        "max_loss_streak": 0,
+        "exposure_pct": 0.0,
     }
 
     if len(equity):
@@ -53,4 +56,45 @@ def compute_metrics(trades: pd.DataFrame, equity: pd.Series, capital: float) -> 
         )
         m["expectancy_per_trade"] = float(net.mean())
         m["days_traded"] = int(pd.to_datetime(trades["entry_time"]).dt.date.nunique())
+        m["max_win_streak"], m["max_loss_streak"] = _streaks(net)
+        m["exposure_pct"] = _exposure_pct(trades, equity)
     return m
+
+
+def _streaks(net_pnl: pd.Series) -> tuple[int, int]:
+    """Longest run of consecutive winning trades, and of consecutive non-winning
+    trades, in the order the trades happened (a trade with net_pnl == 0 counts
+    as a loss for this purpose, matching win_rate_pct's win/loss split above)."""
+    best_win = cur_win = 0
+    best_loss = cur_loss = 0
+    for pnl in net_pnl:
+        if pnl > 0:
+            cur_win += 1
+            cur_loss = 0
+        else:
+            cur_loss += 1
+            cur_win = 0
+        best_win = max(best_win, cur_win)
+        best_loss = max(best_loss, cur_loss)
+    return best_win, best_loss
+
+
+def _exposure_pct(trades: pd.DataFrame, equity: pd.Series) -> float:
+    """Percentage of the tested time span spent holding a position (either side).
+    Approximate by design: it sums each trade's own entry-to-exit duration, which
+    slightly overlaps square-off/day-boundary artifacts by at most one bar per
+    trade -- fine for a "how much of the time was capital at risk" read, not a
+    precision timing metric. Needs both entry_time and exit_time on the trades
+    frame; callers that only pass a minimal frame (just net_pnl, say) get 0.0
+    back instead of a KeyError, same as the other stats above degrade quietly."""
+    if trades.empty or len(equity) < 2:
+        return 0.0
+    if "entry_time" not in trades.columns or "exit_time" not in trades.columns:
+        return 0.0
+    total_span = (equity.index[-1] - equity.index[0]).total_seconds()
+    if total_span <= 0:
+        return 0.0
+    entry = pd.to_datetime(trades["entry_time"])
+    exit_ = pd.to_datetime(trades["exit_time"])
+    held_seconds = (exit_ - entry).dt.total_seconds().clip(lower=0).sum()
+    return float(min(held_seconds / total_span * 100.0, 100.0))
