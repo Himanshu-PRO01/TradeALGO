@@ -3,14 +3,15 @@ import json
 
 import streamlit as st
 
-from algobot import ui
+from algobot import charts, live_chart, ui
 from algobot.appstate import is_hosted, storage_note
 
 ui.setup("Trading Desk", "🏠")
 ui.header("Trading Desk", "Size it, log it, practise it, test it. A workshop for learning and testing, "
           "not a signal service and not a broker.")
 
-ui.ticker([("Live orders", "OFF", "up"), ("Broker", "not connected", None),
+ui.ticker([("Live orders", "OFF", "up"),
+           ("Broker", "OpenAlgo connected (read-only)" if live_chart.openalgo_configured() else "not connected", None),
            ("Mode", "hosted" if is_hosted() else "local", None), ("Fake markets", "7 kinds", None),
            ("Journal", "in this browser tab" if is_hosted() else "on this computer", None)])
 
@@ -33,7 +34,19 @@ with c:
     st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
 
 st.markdown("### 📈 Market Chart")
-st.caption("Real market visualization for research. No broker connection and no live orders.")
+st.caption("Real market visualization for research. No live orders are placed from this page.")
+
+use_openalgo = st.checkbox(
+    "Use my OpenAlgo broker for this chart (real candles, no TradingView limits)",
+    value=live_chart.openalgo_configured(),
+    disabled=not live_chart.openalgo_configured(),
+    help="Off by default. Needs OPENALGO_API_KEY (and OPENALGO_HOST if OpenAlgo isn't on this machine) "
+         "set as a local .env value or a Streamlit secret -- the site operator's own broker connection, "
+         "never requested from a visitor. When it's connected, every symbol below (including "
+         "NIFTY1!/BANKNIFTY1!) charts your broker's real data instead of TradingView's widget, which "
+         "can't redistribute most NSE data for free.",
+    key="dashboard_use_openalgo",
+)
 
 chart_controls = st.columns([2, 2, 3])
 with chart_controls[0]:
@@ -106,11 +119,22 @@ dashboard_chart_html = f"""
 </div>
 """
 
-st.iframe(dashboard_chart_html, height=dashboard_height + 15)
-st.caption("NIFTY1!/BANKNIFTY1! (continuous futures) sometimes get a 'permission denied' error from "
-           "TradingView's free anonymous embed -- that's a TradingView data-licensing limit, not a bug "
-           "here. Equity symbols above are reliable. For an always-working NIFTY/Sensex/Bank Nifty chart, "
-           "use the **Live Markets** page (free delayed data, no TradingView restriction).")
+candles, live_chart_error = (live_chart.fetch_candles(dashboard_symbol, dashboard_interval)
+                              if use_openalgo else (None, None))
+if candles is not None:
+    ui.show_chart(charts.candlestick(candles, height=dashboard_height))
+    st.caption(f"{len(candles):,} real candles for {dashboard_symbol} from your OpenAlgo broker connection. "
+               "Research visualization only; no live orders are placed from this page.")
+else:
+    if use_openalgo:
+        st.warning(f"Couldn't get real candles from OpenAlgo: {live_chart_error} Showing the TradingView "
+                   "widget below instead.")
+    st.iframe(dashboard_chart_html, height=dashboard_height + 15)
+    st.caption("NIFTY1!/BANKNIFTY1! (continuous futures) sometimes get a 'permission denied' error from "
+               "TradingView's free anonymous embed -- that's a TradingView data-licensing limit, not a bug "
+               "here. Equity symbols above are reliable. For an always-working NIFTY/Sensex/Bank Nifty chart "
+               "with no broker needed, use the **Live Markets** page (free delayed data, no TradingView "
+               "restriction), or turn on the OpenAlgo option above once it's connected.")
 
 
 st.markdown("### A 10-minute tour")
