@@ -639,6 +639,37 @@ Latest recorded ChatGPT commit:
 - This uses TradingView's embeddable widget rather than the restricted Advanced Charts library. TradingView documents the widget as a ready-to-embed real-time chart with its own supplied market data. citeturn0search0turn0search3
 
 
+## Activity: Fix split kill switch (critical), real market data in Backtest, strategy guide page
+
+**Source:** Claude (Anthropic), reviewing work already on `origin/main` (execution_policy LIVE mode, gated OpenAlgo `place_order()`, Live_Trading control page -- authored across several commits, some by the project owner directly, some by another agent) before pushing unrelated local changes.
+
+**Date:** 2026-09-26/27
+
+### Critical bug found and fixed: the kill switch had split into two disconnected instances
+- Every existing page (`kill_switch_scope()` in `algobot/appstate.py`) reads/writes `ALGOBOT_KILL_SWITCH` (default `kill_switch.db`).
+- The newly-added `algobot/execution_policy.py::_default_kill_switch()` and `pages/11_Live_Trading.py`'s own halt/resume UI independently read/wrote a **different** env var, `TRADEALGO_KILL_SWITCH_DB` (default `data/kill_switch.sqlite`).
+- Practical effect: halting trading from the Paper Trading page -- the established, documented way to stop everything -- would **not** have stopped a live order, because `live_trading_allowed()` was checking a completely different, never-halted file. This directly broke the invariant `appstate.py`'s own docstring states: "the one shared 'stop everything' control."
+- Fixed by making `execution_policy._default_kill_switch()` and `pages/11_Live_Trading.py` use the same `ALGOBOT_KILL_SWITCH` / `kill_switch.db` everyone else uses (`pages/11_Live_Trading.py` now uses `appstate.kill_switch_scope()` directly, same as every other page, rather than constructing its own `KillSwitch` instance). Updated `tests/test_execution_policy.py` to match.
+- **If any other session adds a new page or module that touches the kill switch, use `appstate.kill_switch_scope()` -- never instantiate `KillSwitch(...)` directly with a new path/env var.** This bug is exactly what happens when that rule isn't followed.
+
+### Other changes
+- `pages/5_Backtest.py`: added "Real market history (Yahoo Finance)" as a price-data source (reuses `algobot.live_data.fetch_ohlc`/`MARKETS`/`INTERVALS`, same as the live pages). Previously Backtest could only use synthetic sample data (which, by construction, no strategy can show a real edge on after costs -- confirmed by actually running all 4 `configs/demo_*.yaml` through the engine: all four lose money on the sample CSV) or a manually uploaded CSV. There was no way to see a real-data result without leaving the app.
+- `algobot/prompt.py`: `AI_STRATEGY_PROMPT`'s indicator list had drifted behind `algobot/indicators.py` -- missing `opening_range_high`/`opening_range_low` and every `pivot_*` type. Fixed, and added `tests/test_prompt.py` to pin the two lists together so this can't silently drift again.
+- `pages/19_How_to_Build_a_Strategy.py`: new reference/checklist page (the 7 things a strategy needs, the full indicator list, condition syntax, a worked example, and a pointer to the existing `AI_STRATEGY_PROMPT` flow already in Backtest). This is the manual stand-in for the "interview -> exact rules" compiler discussed with the project owner but not yet built.
+- `.gitignore`: added `*.sqlite`/`*.sqlite3` -- the old split kill switch left a `data/kill_switch.sqlite` file with no gitignore rule to catch it.
+
+### Tests
+- `python -m pytest -q tests`: 360 passed, 1 failed.
+- The 1 failure (`test_ui_hosting.py::test_every_page_in_the_menu_loads_with_no_exception`) is this sandbox's network blocking Yahoo Finance (`query1/query2.finance.yahoo.com` not in the container's egress allowlist) -- confirmed by running it standalone and seeing the yfinance connection refused, not an application error. Not something to "fix" here; will not reproduce in a normally-networked deployment.
+
+### Commits
+- `a4dd640` Fix split kill switch; real market data in Backtest; strategy guide page
+
+### Still not done (unchanged from before)
+- Live order placement is still gated on the project owner supplying evidence of a strategy that passed Reality Check (not the documented NOT READY demo strategy) and confirming broker/compliance setup.
+- New, separately relevant: SEBI's algo trading framework became mandatory April 1, 2026. The self-built-algo personal-use exemption covers self, spouse, dependent children, and dependent parents -- **not siblings** in any source checked. The project's actual use case (owner builds, brother trades) may not fit that exemption as commonly described. Flagged to the project owner directly; not a code change, but should be confirmed with the broker (Upstox) before live execution is used for real, regardless of the technical readiness of the strategy itself.
+
+
 ## Activity: Fix deprecated st.components.v1.html, add WhatsApp Signal Alerts
 
 **Source:** Claude (Anthropic), working directly in this repo via a git clone in a sandboxed container.
