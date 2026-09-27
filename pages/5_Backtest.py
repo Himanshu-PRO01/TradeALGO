@@ -11,6 +11,7 @@ from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
 from algobot.data import DataError, generate_sample_data, load_csv
 from algobot.explain import explain_config
+from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
 from algobot.lookahead import run_lookahead_checks
 from algobot.prompt import AI_STRATEGY_PROMPT
 from algobot.report import summary_text
@@ -65,9 +66,26 @@ def colour_pnl(value):
 st.markdown("### Backtest settings")
 st.caption("Set the test inputs here. The sidebar is reserved for navigation.")
 with st.expander("1. Price data", expanded=True):
-    source = st.radio("Where do the prices come from?", ["Sample data (random, for testing)", "Upload a CSV file"], key="data_source")
-    days = st.slider("Days of sample data", 10, 120, 60, key="sample_days")
-    uploaded = st.file_uploader("CSV with datetime, open, high, low, close (volume optional)", type=["csv"], key="csv")
+    days, uploaded, hist_symbol, hist_interval = 60, None, None, None
+    source = st.radio(
+        "Where do the prices come from?",
+        ["Sample data (random, for testing)", "Real market history (Yahoo Finance)", "Upload a CSV file"],
+        key="data_source",
+        help="Sample data has no real structure to find an edge in -- every strategy loses money on it "
+             "after costs, by construction. That's correct behaviour, not a bug: it's here to test the "
+             "pipeline's mechanics, not to look for a winner. To see what a real result looks like, use "
+             "real market history or your own CSV.",
+    )
+    if source.startswith("Sample"):
+        days = st.slider("Days of sample data", 10, 120, 60, key="sample_days")
+    elif source.startswith("Real"):
+        c1, c2 = st.columns(2)
+        hist_symbol = c1.selectbox("Market", list(MARKETS), key="hist_symbol")
+        hist_interval = c2.selectbox("Timeframe", list(INTERVALS), index=1, key="hist_interval")
+        st.caption("A good-looking result here is still just one run on one period -- not "
+                   "out-of-sample, not walk-forward. Reality check next, always.")
+    else:
+        uploaded = st.file_uploader("CSV with datetime, open, high, low, close (volume optional)", type=["csv"], key="csv")
 with st.expander("2. Trade size and safety"):
     st.caption("The defaults here are sensible for a first test — you don't have to change anything to continue.")
     c1, c2, c3 = st.columns(3)
@@ -172,8 +190,12 @@ confirmed = st.checkbox("Yes, this is exactly what I meant", key="confirm")
 def load_prices():
     if source.startswith("Sample"):
         return sample_data(days)
+    if source.startswith("Real"):
+        ticker = MARKETS[hist_symbol]
+        yf_interval, yf_period = INTERVALS[hist_interval]
+        return fetch_ohlc(ticker, yf_interval, yf_period)
     if uploaded is None:
-        st.info("Upload a CSV file above, or switch to the sample data.")
+        st.info("Upload a CSV file above, or switch to sample data or real market history.")
         return None
     return load_csv(io.BytesIO(uploaded.getvalue()))
 
@@ -188,7 +210,7 @@ if not confirmed:
 if check_clicked or run_clicked:
     try:
         prices = load_prices()
-    except DataError as exc:
+    except (DataError, LiveDataError) as exc:
         st.error(f"Problem with the price data: {exc}")
         prices = None
     if prices is not None and check_clicked:

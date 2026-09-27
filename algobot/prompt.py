@@ -22,11 +22,15 @@ exit_short: "<condition>"
 
 ALLOWED indicator types: sma, ema, rsi, atr, highest, lowest, vwap,
   prev_day_high, prev_day_low, prev_day_close, prev_week_high, prev_week_low,
-  swing_high, swing_low.
-  - vwap and the prev_day_* / prev_week_* types need no period.
+  swing_high, swing_low, opening_range_high, opening_range_low,
+  pivot, pivot_r1, pivot_r2, pivot_r3, pivot_s1, pivot_s2, pivot_s3.
+  - vwap, the prev_day_* / prev_week_* types, and pivot / pivot_r1..r3 / pivot_s1..s3
+    need no period.
   - swing_high / swing_low: period = bars on EACH side needed to confirm the swing.
-  - vwap needs no period. Optional key "source": open, high, low, close or volume
-    (default close) for sma, ema and rsi.
+  - opening_range_high / opening_range_low: period = minutes in the opening window
+    (e.g. 15 for the first 15 minutes of the day).
+  - Optional key "source": open, high, low, close or volume (default close) for
+    sma, ema and rsi.
   - highest / lowest = the highest high / lowest low of the PREVIOUS n bars.
 
 A condition is a true/false statement using ONLY:

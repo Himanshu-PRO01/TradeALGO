@@ -1,6 +1,8 @@
 # Secrets and personal data: never commit these
 .env
 *.db
+*.sqlite
+*.sqlite3
 results/
 __pycache__/
 .pytest_cache/

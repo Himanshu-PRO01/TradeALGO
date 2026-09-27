@@ -10,7 +10,7 @@ def test_live_trading_is_disabled_by_default(monkeypatch):
 
 def test_live_mode_requires_explicit_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TRADEALGO_EXECUTION_MODE", "LIVE")
-    monkeypatch.setenv("TRADEALGO_KILL_SWITCH_DB", str(tmp_path / "kill.sqlite"))
+    monkeypatch.setenv("ALGOBOT_KILL_SWITCH", str(tmp_path / "kill.sqlite"))
     assert get_execution_mode() is ExecutionMode.LIVE
     assert live_trading_allowed() is True
     require_live_enabled()

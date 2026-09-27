@@ -264,6 +264,7 @@ def _menu() -> None:
                 ("📊", "Backtest", "pages/5_Backtest.py"),
                 ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
                 ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+                ("📘", "How to Build a Strategy", "pages/19_How_to_Build_a_Strategy.py"),
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
                 ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),

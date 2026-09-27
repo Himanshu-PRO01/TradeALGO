@@ -29,8 +29,12 @@ def get_execution_mode() -> ExecutionMode:
 
 
 def _default_kill_switch() -> KillSwitch:
-    path = os.environ.get("TRADEALGO_KILL_SWITCH_DB", os.path.join("data", "kill_switch.sqlite"))
-    return KillSwitch(path=path)
+    """The SAME kill switch every other page uses (see appstate.kill_switch_scope) --
+    this must stay one shared switch, or halting from Paper Trading / Sandbox
+    Rehearsal would silently fail to stop live orders. Do not give this its own
+    env var or default path."""
+    path = os.environ.get("ALGOBOT_KILL_SWITCH", "kill_switch.db")
+    return KillSwitch(path)
 
 
 def live_trading_allowed(switch: Optional[KillSwitch] = None) -> bool:
