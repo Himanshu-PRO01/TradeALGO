@@ -87,6 +87,9 @@ class Backtester:
             self.stop = fill * (1 - direction * self.stop_pct / 100.0)
         if self.target_pct is not None:
             self.target = fill * (1 + direction * self.target_pct / 100.0)
+        custom_levels = getattr(self.strategy, "take_pending_levels", lambda: None)()
+        if custom_levels is not None:
+            self.stop, self.target = custom_levels
         self.risk.register_entry()
 
     def _exit(self, ts, raw_price: float, reason: str, slippage: bool = True) -> None:
