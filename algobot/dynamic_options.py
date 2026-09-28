@@ -94,21 +94,104 @@ def validate_option_chain(df: pd.DataFrame) -> list[OptionContract]:
     return contracts
 
 
+def _rename_first(df: pd.DataFrame, target: str, aliases: tuple[str, ...]) -> None:
+    if target in df.columns:
+        return
+    source = next((alias for alias in aliases if alias in df.columns), None)
+    if source is not None:
+        df.rename(columns={source: target}, inplace=True)
+
+
+def _load_long_option_chain(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+    """Normalize one-row-per-contract historical data into the wide backtest format."""
+    _rename_first(df, "strike", ("strike_price", "strikeprice"))
+    _rename_first(df, "option_type", ("type", "right", "optiontype", "cp"))
+    for field in _OHLC:
+        _rename_first(df, field, (f"{field}_price", f"option_{field}"))
+
+    missing = {"strike", "option_type", *_OHLC} - set(df.columns)
+    if missing:
+        raise ConfigError(
+            "Long-format option CSV is missing: " + ", ".join(sorted(missing))
+        )
+
+    if "expiry" in df.columns:
+        expiry_values = df["expiry"].dropna().astype(str).str.strip().unique()
+        if len(expiry_values) > 1:
+            raise ConfigError(
+                "The CSV contains multiple expiries. Upload one expiry per file so "
+                "the dynamic-strike backtest cannot mix contracts."
+            )
+
+    df["option_type"] = df["option_type"].astype(str).str.upper().str.strip()
+    df["option_type"] = df["option_type"].replace({
+        "CALL": "CE",
+        "PUT": "PE",
+        "C": "CE",
+        "P": "PE",
+    })
+    if not set(df["option_type"].dropna()).issubset({"CE", "PE"}):
+        raise ConfigError("option_type must contain CE/PE (or CALL/PUT, C/P).")
+
+    df["strike"] = pd.to_numeric(df["strike"], errors="coerce")
+    for field in _OHLC:
+        df[field] = pd.to_numeric(df[field], errors="coerce")
+    if df[["strike", *_OHLC]].isna().any().any():
+        raise ConfigError("Strike and option OHLC columns contain missing or non-numeric values.")
+
+    # Underlying OHLC may be repeated for every contract at the same timestamp.
+    underlying = (
+        df[[time_col, "open", "high", "low", "close"]]
+        .drop_duplicates(subset=[time_col])
+        .set_index(time_col)
+        .sort_index()
+    )
+    options = df[[time_col, "option_type", "strike", *_OHLC]].copy()
+    options = options.drop_duplicates(subset=[time_col, "option_type", "strike"], keep="last")
+    wide = options.pivot(index=time_col, columns=["option_type", "strike"], values=list(_OHLC))
+    wide.columns = [
+        f"{kind}_{int(strike) if float(strike).is_integer() else strike:g}_{field}"
+        for field, kind, strike in wide.columns
+    ]
+    wide = wide.sort_index()
+    result = underlying.join(wide, how="inner")
+    result.index.name = "datetime"
+    return result
+
+
 def load_option_chain_csv(file_obj) -> pd.DataFrame:
+    """Load either TradeALGO wide CSVs or long historical option OHLC CSVs.
+
+    Wide format is the native TradeALGO format. Long format is useful for historical
+    datasets with one row per timestamp/strike/CE-PE contract:
+    datetime,strike,option_type,open,high,low,close
+    """
     try:
         df = pd.read_csv(file_obj)
     except Exception as exc:
         raise ConfigError(f"Could not read the option-chain CSV: {exc}") from exc
+
     df.columns = [str(c).strip().lower() for c in df.columns]
     time_col = next((c for c in ("datetime", "timestamp", "date", "time") if c in df.columns), None)
     if time_col is None:
         raise ConfigError("The CSV needs a datetime, timestamp, date or time column.")
+
     try:
         df[time_col] = pd.to_datetime(df[time_col])
     except (ValueError, TypeError) as exc:
         raise ConfigError(f"Could not parse '{time_col}' as dates: {exc}") from exc
-    df = df.set_index(time_col).sort_index()
-    df.index.name = "datetime"
+
+    long_format = "strike" in df.columns or "strike_price" in df.columns
+    if long_format and not any(
+        re.search(r"(?i)(?:^|_)(?:ce|pe)[_\-]?[0-9]", str(c))
+        or re.search(r"(?i)(?:^|_)[0-9]+[_\-]?(?:ce|pe)", str(c))
+        for c in df.columns
+    ):
+        df = _load_long_option_chain(df, time_col)
+    else:
+        df = df.set_index(time_col).sort_index()
+        df.index.name = "datetime"
+
     if getattr(df.index, "tz", None) is not None:
         df.index = df.index.tz_localize(None)
     for field in _OHLC:
