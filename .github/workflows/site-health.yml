@@ -1,0 +1,41 @@
+# Opens your LIVE website in a real browser every 6 hours and checks every page.
+# If anything fails, GitHub marks the run red and emails you (default GitHub behaviour).
+#
+# One-time setup: GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret
+#   SITE_URL       = https://your-app.streamlit.app
+#   SITE_PASSWORD  = the password you set in Streamlit Secrets (leave out if the site has none)
+# Run it by hand any time: Actions tab -> "Site health check" -> Run workflow.
+name: Site health check
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install browser
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Check the live site
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: python scripts/check_live_site.py
+      - name: Keep screenshots of any failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-check-screenshots
+          path: site-check-artifacts/
