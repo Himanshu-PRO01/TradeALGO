@@ -40,13 +40,14 @@ st.markdown("### 👨‍💻 What you do on each step")
 steps = [
     ("01", "Idea", "Describe the setup in plain language. Write down where the level comes from, what you look for, and when you skip the trade."),
     ("02", "Strategy Builder", "Convert the idea into measurable entry, confirmation, stop, target, position-size and skip rules."),
-    ("03", "Backtest", "Run the written rules on historical data and inspect trade count, P&L, drawdown and costs."),
-    ("04", "Auto Tester", "Test controlled parameter variations. Treat the output as research evidence, not as a promise or an automatic strategy rewrite."),
-    ("05", "Reality Check", "Review the evidence, risk limits, sample quality and robustness before moving to practice."),
-    ("06", "Paper Trading", "Rehearse the workflow with simulated money and record what actually happens."),
-    ("07", "Upstox Sandbox", "Connect the sandbox credentials privately and verify the broker-facing order path without real-money execution."),
-    ("08", "Sandbox Rehearsal", "Run the end-to-end execution rehearsal: strategy/risk checks → execution layer → sandbox."),
-    ("09", "Live Trading", "Only after the earlier work is understood. Live execution remains behind explicit execution-mode, kill-switch and human-confirmation safeguards."),
+    ("03", "AI Strategy Agent", "Use AI for research, strategy understanding and bounded change proposals. AI does not directly execute trades."),
+    ("04", "Backtest", "Run the written rules on historical data and inspect trade count, P&L, drawdown and costs."),
+    ("05", "Auto Tester", "Test controlled parameter variations. Treat the output as research evidence, not as a promise or an automatic strategy rewrite."),
+    ("06", "Reality Check", "Review the evidence, risk limits, sample quality and robustness before moving to practice."),
+    ("07", "Paper Trading", "Rehearse the workflow with simulated money and record what actually happens."),
+    ("08", "Upstox Sandbox", "Connect the sandbox credentials privately and verify the broker-facing order path without real-money execution."),
+    ("09", "Sandbox Rehearsal", "Run the end-to-end execution rehearsal: strategy/risk checks → execution layer → sandbox."),
+    ("10", "Live Trading", "Only after the earlier work is understood. Live execution remains behind explicit execution-mode, kill-switch and human-confirmation safeguards."),
 ]
 for number, title, body in steps:
     st.markdown(

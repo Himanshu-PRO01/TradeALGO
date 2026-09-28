@@ -92,7 +92,7 @@ if rules:
         mime="application/json",
     )
     try:
-        st.page_link("pages/5_Backtest.py", label="Next: Backtest this strategy", icon="📊")
+        st.page_link("pages/21_AI_Strategy_Agent.py", label="Next: AI Strategy Agent", icon="🤖")
     except Exception:
         pass
 

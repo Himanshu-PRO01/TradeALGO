@@ -640,7 +640,7 @@ def show_table(frame, **kwargs) -> None:
 
 
 def workflow_nav(current_key: str, complete: bool = False) -> None:
-    """Show the full workflow plus always-available previous/next navigation."""
+    """Render the workflow as real clickable Streamlit page links."""
     index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
     total = len(WORKFLOW_STEPS)
     descriptions = [
@@ -655,24 +655,28 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
         "Run the full rehearsal",
         "Controlled execution",
     ]
-    parts = []
-    for i, (_, name, _) in enumerate(WORKFLOW_STEPS):
-        cls = "ta-workflow-step active" if i == index else "ta-workflow-step"
-        parts.append(
-            f'<div class="{cls}"><div class="num">STEP {i+1:02d}</div>'
-            f'<div class="name">{escape(name)}</div>'
-            f'<div class="desc">{escape(descriptions[i])}</div></div>'
-        )
-        if i < total - 1:
-            parts.append('<div class="ta-workflow-arrow">›</div>')
-    st.markdown(
-        '<div class="ta-workflow"><div class="ta-workflow-track">'
-        + "".join(parts)
-        + '</div><div class="ta-flow-note">'
-        + f'Step {index+1} of {total} · scroll sideways on a small screen · navigation is always available'
-        + '</div></div>',
-        unsafe_allow_html=True,
+
+    # Use Streamlit page_link rather than raw HTML anchors. This keeps
+    # st.session_state (including strategy_rules) when moving between pages.
+    # A no-wrap horizontal container gives the same sideways-scroll behaviour
+    # on small screens as the old visual workflow, while every card is clickable.
+    with st.container(horizontal=True, wrap=False, gap="small"):
+        for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
+            page_link(
+                path,
+                label=f"STEP {i+1:02d} · {name}",
+                icon="✓" if i < index else ("●" if i == index else "○"),
+                use_container_width=False,
+                help=descriptions[i],
+            )
+            if i < total - 1:
+                st.markdown("›")
+
+    st.caption(
+        f"Step {index+1} of {total} · swipe/scroll sideways on a small screen · "
+        "each step opens its own page"
     )
+
     prev_step = WORKFLOW_STEPS[index - 1] if index > 0 else None
     next_step = WORKFLOW_STEPS[index + 1] if index < total - 1 else None
     left, right = st.columns(2)
