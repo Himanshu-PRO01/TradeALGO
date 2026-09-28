@@ -483,6 +483,39 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     z-index:100000 !important;
     width:auto !important;
 }}
+.st-key-top_feedback {{
+    position:fixed !important;
+    top:8px !important;
+    right:438px !important;
+    z-index:100000 !important;
+    width:auto !important;
+}}
+.st-key-top_feedback {{
+    display:flex !important;
+    align-items:center !important;
+}}
+.st-key-top_feedback [data-testid="stPageLink"] {{
+    margin:0 !important;
+}}
+.st-key-top_feedback [data-testid="stPageLink"] a {{
+    min-height:38px !important;
+    height:38px !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    padding:7px 14px !important;
+    border-radius:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.02em !important;
+    white-space:nowrap !important;
+    background:#111923 !important;
+    border:1px solid #263242 !important;
+    text-decoration:none !important;
+}}
+.st-key-top_feedback [data-testid="stPageLink"] a:hover {{
+    border-color:#3B82F6 !important;
+    background:#172231 !important;
+}}
 .st-key-top_profile {{
     display:flex !important;
     align-items:center !important;
@@ -553,13 +586,28 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 }}
 @media (max-width:768px) {{
     .st-key-top_profile {{
-        top:62px !important;
-        right:10px !important;
-        width:calc(100vw - 20px) !important;
+        top:8px !important;
+        right:232px !important;
+        width:auto !important;
     }}
     .st-key-top_profile [data-testid="stPageLink"] a {{
-        width:100% !important;
+        width:auto !important;
         justify-content:center !important;
+        padding-left:10px !important;
+        padding-right:10px !important;
+    }}
+    .st-key-top_feedback {{
+        top:8px !important;
+        right:116px !important;
+        width:auto !important;
+    }}
+    .st-key-top_feedback [data-testid="stPageLink"] a {{
+        padding-left:9px !important;
+        padding-right:9px !important;
+    }}
+    .st-key-top_menu {{
+        top:8px !important;
+        right:10px !important;
     }}
     .st-key-top_menu_drawer {{
         top:62px !important;
@@ -846,6 +894,13 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         st.page_link(
             "pages/22_Profile.py",
             label="👤  Profile",
+            use_container_width=False,
+        )
+
+    with st.container(key="top_feedback"):
+        st.page_link(
+            "pages/8_Feedback.py",
+            label="💬  Feedback",
             use_container_width=False,
         )
 
