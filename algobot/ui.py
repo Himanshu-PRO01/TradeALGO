@@ -453,6 +453,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 WORKFLOW_STEPS = [
     ("guide", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
     ("strategy", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+    ("ai", "AI Strategy Agent", "pages/21_AI_Strategy_Agent.py"),
     ("backtest", "Backtest", "pages/5_Backtest.py"),
     ("auto", "Auto Tester", "pages/13_Auto_Tester.py"),
     ("reality", "Reality Check", "pages/6_Reality_check.py"),
@@ -509,7 +510,8 @@ def _menu() -> None:
             ]),
             ("Automation", [
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
-                ("🤖", "Auto Tester", "pages/13_Auto_Tester.py"),
+                ("🤖", "AI Strategy Agent", "pages/21_AI_Strategy_Agent.py"),
+                ("🧪", "Auto Tester", "pages/13_Auto_Tester.py"),
                 ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
                 ("📝", "Paper Trading", "pages/16_Paper_Trading.py"),
                 ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
