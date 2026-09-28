@@ -81,3 +81,5 @@ class StrategyAgent:
         return r
     def analyze_forward_test(self,facts):
         f=clean_metrics(facts); return self._call(p.FORWARD,{"facts":f},("summary","consistency","differences_from_backtest","concerns","cited_metrics"),truth=f)
+    def analyze_live_market(self,snapshot):
+        facts=clean_metrics(snapshot); return self._call(p.LIVE_MARKET,{"snapshot":facts},("summary","observations","strategy_state","data_limits","watch_items","cited_metrics"),truth=facts)

@@ -27,6 +27,7 @@ from .kill_switch import KillSwitch
 from .paper_trading import PaperLog
 from .sandbox_rehearsal import RehearsalLog
 from .signal_alerts import AlertLog
+from .saved_strategies import SavedStrategyLibrary
 
 
 def _secret(name: str):
@@ -160,6 +161,23 @@ def paper_scope():
         finally:
             log.close_db()
 
+
+
+@contextmanager
+def strategies_scope():
+    """Saved strategy/backtest library: per-user in hosted mode, local file otherwise."""
+    if is_hosted():
+        library = st.session_state.get("_ab_strategy_library")
+        if library is None:
+            library = SavedStrategyLibrary(":memory:", check_same_thread=False)
+            st.session_state["_ab_strategy_library"] = library
+        yield library
+    else:
+        library = SavedStrategyLibrary(os.environ.get("ALGOBOT_STRATEGIES", "strategies.db"))
+        try:
+            yield library
+        finally:
+            library.close_db()
 
 def storage_note() -> str:
     if is_hosted():

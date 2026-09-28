@@ -6,7 +6,7 @@ import streamlit as st
 import yaml
 
 from algobot import ui
-from algobot.appstate import experiments_scope
+from algobot.appstate import experiments_scope, strategies_scope
 from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
 from algobot.data import DataError, generate_sample_data, load_csv
@@ -233,6 +233,9 @@ try:
                   "stt_sell_pct": stt_sell, "exchange_txn_pct": exch, "sebi_fee_pct": sebi, "stamp_buy_pct": stamp,
                   "gst_pct": gst, "slippage_bps": slippage},
     }
+    saved_cfg = st.session_state.pop("saved_backtest_cfg", None)
+    if saved_cfg:
+        raw = saved_cfg
     cfg = validate_config(raw)
     check_strategy(cfg)
 except (ConfigError, yaml.YAMLError) as exc:
@@ -311,6 +314,22 @@ if result is not None:
         st.warning("This used random sample data (made-up prices). The numbers say nothing about the real market. "
                    "Switch Step 2 to real market history for a meaningful result.")
     m = result.metrics
+    st.divider()
+    st.markdown("### Save this backtest")
+    st.caption("Save the exact strategy configuration together with its backtest metrics so you can reuse it later.")
+    save_name = st.text_input("Saved strategy name", value=str(cfg.get("name", "Backtest strategy")), key="save_backtest_name")
+    if st.button("💾 Save strategy + results", key="save_backtest_result", disabled=not save_name.strip()):
+        with strategies_scope() as library:
+            saved_id = library.save(
+                save_name,
+                cfg,
+                result=result,
+                market=hist_symbol or ("Practice" if source == SRC_SAMPLE else "CSV"),
+                timeframe=hist_interval or "custom",
+            )
+            st.session_state["selected_saved_strategy"] = saved_id
+            count = library.count()
+            st.success(f"Saved **{save_name.strip()}**. You now have {count} saved strateg{'y' if count == 1 else 'ies'}.")
     blocked_big = result.rejections.get("position_too_large", 0)
     if m["trades"] == 0 and blocked_big:
         st.warning(f"The idea found {blocked_big} chances to trade, but every one was blocked because a single trade "

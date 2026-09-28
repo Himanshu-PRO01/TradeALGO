@@ -24,3 +24,10 @@ REALITY = make("Explain the supplied Reality Check. It is authoritative; never r
 '{"explanation":"","gaps":[],"next_steps":[],"cited_metrics":{}}')
 FORWARD = make("Analyze the supplied virtual-capital paper record. Do not judge live readiness.",
 '{"summary":"","consistency":[],"differences_from_backtest":[],"concerns":[],"cited_metrics":{}}')
+
+LIVE_MARKET = make(
+    "Analyze the supplied live market snapshot. Never invent a price, trend, signal or forecast. "
+    "Treat the deterministic strategy state as authoritative for paper-trading state. "
+    "Describe observations and uncertainties only; do not place or recommend live orders.",
+    '{"summary":"","observations":[],"strategy_state":"","data_limits":[],"watch_items":[],"cited_metrics":{}}'
+)
