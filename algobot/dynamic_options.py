@@ -107,9 +107,13 @@ def _load_long_option_chain(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
     _rename_first(df, "strike", ("strike_price", "strikeprice"))
     _rename_first(df, "option_type", ("type", "right", "optiontype", "cp"))
     for field in _OHLC:
-        _rename_first(df, field, (f"{field}_price", f"option_{field}"))
-
-    missing = {"strike", "option_type", *_OHLC} - set(df.columns)
+        _rename_first(df, f"underlying_{field}", (
+            f"underlying_{field}_price",
+            f"spot_{field}",
+            f"underlying{field}",
+        ))
+    # In long format the plain OHLC fields belong to the option row itself.
+    missing = {"strike", "option_type", *(f"underlying_{field}" for field in _OHLC), *_OHLC} - set(df.columns)
     if missing:
         raise ConfigError(
             "Long-format option CSV is missing: " + ", ".join(sorted(missing))
@@ -141,10 +145,11 @@ def _load_long_option_chain(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
 
     # Underlying OHLC may be repeated for every contract at the same timestamp.
     underlying = (
-        df[[time_col, "open", "high", "low", "close"]]
+        df[[time_col, *(f"underlying_{field}" for field in _OHLC)]]
         .drop_duplicates(subset=[time_col])
         .set_index(time_col)
         .sort_index()
+        .rename(columns={f"underlying_{field}": field for field in _OHLC})
     )
     options = df[[time_col, "option_type", "strike", *_OHLC]].copy()
     options = options.drop_duplicates(subset=[time_col, "option_type", "strike"], keep="last")
@@ -163,8 +168,9 @@ def load_option_chain_csv(file_obj) -> pd.DataFrame:
     """Load either TradeALGO wide CSVs or long historical option OHLC CSVs.
 
     Wide format is the native TradeALGO format. Long format is useful for historical
-    datasets with one row per timestamp/strike/CE-PE contract:
-    datetime,strike,option_type,open,high,low,close
+    datasets with one row per timestamp/strike/CE-PE contract. Long format uses
+    separate underlying OHLC columns, for example:
+    datetime,strike,option_type,open,high,low,close,underlying_open,underlying_high,underlying_low,underlying_close
     """
     try:
         df = pd.read_csv(file_obj)
