@@ -686,6 +686,7 @@ def _menu() -> None:
                 ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
                 ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
                 ("📲", "Signal Alerts", "pages/20_Signal_Alerts.py"),
+                ("📈", "Live Markets", "pages/23_Live_Markets.py"),
             ]),
             ("More", [
                 ("👤", "My Profile", "pages/22_Profile.py"),
@@ -764,6 +765,7 @@ def _top_menu_links() -> list[tuple[str, str, str]]:
         ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
         ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
         ("📲", "Signal Alerts", "pages/20_Signal_Alerts.py"),
+        ("📈", "Live Markets", "pages/23_Live_Markets.py"),
         ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
     ]
 
