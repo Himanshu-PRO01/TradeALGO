@@ -136,60 +136,164 @@ def style_map(styler, func, subset):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  SIDEBAR
+#  PRACTICE SETUP — MAIN PAGE
 # ═══════════════════════════════════════════════════════════════════════════════
-with st.sidebar:
-    st.markdown("### New practice session")
+# Keep session configuration on the Practice Room itself instead of the sidebar.
+# This makes the workflow discoverable on mobile and leaves the global sidebar
+# available for navigation only.
+_practice_active = (
+    st.session_state.get("practice") is not None
+    or st.session_state.get("live_bars") is not None
+)
+with st.expander(
+    "🎯  New practice session",
+    expanded=not _practice_active,
+):
+    st.caption(
+        "Configure your market, fake-money account and personal risk rules here. "
+        "The setup collapses after you start so the trading workspace stays focused."
+    )
 
-    with st.expander("Market", expanded=True):
+    with st.container(border=True):
+        st.markdown("#### 1 · Choose your market mode")
         data_source = st.radio(
             "Data source",
-            ["Fake (synthetic)", "Real market (historical replay)", "⚡ Live (real-time + AI)"],
+            [
+                "Fake (synthetic)",
+                "Real market (historical replay)",
+                "⚡ Live (real-time + AI)",
+            ],
             key="pr_source",
+            horizontal=True,
         )
 
         if data_source == "⚡ Live (real-time + AI)":
-            market_label    = st.selectbox("Market", list(REAL_MARKETS), key="pr_live_market")
-            interval_label  = st.selectbox("Timeframe", list(REAL_INTERVALS), key="pr_live_interval")
+            market_col, timeframe_col = st.columns(2)
+            with market_col:
+                market_label = st.selectbox(
+                    "Market", list(REAL_MARKETS), key="pr_live_market"
+                )
+            with timeframe_col:
+                interval_label = st.selectbox(
+                    "Timeframe", list(REAL_INTERVALS), key="pr_live_interval"
+                )
             regime_choice, seed, days = "random (hidden)", 1, 3
 
         elif data_source == "Real market (historical replay)":
-            market_label   = st.selectbox("Market", list(REAL_MARKETS), key="pr_real_market")
-            interval_label = st.selectbox("Timeframe", list(REAL_INTERVALS), key="pr_real_interval")
+            market_col, timeframe_col = st.columns(2)
+            with market_col:
+                market_label = st.selectbox(
+                    "Market", list(REAL_MARKETS), key="pr_real_market"
+                )
+            with timeframe_col:
+                interval_label = st.selectbox(
+                    "Timeframe", list(REAL_INTERVALS), key="pr_real_interval"
+                )
             regime_choice, seed, days = "random (hidden)", 1, 3
 
         else:
-            regime_choice = st.selectbox(
-                "Market",
-                ["random (hidden)", "mixed (changes every few days)"] + list(REGIMES),
-                key="pr_regime",
-            )
-            seed           = st.number_input("Seed (same seed → same market)", min_value=0, value=1, step=1, key="pr_seed")
-            days           = st.slider("Days", 1, 5, 3, key="pr_days")
-            market_label   = None
+            market_col, seed_col = st.columns(2)
+            with market_col:
+                regime_choice = st.selectbox(
+                    "Market",
+                    ["random (hidden)", "mixed (changes every few days)"] + list(REGIMES),
+                    key="pr_regime",
+                )
+            with seed_col:
+                seed = st.number_input(
+                    "Seed (same seed → same market)",
+                    min_value=0,
+                    value=1,
+                    step=1,
+                    key="pr_seed",
+                )
+            days = st.slider("Days", 1, 5, 3, key="pr_days")
+            market_label = None
             interval_label = None
 
-    with st.expander("Account and option", expanded=True):
-        capital  = st.number_input("Fake capital (Rs)", min_value=1000, value=100000, step=5000, key="pr_capital")
-        iv       = st.number_input("Implied volatility (%)", min_value=1.0, value=14.0, step=0.5, key="pr_iv")
-        dte      = st.number_input("Calendar days to expiry at the start", min_value=0.5, value=3.0, step=0.5, key="pr_dte")
-        spread   = st.number_input("Buy-sell spread (premium points)", min_value=0.0, value=0.6, step=0.1, key="pr_spread")
-        charges  = st.number_input("Charges per order (Rs)", min_value=0, value=40, step=5, key="pr_charges")
-
-    with st.expander("Your own rules"):
-        max_loss   = st.number_input("Your max loss per trade (Rs)", min_value=1, value=1000, step=100, key="pr_maxloss")
-        max_trades = st.number_input("Your max trades per day", min_value=1, value=2, step=1, key="pr_maxtrades")
-        max_daily  = st.number_input("Your max loss per day (Rs)", min_value=1, value=1500, step=100, key="pr_maxdaily")
-
-    # Upstox Sandbox token (only shown for Live mode)
-    if data_source == "⚡ Live (real-time + AI)":
-        with st.expander("🔐 Upstox Sandbox token", expanded=False):
+    with st.container(border=True):
+        st.markdown("#### 2 · Account & option model")
+        account_left, account_right = st.columns(2)
+        with account_left:
+            capital = st.number_input(
+                "Fake capital (Rs)",
+                min_value=1000,
+                value=100000,
+                step=5000,
+                key="pr_capital",
+            )
+            iv = st.number_input(
+                "Implied volatility (%)",
+                min_value=1.0,
+                value=14.0,
+                step=0.5,
+                key="pr_iv",
+            )
+            dte = st.number_input(
+                "Calendar days to expiry at the start",
+                min_value=0.5,
+                value=3.0,
+                step=0.5,
+                key="pr_dte",
+            )
+        with account_right:
+            spread = st.number_input(
+                "Buy-sell spread (premium points)",
+                min_value=0.0,
+                value=0.6,
+                step=0.1,
+                key="pr_spread",
+            )
+            charges = st.number_input(
+                "Charges per order (Rs)",
+                min_value=0,
+                value=40,
+                step=5,
+                key="pr_charges",
+            )
             st.caption(
-                "Paste your Upstox Sandbox access token here to place orders "
-                "via the official sandbox API (fake money, no real trades ever)."
+                "These values model the practice account and option pricing; "
+                "they do not create real broker orders."
+            )
+
+    with st.container(border=True):
+        st.markdown("#### 3 · Your trading rules")
+        rule_cols = st.columns(3)
+        with rule_cols[0]:
+            max_loss = st.number_input(
+                "Max loss / trade (Rs)",
+                min_value=1,
+                value=1000,
+                step=100,
+                key="pr_maxloss",
+            )
+        with rule_cols[1]:
+            max_trades = st.number_input(
+                "Max trades / day",
+                min_value=1,
+                value=2,
+                step=1,
+                key="pr_maxtrades",
+            )
+        with rule_cols[2]:
+            max_daily = st.number_input(
+                "Max loss / day (Rs)",
+                min_value=1,
+                value=1500,
+                step=100,
+                key="pr_maxdaily",
+            )
+
+    if data_source == "⚡ Live (real-time + AI)":
+        with st.container(border=True):
+            st.markdown("#### 🔐 Live mode connection")
+            st.caption(
+                "Optional Upstox Sandbox access. Sandbox uses fake money, but requests "
+                "still leave TradeALGO and reach the configured sandbox API."
             )
             raw_token = st.text_input(
-                "Sandbox token", type="password",
+                "Sandbox token",
+                type="password",
                 key="pr_sandbox_token",
                 placeholder="eyJ… paste your token",
             )
@@ -197,48 +301,77 @@ with st.sidebar:
             if tok:
                 st.success(f"Token set: {token_preview(tok)}")
             else:
-                st.info("No token — orders placed in Practice Room only (no Upstox API call).")
+                st.info(
+                    "No token — trades stay inside Practice Room; no Upstox API call is made."
+                )
             from algobot.dom_fixups import fix_password_autocomplete
             fix_password_autocomplete()
 
-    if st.button("Start a new market", type="primary", key="pr_start", use_container_width=True):
+    st.divider()
+    start_col, hint_col = st.columns([1.5, 1])
+    with start_col:
+        start_new_market = st.button(
+            "🎯  Start a new practice market",
+            type="primary",
+            key="pr_start",
+            use_container_width=True,
+        )
+    with hint_col:
+        st.caption(
+            "Start a fresh session. Existing practice results are replaced only when "
+            "you launch a new market."
+        )
+
+    if start_new_market:
         if data_source == "⚡ Live (real-time + AI)":
-            # For live mode: fetch bars now and store as the live session state
             ticker, strike_step = REAL_MARKETS[market_label]
             yf_interval, yf_period = REAL_INTERVALS[interval_label]
             try:
                 bars = _live_bars(ticker, yf_interval, yf_period)
-                st.session_state["live_bars"]         = bars
-                st.session_state["live_ticker"]       = ticker
-                st.session_state["live_interval"]     = yf_interval
-                st.session_state["live_period"]       = yf_period
-                st.session_state["live_market"]       = market_label
-                st.session_state["live_strike_step"]  = strike_step
-                st.session_state["live_iv"]           = float(iv)
-                st.session_state["live_dte_initial"]  = float(dte)
-                st.session_state["live_started_at"]   = datetime.now()
-                st.session_state["live_spread"]       = float(spread)
-                st.session_state["live_charges"]      = float(charges)
-                st.session_state["live_capital"]      = float(capital)
-                st.session_state["live_max_loss"]     = float(max_loss)
-                st.session_state["live_max_trades"]   = int(max_trades)
-                st.session_state["live_max_daily"]    = float(max_daily)
-                st.session_state["live_cash"]         = float(capital)
-                st.session_state["live_position"]     = None
-                st.session_state["live_closed"]       = []
-                st.session_state["live_last_refresh"] = time.time()
-                st.session_state["practice"]          = None
-                st.session_state["practice_report"]   = None
-                st.session_state["ai_idea"]           = None
-                st.session_state["ai_checked"]        = False
+                st.session_state["live_bars"]          = bars
+                st.session_state["live_ticker"]        = ticker
+                st.session_state["live_interval"]      = yf_interval
+                st.session_state["live_period"]        = yf_period
+                st.session_state["live_market"]        = market_label
+                st.session_state["live_strike_step"]   = strike_step
+                st.session_state["live_iv"]             = float(iv)
+                st.session_state["live_dte_initial"]    = float(dte)
+                st.session_state["live_started_at"]     = datetime.now()
+                st.session_state["live_spread"]         = float(spread)
+                st.session_state["live_charges"]        = float(charges)
+                st.session_state["live_capital"]        = float(capital)
+                st.session_state["live_max_loss"]       = float(max_loss)
+                st.session_state["live_max_trades"]     = int(max_trades)
+                st.session_state["live_max_daily"]      = float(max_daily)
+                st.session_state["live_cash"]           = float(capital)
+                st.session_state["live_position"]       = None
+                st.session_state["live_closed"]         = []
+                st.session_state["live_last_refresh"]   = time.time()
+                st.session_state["practice"]            = None
+                st.session_state["practice_report"]     = None
+                st.session_state["ai_idea"]             = None
+                st.session_state["ai_checked"]          = False
                 st.rerun()
             except LiveDataError as exc:
                 st.error(str(exc))
-        else:
-            if _build_session(data_source, regime_choice, seed, days, market_label, interval_label,
-                               capital, iv, dte, spread, charges, max_loss, max_trades, max_daily):
-                st.session_state.pop("live_bars", None)
-                st.rerun()
+        elif _build_session(
+            data_source,
+            regime_choice,
+            seed,
+            days,
+            market_label,
+            interval_label,
+            capital,
+            iv,
+            dte,
+            spread,
+            charges,
+            max_loss,
+            max_trades,
+            max_daily,
+        ):
+            st.session_state.pop("live_bars", None)
+            st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -591,20 +724,6 @@ if st.session_state.get("live_bars") is not None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  MAIN PAGE BUTTON (for non-live modes)
-# ═══════════════════════════════════════════════════════════════════════════════
-st.markdown("### Start a new practice market")
-st.caption("Choose the market settings in the sidebar, then start a fresh fake-money market here.")
-if st.button("🎯 Start a new market", type="primary", key="pr_start_main", use_container_width=True):
-    if data_source == "⚡ Live (real-time + AI)":
-        st.info("Use the sidebar 'Start' button to launch Live mode.")
-    elif _build_session(data_source, regime_choice, seed, days, market_label, interval_label,
-                         capital, iv, dte, spread, charges, max_loss, max_trades, max_daily):
-        st.session_state.pop("live_bars", None)
-        st.rerun()
-
-st.divider()
-
 # ═══════════════════════════════════════════════════════════════════════════════
 #  FAKE / HISTORICAL REPLAY MODE  (original logic below, unchanged)
 # ═══════════════════════════════════════════════════════════════════════════════
