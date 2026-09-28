@@ -646,6 +646,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
     descriptions = [
         "Start with the trading idea",
         "Write measurable rules",
+        "Use AI for research",
         "Test historical data",
         "Test controlled variations",
         "Challenge the evidence",
