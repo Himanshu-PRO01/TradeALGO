@@ -5,6 +5,7 @@ import json
 import streamlit as st
 
 from algobot import ui
+from algobot.appstate import strategies_scope
 
 ui.setup("Strategy Builder", "🧠")
 ui.header(
@@ -14,6 +15,28 @@ ui.header(
 )
 
 st.info("Build the rule first. The next step is to test it on historical data before considering any live use.")
+
+with strategies_scope() as library:
+    saved = library.list()
+    saved_count = len(saved)
+    st.markdown("### 🗂️ My saved strategies")
+    st.metric("Strategies saved", saved_count)
+    if saved:
+        selected = st.selectbox(
+            "Choose a saved strategy",
+            saved,
+            format_func=lambda item: f"{item['name']} · {item['market'] or 'Custom'} · {item['metrics'].get('trades', 0)} trades",
+            key="saved_strategy_picker",
+        )
+        if st.button("▶ Use selected strategy in Backtest", key="use_saved_strategy"):
+            record = library.get(selected["id"])
+            if record:
+                st.session_state["last_raw"] = record["config"]
+                st.session_state["selected_saved_strategy"] = record["id"]
+                library.mark_used(record["id"])
+                st.switch_page("pages/5_Backtest.py")
+    else:
+        st.caption("No saved strategies yet. Run a backtest and use **Save strategy + results** to create your first one.")
 
 if st.button("Load supplied New Era Strategy 1.0 profile", key="load_new_era_profile"):
     st.session_state["strategy_rules"] = {
