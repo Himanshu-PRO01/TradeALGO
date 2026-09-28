@@ -640,7 +640,7 @@ def show_table(frame, **kwargs) -> None:
 
 
 def workflow_nav(current_key: str, complete: bool = False) -> None:
-    """Render the workflow as real clickable Streamlit page links."""
+    """Render the workflow as real clickable Streamlit navigation buttons."""
     index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
     total = len(WORKFLOW_STEPS)
     descriptions = [
@@ -656,24 +656,23 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
         "Controlled execution",
     ]
 
-    # Use Streamlit page_link rather than raw HTML anchors. This keeps
-    # st.session_state (including strategy_rules) when moving between pages.
-    # A no-wrap horizontal container gives the same sideways-scroll behaviour
-    # on small screens as the old visual workflow, while every card is clickable.
-    with st.container(horizontal=True, wrap=False, gap="small"):
-        for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
-            page_link(
-                path,
-                label=f"STEP {i+1:02d} · {name}",
-                icon="✓" if i < index else ("●" if i == index else "○"),
-                use_container_width=False,
-            )
-            if i < total - 1:
-                st.markdown("›")
+    # Use st.switch_page instead of st.page_link here. It works reliably with
+    # Streamlit's pages/ directory and avoids page-registry/path issues.
+    cols = st.columns(total)
+    for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
+        with cols[i]:
+            if st.button(
+                f"{i+1:02d}  {name}",
+                key=f"workflow_step_{current_key}_{i}",
+                disabled=(i == index),
+                use_container_width=True,
+                help=descriptions[i],
+            ):
+                st.switch_page(path)
 
     st.caption(
-        f"Step {index+1} of {total} · swipe/scroll sideways on a small screen · "
-        "each step opens its own page"
+        f"Step {index+1} of {total} · click any step to open its page · "
+        "the current step is highlighted"
     )
 
     prev_step = WORKFLOW_STEPS[index - 1] if index > 0 else None
@@ -681,20 +680,20 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
     left, right = st.columns(2)
     with left:
         if prev_step:
-            page_link(
-                prev_step[2],
-                label=f"⬅️  Previous: {prev_step[1]}",
-                icon="⬅️",
+            if st.button(
+                f"⬅️  Previous: {prev_step[1]}",
+                key=f"workflow_prev_{current_key}",
                 use_container_width=True,
-            )
+            ):
+                st.switch_page(prev_step[2])
     with right:
         if next_step:
-            page_link(
-                next_step[2],
-                label=f"Next: {next_step[1]}  ➡️",
-                icon="➡️",
+            if st.button(
+                f"Next: {next_step[1]}  ➡️",
+                key=f"workflow_next_{current_key}",
                 use_container_width=True,
-            )
+            ):
+                st.switch_page(next_step[2])
         else:
             st.success("✅ Workflow complete — you have reached Live Trading.")
 
