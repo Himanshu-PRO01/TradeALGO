@@ -303,7 +303,7 @@ much of the loss is trading costs. That is exactly why costs are in the model.
 | `algobot/options.py` | Black-Scholes model and the option breakeven analysis |
 | `algobot/ruin.py` | Risk-of-ruin simulator |
 | `algobot/dataquality.py` | Data quality checks |
-| `algobot/openalgo_bridge.py` | Read-only OpenAlgo client: history, lot size, Telegram notify (no orders) |
+| `algobot/openalgo_bridge.py` | OpenAlgo adapter: history, quotes, account state and explicitly gated order routing |
 | `algobot/gate.py` | Pre-trade gate and the sized alert message |
 | `.env.example`, `.gitignore` | Where the private key goes (never committed) |
 | `algobot/worlds.py` | Fake market personalities and a market that changes character |
@@ -423,6 +423,20 @@ An outside code review of this project is in [CODE_REVIEW.md](CODE_REVIEW.md): w
 fix to the option breakeven tool (it now accepts the actual ask instead of relying only on a model price), the
 claims this project must never make (it cannot promise profit; a passing audit only permits paper trading), and
 the work to do once the brother gives one exact strategy. Read it before trusting any number here.
+
+## Current architecture
+
+TradeALGO is the **research and strategy engine**. It owns market research, strategy construction, AI-assisted analysis, backtesting, robustness checks, paper trading and deterministic signal generation. OpenAlgo is the **execution boundary**: it owns broker authentication, order routing, order status, positions, funds and broker-specific handling. The two responsibilities are intentionally separated:
+
+```text
+Live market data → TradeALGO → strategy signal → OpenAlgo → configured broker
+                     ↑
+              research / build / test
+```
+
+The OpenAlgo API supports order placement plus order/account endpoints, while its API key resolves the active broker session server-side. TradeALGO's execution adapter uses that API boundary rather than embedding broker credentials or broker-specific SDK calls. citeturn0search1turn0search0
+
+Live order routing is **locked by default** with `TRADEALGO_EXECUTION_ENABLED=false`. The research engine never auto-submits an order. The OpenAlgo Execution page requires the explicit gate plus an order confirmation before sending one request.
 
 ## Important
 
