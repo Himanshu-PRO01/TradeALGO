@@ -15,6 +15,22 @@ ui.header(
 
 st.info("Build the rule first. The next step is to test it on historical data before considering any live use.")
 
+if st.button("Load supplied New Era Strategy 1.0 profile", key="load_new_era_profile"):
+    st.session_state["strategy_rules"] = {
+        "name": "New Era Strategy 1.0",
+        "market": "NIFTY",
+        "timeframe": "15m",
+        "direction": "Long and short",
+        "entry_level": "PE: formation state from EMA Smooth 9 < EMA 33 < HMA 27 < HMA 22 < HMA 18, RSI(5) > 65 and RSI SMA(5) > 60, CCI(14) > 100 and CCI SMA(5) > 80; then signal when close < captured low. CE: reverse indicator ordering, RSI(5) < 25 and RSI SMA(5) < 30, CCI(14) < -50 and CCI SMA(5) < -20; then signal when close > captured high.",
+        "confirmation": "The supplied Pine Script uses a stateful formation candle range. It updates the captured high/low while the formation remains active, then requires the breakout candle to close beyond the captured boundary.",
+        "stop_loss": "PE: min(previous-bar high, signal-bar high). CE: min(previous-bar low, signal-bar low). Optional SL Max Points % is 0 by default (disabled).",
+        "take_profit": "Target ratio 2R by default, calculated from the signal-bar close and the signal-bar-derived stop distance.",
+        "skip_trade": "Only formation/signal processing from 09:15 to before 15:00. The supplied script also squares off at the day-close window.",
+        "position_sizing": "Pine strategy qty = 1.",
+        "notes": "Source: brother-supplied TradingView Pine Script 'New Era Strategy 1.0'. This profile records the source rules; it does not silently alter them. The deterministic backtester has a dedicated new_era_1_0 implementation."
+    }
+    st.success("New Era Strategy 1.0 profile loaded. Review the captured rules before backtesting.")
+
 with st.form("strategy_builder"):
     name = st.text_input("Strategy name", placeholder="Example: Previous-week level reversal")
     timeframe = st.selectbox("Timeframe", ["5m", "15m", "30m", "1h", "Daily"], index=1)
