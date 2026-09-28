@@ -136,3 +136,27 @@ def research_shortlist(rows: list[dict]) -> list[dict]:
 
 def learning_summary(path: str | None = None) -> list[dict]:
     return load_memory(path)["lessons"]
+
+
+def record_experiment(strategy_id, version_label, hypothesis, parameters, dataset_period, result, metrics, ai_explanation="", train_period="", test_period="", path=None):
+    if not str(hypothesis).strip(): raise ValueError("An experiment needs a hypothesis: what were you trying to find out?")
+    memory=load_memory(path); experiments=memory.setdefault("experiments",[])
+    next_id=1+max((int(e.get("id",0)) for e in experiments),default=0)
+    experiment={"id":next_id,"timestamp":_now(),"strategy_id":str(strategy_id),"version_label":str(version_label),
+        "hypothesis":str(hypothesis).strip(),"parameters":json.loads(json.dumps(parameters,default=str)),
+        "dataset_period":str(dataset_period),"train_period":str(train_period),"test_period":str(test_period),
+        "result":str(result),"metrics":json.loads(json.dumps(metrics,default=str)),"ai_explanation":str(ai_explanation)}
+    experiments.append(experiment); save_memory(memory,path); return experiment
+
+def list_experiments(path=None, strategy_id=None):
+    experiments=load_memory(path).get("experiments",[])
+    if not isinstance(experiments,list): return []
+    return [e for e in experiments if strategy_id is None or e.get("strategy_id")==strategy_id]
+
+def experiments_for_ai(path=None, strategy_id=None, limit=20):
+    out=[]
+    for e in list_experiments(path,strategy_id)[-max(1,int(limit)):]:
+        out.append({"id":e.get("id"),"strategy_id":e.get("strategy_id"),"version_label":e.get("version_label"),
+            "hypothesis":str(e.get("hypothesis",""))[:300],"parameters":e.get("parameters"),
+            "train_period":e.get("train_period"),"test_period":e.get("test_period"),"result":str(e.get("result",""))[:300]})
+    return out
