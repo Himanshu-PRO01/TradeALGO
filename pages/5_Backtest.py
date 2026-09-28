@@ -233,6 +233,9 @@ try:
                   "stt_sell_pct": stt_sell, "exchange_txn_pct": exch, "sebi_fee_pct": sebi, "stamp_buy_pct": stamp,
                   "gst_pct": gst, "slippage_bps": slippage},
     }
+    saved_cfg = st.session_state.pop("saved_backtest_cfg", None)
+    if saved_cfg:
+        raw = saved_cfg
     cfg = validate_config(raw)
     check_strategy(cfg)
 except (ConfigError, yaml.YAMLError) as exc:
