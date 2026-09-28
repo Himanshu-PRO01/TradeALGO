@@ -1,7 +1,13 @@
-import hashlib\nimport json\nimport os\nimport streamlit as st
+import hashlib
+import json
+import os
+import streamlit as st
 from algobot import ui
 from algobot.ai_strategy_agent import StrategyAgent
-from algobot.research_context import backtest_facts, reality_check_facts, reality_check_details, forward_test_facts\nfrom algobot.learning import record_experiment, list_experiments\nfrom algobot.paper_trading import PaperLog, run_key_for\nfrom algobot.strategy_versions import StrategyVersionStore
+from algobot.research_context import backtest_facts, reality_check_facts, reality_check_details, forward_test_facts
+from algobot.learning import record_experiment, list_experiments
+from algobot.paper_trading import PaperLog, run_key_for
+from algobot.strategy_versions import StrategyVersionStore
 
 ui.setup("AI Strategy Agent","🤖")
 ui.header("AI Strategy Agent","AI-assisted research without direct trading execution.",mode="research:AI")
@@ -14,7 +20,8 @@ if not rules:
     ui.footer_note()
     st.stop()
 
-strategy_id="strategy_"+hashlib.sha256(json.dumps(rules,sort_keys=True).encode()).hexdigest()[:16]\npath=os.environ.get("ALGOBOT_STRATEGY_VERSIONS","data/strategy_versions.sqlite")
+strategy_id="strategy_"+hashlib.sha256(json.dumps(rules,sort_keys=True).encode()).hexdigest()[:16]
+path=os.environ.get("ALGOBOT_STRATEGY_VERSIONS","data/strategy_versions.sqlite")
 os.makedirs(os.path.dirname(path) or ".",exist_ok=True)
 store=StrategyVersionStore(path)
 if not store.list_versions(strategy_id):
