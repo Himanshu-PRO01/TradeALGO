@@ -36,6 +36,26 @@ with st.expander("📘 How to Build a Strategy", expanded=False):
     st.caption("Idea → Strategy Builder → AI Strategy Agent (optional) → Backtest → Reality Check → Practice/Paper Trading → Sandbox Rehearsal.")
     st.page_link("pages/19_How_to_Build_a_Strategy.py", label="📖 Open the full strategy-building guide", icon="📘")
 
+with st.expander("📘 How to Build a Strategy", expanded=False):
+    st.markdown("**A strategy is a rule precise enough that TradeALGO can evaluate it bar by bar.** If you cannot describe the rule precisely, it is not ready to backtest yet.")
+    st.markdown("#### 7-point checklist")
+    checklist = [
+        ("1. Instrument & timeframe", "What exactly are you trading and on what candle size?"),
+        ("2. Entry rule", "Define the exact condition that opens a position. Avoid phrases like “looks bullish.”"),
+        ("3. Exit rule", "Define the measurable condition that closes the position apart from stop-loss/target."),
+        ("4. Stop-loss & target", "Use a precise percentage, points, R multiple, or another measurable rule."),
+        ("5. Position size", "Specify the fixed quantity/lot size you want to test."),
+        ("6. Risk limits", "Define daily loss, trade-count, position-value and trading-session limits."),
+        ("7. Costs", "Account for brokerage, STT, exchange fees, GST and slippage when evaluating results."),
+    ]
+    for title, detail in checklist:
+        st.markdown(f"**{title}** — {detail}")
+    st.markdown("#### Make conditions measurable")
+    st.caption("Use explicit price fields, indicators, previous-bar values, numbers, arithmetic, comparisons, and logical operators. Avoid discretionary wording such as “I decide as it happens.”")
+    st.markdown("#### Recommended workflow")
+    st.caption("Idea → Strategy Builder → AI Strategy Agent (optional) → Backtest → Reality Check → Practice/Paper Trading → Sandbox Rehearsal.")
+    st.page_link("pages/19_How_to_Build_a_Strategy.py", label="📖 Open the full strategy-building guide", icon="📘")
+
 with strategies_scope() as library:
     saved = library.list()
     saved_count = len(saved)
