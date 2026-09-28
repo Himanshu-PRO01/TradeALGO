@@ -54,16 +54,16 @@ if source == "Upstox Live V3":
         "Never commit the token to GitHub."
     )
 
-    token = os.getenv("UPSTOX_ACCESS_TOKEN", "").strip()
+    token = (os.getenv("UPSTOX_ANALYTICS_TOKEN") or os.getenv("UPSTOX_ACCESS_TOKEN") or "").strip()
     try:
         if not token and hasattr(st, "secrets"):
-            token = str(st.secrets.get("UPSTOX_ACCESS_TOKEN", "")).strip()
+            token = str(st.secrets.get("UPSTOX_ANALYTICS_TOKEN") or st.secrets.get("UPSTOX_ACCESS_TOKEN") or "").strip()
     except Exception:
         token = token
 
     if not token:
         st.warning(
-            "No Upstox token is configured. Add UPSTOX_ACCESS_TOKEN to Streamlit Secrets "
+            "No Upstox token is configured. Add UPSTOX_ANALYTICS_TOKEN (preferred) or UPSTOX_ACCESS_TOKEN to Streamlit Secrets "
             "and reload this page."
         )
 
