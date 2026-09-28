@@ -89,30 +89,17 @@ def test_long_format_option_csv_is_normalized_into_wide_contracts(tmp_path):
                     "high": premium + 2,
                     "low": premium - 2,
                     "close": premium + 1,
+                    "underlying_open": spot,
+                    "underlying_high": spot + 10,
+                    "underlying_low": spot - 10,
+                    "underlying_close": spot,
                 }
             )
     path = tmp_path / "long_chain.csv"
-    frame = pd.DataFrame(rows)
-    frame["underlying_open"] = [24500] * len(frame)
-    frame["underlying_high"] = [24510] * len(frame)
-    frame["underlying_low"] = [24490] * len(frame)
-    frame["underlying_close"] = [24500 + i * 25 for i in range(3) for _ in range(2)]
-    frame = frame.rename(
-        columns={
-            "underlying_open": "open_underlying",
-            "underlying_high": "high_underlying",
-            "underlying_low": "low_underlying",
-            "underlying_close": "close_underlying",
-        }
-    )
-    # The loader expects the standard underlying OHLC names alongside option rows.
-    frame["open"] = [120, 130, 125, 126, 130, 122]
-    frame["high"] = frame["open"] + 2
-    frame["low"] = frame["open"] - 2
-    frame["close"] = frame["open"] + 1
-    frame.to_csv(path, index=False)
+    pd.DataFrame(rows).to_csv(path, index=False)
 
     loaded = load_option_chain_csv(path)
     assert "CE_24500_open" in loaded.columns
     assert "PE_24500_close" in loaded.columns
+    assert list(loaded["close"]) == [24500, 24525, 24550]
     assert len(loaded) == 3
