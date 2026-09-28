@@ -174,9 +174,43 @@ def test_telegram_notify_sends_the_documented_fields_and_needs_both_arguments():
         c.telegram_notify("", "hello")
 
 
-def test_the_client_has_no_way_to_place_an_order():
-    names = [n for n in dir(OpenAlgoClient) if not n.startswith("_")]
-    assert not any(word in n.lower() for n in names for word in ("order", "buy", "sell", "place", "cancel", "modify"))
+def test_order_placement_is_gated_and_uses_openalgo():
+    fake = Fake({"/api/v1/placeorder": {"status": "success", "orderid": "OA-123"}})
+    c = client(fake)
+    with pytest.raises(OpenAlgoError, match="execution is disabled"):
+        c.place_order(strategy="TradeALGO", symbol="NIFTY28APR2624500CE", action="BUY", exchange="NFO", quantity=65)
+    assert fake.calls == []
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("TRADEALGO_EXECUTION_ENABLED", "true")
+    try:
+        result = c.place_order(strategy="TradeALGO", symbol="NIFTY28APR2624500CE", action="BUY", exchange="NFO", quantity=65)
+        assert result["orderid"] == "OA-123"
+        path, body = fake.calls[0]
+        assert path == "/api/v1/placeorder"
+        assert body["apikey"] == KEY
+        assert body["strategy"] == "TradeALGO"
+        assert body["symbol"] == "NIFTY28APR2624500CE"
+        assert body["action"] == "BUY"
+        assert body["exchange"] == "NFO"
+        assert body["quantity"] == 65
+    finally:
+        monkeypatch.undo()
+
+
+def test_order_calls_are_never_retried():
+    calls=[]
+    def fail(url, body, timeout):
+        calls.append(url)
+        raise OpenAlgoError("temporary failure")
+    mp=pytest.MonkeyPatch(); mp.setenv("TRADEALGO_EXECUTION_ENABLED", "1")
+    try:
+        c=OpenAlgoClient(api_key=KEY, host="http://localhost:5000", transport=fail)
+        with pytest.raises(OpenAlgoError):
+            c.place_order(strategy="TradeALGO", symbol="X", action="BUY", exchange="NSE", quantity=1)
+        assert len(calls)==1
+    finally:
+        mp.undo()
 
 
 # -------------------------------------------------------- .env handling
