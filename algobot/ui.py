@@ -475,6 +475,30 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     background:#111923 !important;
     border:1px solid #263242 !important;
 }}
+/* Profile sits immediately beside the Menu control in the top toolbar. */
+.st-key-top_profile {{
+    position:fixed !important;
+    top:8px !important;
+    right:320px !important;
+    z-index:100000 !important;
+    width:auto !important;
+}}
+.st-key-top_profile button {{
+    min-height:38px !important;
+    height:38px !important;
+    padding:7px 14px !important;
+    border-radius:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.02em !important;
+    white-space:nowrap !important;
+    background:#111923 !important;
+    border:1px solid #263242 !important;
+}}
+.st-key-top_profile button:hover {{
+    border-color:#16C784 !important;
+    background:#17251f !important;
+}}
+
 .st-key-top_menu button:hover {{
     border-color:#3B82F6 !important;
     background:#172231 !important;
@@ -517,6 +541,14 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     margin-bottom:12px;
 }}
 @media (max-width:768px) {{
+    .st-key-top_profile {{
+        top:62px !important;
+        right:10px !important;
+        width:calc(100vw - 20px) !important;
+    }}
+    .st-key-top_profile button {{
+        width:100% !important;
+    }}
     .st-key-top_menu_drawer {{
         top:62px !important;
         right:10px !important;
@@ -796,8 +828,11 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
 
-    # Render the trigger as a floating toolbar control so it sits beside
-    # Streamlit's native Share/star/edit controls at the very top.
+    # Render compact controls in the top toolbar area: Profile sits immediately
+    # beside Menu, keeping the most-used account destination one tap away.
+    if st.button("👤  Profile", key="top_profile", type="secondary"):
+        st.switch_page("pages/22_Profile.py")
+
     if st.button("☰  Menu", key="top_menu", type="secondary"):
         st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
         st.rerun()
