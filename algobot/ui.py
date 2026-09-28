@@ -666,7 +666,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
         border=True,
     ):
         for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
-            label = f"STEP {i+1:02d}\\n{name}"
+            label = f"STEP {i+1:02d}\n{name}"
             if st.button(
                 label,
                 key=f"workflow_step_{current_key}_{i}",
