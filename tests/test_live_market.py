@@ -1,7 +1,3 @@
-from datetime import datetime
-
-import pandas as pd
-
 from algobot.live_market import LiveMarketHub, _as_dict
 
 
@@ -21,12 +17,15 @@ def test_live_market_hub_aggregates_ticks_into_minute_bars():
             },
         }
     )
+    # Keep the second tick inside the same Asia/Kolkata minute. The previous
+    # fixture crossed a minute boundary (01:56:40 -> 01:57:10), so two bars
+    # were correctly produced and the test was asserting the wrong fixture.
     hub._ingest(
         {
-            "currentTs": 1780000030000,
+            "currentTs": 1780000005000,
             "feeds": {
                 "NSE_INDEX|Nifty 50": {
-                    "ltpc": {"ltp": 25010.0, "ltt": "1780000030000", "ltq": "5"}
+                    "ltpc": {"ltp": 25010.0, "ltt": "1780000005000", "ltq": "5"}
                 }
             },
         }
