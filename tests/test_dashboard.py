@@ -102,3 +102,17 @@ def test_new_era_strategy_runs_instead_of_crashing():
     at.button(key="btn_run").click().run()
     assert not at.exception
     assert any(m.label == "Trades" for m in at.metric)
+def test_zero_trades_because_of_position_limit_explains_the_real_cause(monkeypatch):
+    """High-priced data (like Nifty ~ 23,000) with the default 10 units / Rs 50,000 limit blocks every entry.
+    The page must say so instead of claiming the rule never triggered."""
+    import algobot.data as data
+    real = data.generate_sample_data(days=30, seed=1)
+    pricey = real.copy()
+    pricey[["open", "high", "low", "close"]] = pricey[["open", "high", "low", "close"]] * 23.0
+    monkeypatch.setattr(data, "generate_sample_data", lambda days=60, seed=42, **k: pricey.iloc[: int(days) * 75].copy())
+    at = fresh()
+    at.slider(key="sample_days").set_value(30).run()
+    at.button(key="btn_run").click().run()
+    assert not at.exception
+    assert any("bigger than your limit" in w.value for w in at.warning)
+    assert not any("never triggered" in i.value for i in at.info)
