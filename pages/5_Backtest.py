@@ -311,7 +311,14 @@ if result is not None:
         st.warning("This used random sample data (made-up prices). The numbers say nothing about the real market. "
                    "Switch Step 2 to real market history for a meaningful result.")
     m = result.metrics
-    if m["trades"] == 0:
+    blocked_big = result.rejections.get("position_too_large", 0)
+    if m["trades"] == 0 and blocked_big:
+        st.warning(f"The idea found {blocked_big} chances to trade, but every one was blocked because a single trade "
+                   f"would be bigger than your limit of {ui.inr(max_position)}. Prices on this data are high (an index "
+                   "like Nifty is worth lakhs per 10 units). Fix: open **Money, stop-loss and daily limits** above and "
+                   "either lower **Quantity per trade** (try 1 or 2) or raise **Max money in one trade** "
+                   "(or set it to 0 for no limit), then run again.")
+    elif m["trades"] == 0:
         st.info("The rule never triggered on this data, so there is nothing to judge yet. "
                 "Try a longer period or a different idea.")
     elif m["net_pnl"] > 0:
