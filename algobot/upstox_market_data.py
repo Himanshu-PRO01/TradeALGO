@@ -143,7 +143,14 @@ class UpstoxMarketData:
 
     def _on_message(self, message: Any) -> None:
         received_ts = int(time.time() * 1000)
-        payload = message.to_dict() if hasattr(message, "to_dict") else message
+        if hasattr(message, "to_dict"):
+            payload = message.to_dict()
+        else:
+            try:
+                from google.protobuf.json_format import MessageToDict
+                payload = MessageToDict(message, preserving_proto_field_name=True)
+            except Exception:
+                payload = message
         feeds = payload.get("feeds", {}) if isinstance(payload, dict) else {}
         current_ts = payload.get("currentTs") if isinstance(payload, dict) else None
         if current_ts is not None:
@@ -192,6 +199,10 @@ class UpstoxMarketData:
                 configuration.access_token = self.access_token
                 api_client = self._sdk.ApiClient(configuration)
                 self._streamer = self._sdk.MarketDataStreamerV3(api_client)
+                try:
+                    self._streamer.auto_reconnect(True, 5, 10)
+                except Exception:
+                    pass
                 self._streamer.on("open", self._on_open)
                 self._streamer.on("message", self._on_message)
                 self._streamer.on("error", self._on_error)
