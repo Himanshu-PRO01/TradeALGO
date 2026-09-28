@@ -724,14 +724,13 @@ if st.session_state.get("live_bars") is not None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ═══════════════════════════════════════════════════════════════════════════════
 #  FAKE / HISTORICAL REPLAY MODE  (original logic below, unchanged)
 # ═══════════════════════════════════════════════════════════════════════════════
 sess = st.session_state.get("practice")
 if sess is None:
     st.markdown(ui.card(
         "Start here",
-        "Choose a mode in the sidebar and press 'Start a new market'. "
+        "Choose a mode in the setup above and press 'Start a new practice market'. "
         "Try **⚡ Live (real-time + AI)** to practice on today's actual market movement.",
         "🎯",
     ), unsafe_allow_html=True)
