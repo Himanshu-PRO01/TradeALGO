@@ -17,6 +17,8 @@ Both are DEMOS to prove the pipeline works. Neither is a recommendation.
 from __future__ import annotations
 
 import re
+
+import numpy as np
 from typing import Callable, Optional
 
 import pandas as pd
