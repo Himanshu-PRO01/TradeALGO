@@ -1,0 +1,36 @@
+# FAKE SMOKE TEST ONLY — NOT A REAL TRADING STRATEGY.
+# Purpose: verify TradeALGO can load a strategy config and execute a backtest.
+name: fake_smoke_test
+capital: 100000
+
+data:
+  path: data/sample_5min.csv
+
+strategy:
+  name: sma_crossover
+  params:
+    fast: 3
+    slow: 8
+  quantity: 1
+  allow_short: false
+  stop_loss_pct: null
+  target_pct: null
+
+risk:
+  max_daily_loss: 100000
+  max_trades_per_day: 100
+  max_position_value: 100000
+  trading_start: "09:15"
+  no_new_entries_after: "15:00"
+  square_off_time: "15:15"
+
+# Zero costs are intentional: this is a plumbing test, not a realistic P&L model.
+costs:
+  brokerage_pct: 0
+  brokerage_cap: 0
+  stt_sell_pct: 0
+  exchange_txn_pct: 0
+  sebi_fee_pct: 0
+  stamp_buy_pct: 0
+  gst_pct: 0
+  slippage_bps: 0
