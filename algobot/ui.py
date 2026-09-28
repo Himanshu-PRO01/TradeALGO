@@ -298,6 +298,43 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .st-key-pr_buy button:hover {{ filter: brightness(1.1); }}
 .st-key-pr_close button:hover {{ filter: brightness(1.1); }}
 
+/* square graphic workflow cards */
+[class*="st-key-workflow_step_"] > button {{
+    width: 148px !important;
+    min-width: 148px !important;
+    max-width: 148px !important;
+    height: 148px !important;
+    min-height: 148px !important;
+    padding: 12px 8px !important;
+    border-radius: 18px !important;
+    line-height: 1.15 !important;
+    white-space: pre-line !important;
+    text-align: center !important;
+    font-size: .86rem !important;
+    overflow: hidden !important;
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease !important;
+}}
+[class*="st-key-workflow_step_"] > button:hover {{
+    transform: translateY(-3px) !important;
+    border-color: #3B82F6 !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.24), inset 0 0 0 1px rgba(59,130,246,.18) !important;
+}}
+[class*="st-key-workflow_step_"] > button p {{
+    white-space: pre-line !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+}}
+@media (max-width:768px) {{
+    [class*="st-key-workflow_step_"] > button {{
+        width: 132px !important;
+        min-width: 132px !important;
+        max-width: 132px !important;
+        height: 132px !important;
+        min-height: 132px !important;
+        font-size: .8rem !important;
+    }}
+}}
+
 /* tabs, expanders, dataframes */
 .stTabs [data-baseweb="tab"] {{ font-weight: 600; }}
 [data-testid="stExpander"] {{ border: 1px solid {BORDER}; border-radius: 12px; background: {PANEL}; }}
@@ -665,8 +702,9 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
         gap="small",
         border=True,
     ):
+        workflow_icons = ["🗺️", "🧠", "🤖", "📊", "🧪", "🛡️", "📝", "🏦", "🎬", "🚀"]
         for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
-            label = f"STEP {i+1:02d}\n{name}"
+            label = f"{workflow_icons[i]}\nSTEP {i+1:02d}\n{name}"
             if st.button(
                 label,
                 key=f"workflow_step_{current_key}_{i}",
