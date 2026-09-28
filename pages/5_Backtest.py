@@ -141,13 +141,20 @@ with st.expander("3. Costs (the defaults are typical discount-broker charges for
 st.markdown("#### 1. Strategy")
 st.caption("A strategy is just the rule for when to buy and when to sell. Not sure where to start? Try "
           "'SMA crossover (demo)' first — no writing required.")
-kind = st.radio("Type", ["Rules (write conditions)", "SMA crossover (demo)"], horizontal=True, key="strategy_kind",
+kind = st.radio("Type", ["Rules (write conditions)", "New Era Strategy 1.0", "SMA crossover (demo)"], horizontal=True, key="strategy_kind",
                 help="'Rules' lets you (or an AI, or your developer) write exact entry/exit conditions. "
                      "'SMA crossover (demo)' is a ready-made simple strategy: buy when a short-term average "
                      "crosses above a longer-term one.")
 if kind.startswith("Rules"):
     strategy_name = "rules"
     rules_text = st.text_area("Strategy rules (edit, or paste what an AI wrote)", DEFAULT_RULES, height=230, key="rules_text")
+elif kind.startswith("New Era"):
+    strategy_name = "new_era_1_0"
+    c1, c2 = st.columns(2)
+    new_era_sl = c1.number_input("SL max points % (0 = disabled)", min_value=0.0, value=0.0, step=0.1, key="new_era_sl")
+    new_era_ratio = c2.number_input("Target ratio", min_value=0.0, value=2.0, step=0.5, key="new_era_ratio")
+    st.caption("This is the supplied New Era Strategy 1.0 translated into the deterministic backtest engine. It uses the formation state, RSI/CCI/EMA/HMA conditions, next-bar entry, and signal-bar-derived SL/target.")
+    st.warning("Source-parity note: the supplied Pine script explicitly calls Day Close only while position_size > 0, whereas TradeALGO's conservative backtest engine squares off both long and short positions at the configured square-off time.")
     with st.expander("Want an AI to write the rules for you? Copy this prompt into any AI chat"):
         st.code(AI_STRATEGY_PROMPT, language="text")
         st.caption("Paste the yaml block it gives you into the box above. Never paste broker keys or passwords into an AI chat. "
