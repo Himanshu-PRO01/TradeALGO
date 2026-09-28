@@ -640,7 +640,7 @@ def show_table(frame, **kwargs) -> None:
 
 
 def workflow_nav(current_key: str, complete: bool = False) -> None:
-    """Render the workflow as real clickable Streamlit navigation buttons."""
+    """Render the workflow as large, horizontally scrollable navigation cards."""
     index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
     total = len(WORKFLOW_STEPS)
     descriptions = [
@@ -656,23 +656,30 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
         "Controlled execution",
     ]
 
-    # Use st.switch_page instead of st.page_link here. It works reliably with
-    # Streamlit's pages/ directory and avoids page-registry/path issues.
-    cols = st.columns(total)
-    for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
-        with cols[i]:
+    # Fixed-width buttons inside a no-wrap horizontal container preserve the
+    # large workflow-card appearance while allowing sideways scrolling.
+    with st.container(
+        horizontal=True,
+        wrap=False,
+        horizontal_alignment="left",
+        gap="small",
+        border=True,
+    ):
+        for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
+            label = f"STEP {i+1:02d}\\n{name}"
             if st.button(
-                f"{i+1:02d}  {name}",
+                label,
                 key=f"workflow_step_{current_key}_{i}",
                 disabled=(i == index),
-                use_container_width=True,
+                type="primary" if i == index else "secondary",
+                width=170,
                 help=descriptions[i],
             ):
                 st.switch_page(path)
 
     st.caption(
-        f"Step {index+1} of {total} · click any step to open its page · "
-        "the current step is highlighted"
+        f"Step {index+1} of {total} · scroll sideways to see all steps · "
+        "click any step to open its page"
     )
 
     prev_step = WORKFLOW_STEPS[index - 1] if index > 0 else None
@@ -683,7 +690,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
             if st.button(
                 f"⬅️  Previous: {prev_step[1]}",
                 key=f"workflow_prev_{current_key}",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.switch_page(prev_step[2])
     with right:
@@ -691,7 +698,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
             if st.button(
                 f"Next: {next_step[1]}  ➡️",
                 key=f"workflow_next_{current_key}",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.switch_page(next_step[2])
         else:
