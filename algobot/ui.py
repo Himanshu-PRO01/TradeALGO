@@ -298,8 +298,9 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .st-key-pr_buy button:hover {{ filter: brightness(1.1); }}
 .st-key-pr_close button:hover {{ filter: brightness(1.1); }}
 
-/* square graphic workflow cards */
+/* square graphic workflow cards + shadcn-inspired hover previews */
 [class*="st-key-workflow_step_"] > button {{
+    position: relative !important;
     width: 148px !important;
     min-width: 148px !important;
     max-width: 148px !important;
@@ -318,12 +319,60 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     transform: translateY(-3px) !important;
     border-color: #3B82F6 !important;
     box-shadow: 0 8px 22px rgba(0,0,0,.24), inset 0 0 0 1px rgba(59,130,246,.18) !important;
+    z-index: 20 !important;
 }}
 [class*="st-key-workflow_step_"] > button p {{
     white-space: pre-line !important;
     line-height: 1.2 !important;
     margin: 0 !important;
 }}
+
+/* HoverCard behavior: preview the step description on hover/focus.
+   This mirrors shadcn HoverCard's trigger -> content pattern while keeping
+   navigation native to Streamlit. */
+[class*="st-key-workflow_step_"] > button::after {{
+    position: absolute !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    min-height: 52px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 9px !important;
+    border: 1px solid rgba(59,130,246,.35) !important;
+    border-radius: 11px !important;
+    background: linear-gradient(180deg, rgba(17,25,35,.97), rgba(10,15,22,.98)) !important;
+    color: #AAB7C7 !important;
+    font-size: .70rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    text-align: center !important;
+    white-space: normal !important;
+    opacity: 0 !important;
+    transform: translateY(7px) !important;
+    pointer-events: none !important;
+    transition: opacity .14s ease, transform .14s ease !important;
+    z-index: 30 !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.38) !important;
+}}
+[class*="st-key-workflow_step_"] > button:hover::after,
+[class*="st-key-workflow_step_"] > button:focus-visible::after {{
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}}
+.st-key-workflow_step_0 > button::after {{ content: "Start with the trading idea and define what you want to test."; }}
+.st-key-workflow_step_1 > button::after {{ content: "Turn the idea into clear, measurable entry and exit rules."; }}
+.st-key-workflow_step_2 > button::after {{ content: "Use AI to research, refine, and challenge the strategy."; }}
+.st-key-workflow_step_3 > button::after {{ content: "Run the strategy on historical market data and inspect results."; }}
+.st-key-workflow_step_4 > button::after {{ content: "Test controlled variations to see how robust the strategy is."; }}
+.st-key-workflow_step_5 > button::after {{ content: "Challenge the evidence with risk and robustness checks."; }}
+.st-key-workflow_step_6 > button::after {{ content: "Rehearse trades with fake money before using a broker."; }}
+.st-key-workflow_step_7 > button::after {{ content: "Test broker integration safely in the sandbox environment."; }}
+.st-key-workflow_step_8 > button::after {{ content: "Run the full paper-to-sandbox rehearsal before execution."; }}
+.st-key-workflow_step_9 > button::after {{ content: "Controlled execution stage. Live orders remain locked by default."; }}
+
 @media (max-width:768px) {{
     [class*="st-key-workflow_step_"] > button {{
         width: 132px !important;
@@ -332,6 +381,14 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
         height: 132px !important;
         min-height: 132px !important;
         font-size: .8rem !important;
+    }}
+    [class*="st-key-workflow_step_"] > button::after {{
+        left: 6px !important;
+        right: 6px !important;
+        bottom: 6px !important;
+        min-height: 48px !important;
+        font-size: .66rem !important;
+        padding: 7px !important;
     }}
 }}
 
@@ -790,19 +847,6 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
     """Render the workflow as large, horizontally scrollable navigation cards."""
     index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
     total = len(WORKFLOW_STEPS)
-    descriptions = [
-        "Start with the trading idea",
-        "Write measurable rules",
-        "Use AI for research",
-        "Test historical data",
-        "Test controlled variations",
-        "Challenge the evidence",
-        "Rehearse with fake money",
-        "Test the broker sandbox",
-        "Run the full rehearsal",
-        "Controlled execution",
-    ]
-
     # Fixed-width buttons inside a no-wrap horizontal container preserve the
     # large workflow-card appearance while allowing sideways scrolling.
     with st.container(
@@ -817,11 +861,10 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
             label = f"{workflow_icons[i]}\nSTEP {i+1:02d}\n{name}"
             if st.button(
                 label,
-                key=f"workflow_step_{current_key}_{i}",
+                key=f"workflow_step_{i}",
                 disabled=(i == index),
                 type="primary" if i == index else "secondary",
                 width=170,
-                help=descriptions[i],
             ):
                 st.switch_page(path)
 
