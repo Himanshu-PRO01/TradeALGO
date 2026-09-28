@@ -1,5 +1,6 @@
 """Tick Engine: tick-by-tick dynamic CE/PE research and paper rehearsal."""
 import io
+import os
 
 import pandas as pd
 import streamlit as st
@@ -9,6 +10,7 @@ from algobot.config import ConfigError
 from algobot.data import generate_sample_data
 from algobot.dynamic_options import generate_synthetic_option_chain
 from algobot.tick_engine import load_tick_csv, run_tick_strategy
+from algobot.upstox_market_data import UpstoxMarketData
 
 ui.setup("Tick Engine", "⚡")
 ui.header(
@@ -37,10 +39,127 @@ broker execution separate from research.
 
 source = st.radio(
     "Tick-data source",
-    ["Practice synthetic ticks", "Upload tick CSV"],
+    ["Practice synthetic ticks", "Upload tick CSV", "Upstox Live V3"],
     horizontal=True,
     key="tick_source",
 )
+
+if source == "Upstox Live V3":
+    st.info(
+        "Live Upstox mode is read-only market data. It does not place orders. "
+        "Use an Upstox Analytics Token or another read-only market-data token."
+    )
+    st.markdown(
+        "Configure UPSTOX_ACCESS_TOKEN in Streamlit Secrets/environment variables. "
+        "Never commit the token to GitHub."
+    )
+
+    token = os.getenv("UPSTOX_ACCESS_TOKEN", "").strip()
+    try:
+        if not token and hasattr(st, "secrets"):
+            token = str(st.secrets.get("UPSTOX_ACCESS_TOKEN", "")).strip()
+    except Exception:
+        token = token
+
+    if not token:
+        st.warning(
+            "No Upstox token is configured. Add UPSTOX_ACCESS_TOKEN to Streamlit Secrets "
+            "and reload this page."
+        )
+
+    c1, c2 = st.columns(2)
+    underlying_key = c1.text_input(
+        "Underlying instrument key",
+        value="NSE_INDEX|Nifty 50",
+        help="Example: NSE_INDEX|Nifty 50. Use the exact instrument key from Upstox.",
+        key="upstox_underlying_key",
+    )
+    feed_mode = c2.selectbox(
+        "Feed mode",
+        ["full", "ltpc", "option_greeks"],
+        help="Use full for LTP + best bid/ask + option Greeks.",
+        key="upstox_feed_mode",
+    )
+    option_keys_text = st.text_area(
+        "Option instrument keys (one per line)",
+        placeholder="CE 24500 = NSE_FO|<instrument-key>\nPE 24500 = NSE_FO|<instrument-key>",
+        help="Format each line as LABEL = INSTRUMENT_KEY. Labels should identify CE/PE and strike, e.g. CE 24500.",
+        key="upstox_option_keys",
+        height=110,
+    )
+    option_map = {}
+    for raw in option_keys_text.splitlines():
+        if "=" in raw:
+            label, key = raw.split("=", 1)
+            label, key = label.strip(), key.strip()
+            if label and key:
+                option_map[label] = key
+
+    all_keys = [underlying_key.strip()] + list(option_map.values())
+    if token and underlying_key.strip() and option_map:
+        resource_key = token + "|" + feed_mode + "|" + "|".join(all_keys)
+
+        @st.cache_resource(show_spinner=False)
+        def get_upstox_feed(cache_key, access_token, instrument_keys, mode):
+            feed = UpstoxMarketData(access_token, instrument_keys, mode=mode)
+            feed.start()
+            return feed
+
+        try:
+            feed = get_upstox_feed(resource_key, token, all_keys, feed_mode)
+            st.session_state["upstox_feed"] = feed
+            status = "🟢 Connected" if feed.connected else "🟡 Connecting"
+            st.metric("Upstox feed", status)
+            if feed.last_error:
+                st.error(f"Upstox feed error: {feed.last_error}")
+
+            snapshot = feed.snapshot()
+            if snapshot:
+                rows = []
+                for label, key in [("Underlying", underlying_key.strip()), *option_map.items()]:
+                    tick = snapshot.get(key)
+                    if tick:
+                        rows.append({
+                            "Instrument": label,
+                            "LTP": tick.ltp,
+                            "Bid": tick.bid_price,
+                            "Ask": tick.ask_price,
+                            "Volume": tick.volume,
+                            "OI": tick.oi,
+                            "Tick time": tick.ltt,
+                        })
+                if rows:
+                    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+                underlying_tick = snapshot.get(underlying_key.strip())
+                if underlying_tick and underlying_tick.ltp is not None:
+                    st.metric("Live underlying", f"{underlying_tick.ltp:,.2f}")
+
+                drained = feed.drain(500)
+                if drained:
+                    chart_rows = [
+                        {"time": pd.to_datetime(t.received_ts, unit="ms"), "ltp": t.ltp}
+                        for t in drained
+                        if t.instrument_key == underlying_key.strip() and t.ltp is not None
+                    ]
+                    if chart_rows:
+                        chart_df = pd.DataFrame(chart_rows).drop_duplicates("time").set_index("time")
+                        st.line_chart(chart_df[["ltp"]], height=280)
+                        st.caption("Live Upstox LTP stream. Refresh the page to continue rendering new ticks.")
+
+            if st.button("⏹️ Disconnect Upstox feed", key="disconnect_upstox"):
+                feed.stop()
+                st.cache_resource.clear()
+                st.rerun()
+        except ConfigError as exc:
+            st.error(str(exc))
+    else:
+        st.caption("Enter at least one option instrument key and configure the token to start the feed.")
+
+    ui.footer_note(
+        "Upstox Live V3 is read-only in this page. TradeALGO does not send orders from the Tick Engine."
+    )
+    st.stop()
 
 if source == "Practice synthetic ticks":
     days = st.slider("Practice days", 1, 5, 1, key="tick_days")
