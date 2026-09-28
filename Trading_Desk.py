@@ -6,9 +6,26 @@ import streamlit as st
 from algobot import charts, live_chart, ui
 from algobot.appstate import is_hosted, storage_note
 
-ui.setup("Trading Desk", "🏠")
-ui.header("Trading Desk", "Size it, log it, practise it, test it. A workshop for learning and testing, "
-          "not a signal service and not a broker.")
+ui.setup("TradeALGO Trading Research Platform", "📈")
+ui.header("TradeALGO Trading Research Platform", "A trading research and paper-trading platform for learning, strategy building, backtesting, risk analysis, and market practice. "
+          "TradeALGO is a research and simulation tool, not a signal service or broker.")
+
+# Public-facing introductory copy is intentionally rendered near the top of the
+# homepage. Streamlit Community Cloud uses page title plus prominent header/text
+# when search engines index public apps, so keep this concise and descriptive.
+st.markdown(
+    "### Trading strategy builder, backtesting and paper trading for Indian markets"
+)
+st.markdown(
+    "TradeALGO helps traders turn ideas into measurable rules, backtest strategies "
+    "on historical market data, test risk and robustness, save strategy results, and "
+    "practise trades with virtual money. Explore Nifty-focused research, strategy "
+    "building, paper trading and market analysis in one workspace."
+)
+st.caption(
+    "Educational and research use only. Market data availability and timing can vary; "
+    "backtests and paper results do not guarantee future performance."
+)
 
 ui.ticker([("Live orders", "OFF", "up"),
            ("Broker", "OpenAlgo connected (read-only)" if live_chart.openalgo_configured() else "not connected", None),
