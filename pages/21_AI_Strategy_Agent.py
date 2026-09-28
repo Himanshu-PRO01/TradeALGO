@@ -30,6 +30,10 @@ if not store.list_versions(strategy_id):
 agent=StrategyAgent()
 if not agent.available:
     st.warning("AI provider not configured. Deterministic strategy tools remain available.")
+else:
+    provider_name = getattr(agent.provider, "name", "unknown").upper()
+    provider_model = getattr(agent.provider, "model", "")
+    st.success(f"AI provider connected: {provider_name}" + (f" · {provider_model}" if provider_model else ""))
 
 st.subheader("1. Strategy understanding")
 idea=st.text_area("Describe the strategy or question for AI",key="ai_idea")
