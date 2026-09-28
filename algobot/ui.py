@@ -393,6 +393,65 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .ab-check .txt b {{ display:block; }}
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
 
+/* shadcn-inspired top-right navigation drawer */
+.ta-menu-trigger {{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+}}
+.st-key-top_menu button {{
+    min-height:38px !important;
+    padding:7px 14px !important;
+    border-radius:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.02em !important;
+}}
+.st-key-top_menu_drawer {{
+    position:fixed !important;
+    top:76px !important;
+    right:24px !important;
+    width:min(390px, calc(100vw - 32px)) !important;
+    max-height:calc(100vh - 100px) !important;
+    overflow-y:auto !important;
+    z-index:9999 !important;
+    padding:18px !important;
+    border:1px solid #263242 !important;
+    border-radius:20px !important;
+    background:linear-gradient(180deg,#111923 0%,#0d131b 100%) !important;
+    box-shadow:0 24px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(59,130,246,.08) !important;
+}}
+.st-key-top_menu_drawer [data-testid="stPageLink"] a {{
+    min-height:42px;
+    border-radius:10px;
+    padding:9px 12px !important;
+    transition:background-color .12s ease, transform .12s ease;
+}}
+.st-key-top_menu_drawer [data-testid="stPageLink"] a:hover {{
+    background:rgba(255,255,255,.06);
+    transform:translateX(2px);
+}}
+.ta-drawer-title {{
+    font-size:.72rem;
+    font-weight:900;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#16C784;
+    margin-bottom:3px;
+}}
+.ta-drawer-subtitle {{
+    color:#8B98A9;
+    font-size:.78rem;
+    margin-bottom:12px;
+}}
+@media (max-width:768px) {{
+    .st-key-top_menu_drawer {{
+        top:62px !important;
+        right:10px !important;
+        width:calc(100vw - 20px) !important;
+        max-height:calc(100vh - 78px) !important;
+        border-radius:16px !important;
+    }}
+}}
 /* guided workflow */
 .ta-workflow {{
     width: 100%;
@@ -595,6 +654,7 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
+    st.session_state.setdefault("top_menu_open", False)
     _menu()
     language_toggle()
     swipe_component = _swipe_menu_component()
@@ -612,19 +672,69 @@ def pill(text: str, tone: str = "green") -> str:
     return f'<span class="ab-pill {escape(tone)}">{escape(text)}</span>'
 
 
+def _top_menu_links() -> list[tuple[str, str, str]]:
+    return [
+        ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
+        ("🏠", "Trading Desk", "dashboard.py"),
+        ("🧮", "Position Size", "pages/1_Position_size.py"),
+        ("📒", "Journal & Report", "pages/2_Journal_and_report.py"),
+        ("🎯", "Practice Room", "pages/3_Practice_room.py"),
+        ("📊", "Backtest", "pages/5_Backtest.py"),
+        ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
+        ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+        ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+        ("🤖", "AI Strategy Agent", "pages/21_AI_Strategy_Agent.py"),
+        ("🧪", "Auto Tester", "pages/13_Auto_Tester.py"),
+        ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
+        ("📝", "Paper Trading", "pages/16_Paper_Trading.py"),
+        ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
+        ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
+        ("📲", "Signal Alerts", "pages/20_Signal_Alerts.py"),
+        ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
+    ]
+
+
+def _top_menu_drawer() -> None:
+    if not st.session_state.get("top_menu_open", False):
+        return
+    with st.container(key="top_menu_drawer"):
+        st.markdown('<div class="ta-drawer-title">TRADEALGO MENU</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ta-drawer-subtitle">Navigate anywhere without opening the sidebar.</div>',
+                    unsafe_allow_html=True)
+        if st.button("✕  Close menu", key="top_menu_close", width="stretch"):
+            st.session_state["top_menu_open"] = False
+            st.rerun()
+        st.divider()
+        for icon_, label, path in _top_menu_links():
+            page_link(path, label=f"{icon_}  {label}", use_container_width=True)
+
+
 def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
-    """Brand bar with the safety pills, then the page title."""
+    """Brand bar with safety pills and a shadcn-inspired top-right drawer trigger."""
     lang = "Hinglish" if is_hinglish() else "English"
     pills = [pill("LIVE ORDERS OFF" if is_hinglish() else "NO LIVE ORDERS", "green")]
     if mode:
         tone = {"practice": "amber", "backtest": "blue", "journal": "green", "research": "blue"}.get(mode.split(":")[0], "blue")
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
-    st.markdown(f'<div class="ab-top"><div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>'
-                f'<div class="ab-pills">{"".join(pills)}</div></div>', unsafe_allow_html=True)
+
+    left, middle, right = st.columns([4.8, 4.2, 1.2], vertical_alignment="center")
+    with left:
+        st.markdown('<div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>',
+                    unsafe_allow_html=True)
+    with middle:
+        st.markdown(f'<div class="ab-pills" style="justify-content:flex-end">{"".join(pills)}</div>',
+                    unsafe_allow_html=True)
+    with right:
+        if st.button("☰  Menu", key="top_menu", type="secondary", width="stretch"):
+            st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
+            st.rerun()
+
     st.markdown(f"## {title}")
     if subtitle:
         st.caption(subtitle)
+
+    _top_menu_drawer()
 
 
 def ticker(items: Iterable) -> None:
