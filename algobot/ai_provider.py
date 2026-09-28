@@ -26,16 +26,35 @@ class OpenAIProvider(AIProvider):
     def __init__(self, key, model="gpt-4o-mini", timeout=60):
         self.key, self.model, self.timeout = key, model, timeout
     def generate(self, system_prompt, user_prompt):
-        body = json.dumps({"model": self.model, "temperature": 0.2, "messages": [
-            {"role":"system","content":system_prompt},{"role":"user","content":user_prompt}
-        ]}).encode()
-        req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=body, method="POST",
-            headers={"Content-Type":"application/json","Authorization":f"Bearer {self.key}"})
-        data = _send(req, self.timeout, "OpenAI")
-        try: out = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError): out = ""
-        if not out: raise ProviderError("OpenAI returned no text.")
-        return out.strip()
+        return _chat_completion(
+            "https://api.openai.com/v1/chat/completions",
+            self.key,
+            self.model,
+            system_prompt,
+            user_prompt,
+            self.timeout,
+            "OpenAI",
+        )
+
+
+class GroqProvider(AIProvider):
+    """Groq's OpenAI-compatible Chat Completions provider."""
+    name = "groq"
+    BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+    def __init__(self, key, model="openai/gpt-oss-120b", timeout=60):
+        self.key, self.model, self.timeout = key, model, timeout
+
+    def generate(self, system_prompt, user_prompt):
+        return _chat_completion(
+            self.BASE_URL,
+            self.key,
+            self.model,
+            system_prompt,
+            user_prompt,
+            self.timeout,
+            "Groq",
+        )
 
 class AnthropicProvider(AIProvider):
     name = "anthropic"
@@ -52,6 +71,34 @@ class AnthropicProvider(AIProvider):
         if not out: raise ProviderError("Anthropic returned no text.")
         return out.strip()
 
+def _chat_completion(url, key, model, system_prompt, user_prompt, timeout, vendor):
+    body = json.dumps({
+        "model": model,
+        "temperature": 0.2,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    }).encode()
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}",
+        },
+    )
+    data = _send(req, timeout, vendor)
+    try:
+        out = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        out = ""
+    if not out:
+        raise ProviderError(f"{vendor} returned no text.")
+    return out.strip()
+
+
 def _send(req, timeout, vendor):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -65,6 +112,12 @@ def _send(req, timeout, vendor):
         raise ProviderError(f"{vendor} returned invalid JSON.") from e
 
 def get_provider() -> Optional[AIProvider]:
+    # Prefer Groq when configured. This keeps the provider choice explicit
+    # while preserving OpenAI/Anthropic fallbacks.
+    k = _value("GROQ_API_KEY")
+    if k:
+        return GroqProvider(k, _value("GROQ_MODEL") or "openai/gpt-oss-120b")
+
     k = _value("ANTHROPIC_API_KEY")
     if k: return AnthropicProvider(k, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
     k = _value("OPENAI_API_KEY")
