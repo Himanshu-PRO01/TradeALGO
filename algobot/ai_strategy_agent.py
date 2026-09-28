@@ -13,7 +13,13 @@ class AgentError(ValueError): pass
 class AgentResult:
     available:bool; ok:bool; message:str; data:Optional[dict]=None
 def _parse(raw,required):
-    raw=raw.strip().strip("`")
+    raw=raw.strip()
+    if raw.startswith("```"):
+        lines=raw.splitlines()
+        if lines and lines[0].startswith("```"): lines=lines[1:]
+        if lines and lines[-1].strip()=="```": lines=lines[:-1]
+        raw="\\n".join(lines).strip()
+    if raw.lower().startswith("json") and raw[4:].lstrip().startswith("{"): raw=raw[4:].lstrip()
     try: x=json.loads(raw)
     except json.JSONDecodeError as e: raise AgentError(f"The AI response was not valid JSON: {e}")
     if not isinstance(x,dict): raise AgentError("The AI response must be a JSON object.")
