@@ -4,9 +4,11 @@ OpenAlgo (open source, AGPL-3.0) already handles broker login, live and
 historical data, Telegram alerts and much more. This toolkit does not copy any
 of its code: it talks to it over its documented HTTP API, as a separate program.
 
-By design this client can READ data and SEND NOTIFICATIONS. It has no function
-that places, changes or cancels an order. The brother wants alerts, not
-automatic orders, and a tool that cannot send orders cannot send a wrong one.
+By design, execution is an explicit second-stage capability. TradeALGO owns
+research, strategy logic and signal generation; OpenAlgo owns broker login,
+order routing and broker-specific handling. Order methods below are gated by
+TRADEALGO_EXECUTION_ENABLED and are never called automatically by the research
+engine.
 
 Endpoints used (from OpenAlgo's API documentation):
   POST /api/v1/history           candles: apikey, symbol, exchange, interval, start_date, end_date [, source]
@@ -169,6 +171,141 @@ class OpenAlgoClient:
         if not isinstance(size, (int, float)) or size < 1:
             raise OpenAlgoError(f"OpenAlgo did not return a lot size for {symbol} on {exchange}.")
         return int(size)
+
+    # -------------------------------------------------------------- execution
+    @staticmethod
+    def execution_enabled() -> bool:
+        """Return True only when the user explicitly enables OpenAlgo execution."""
+        return os.environ.get("TRADEALGO_EXECUTION_ENABLED", "").strip().lower() in {
+            "1", "true", "yes", "on"
+        }
+
+    def ping(self) -> dict:
+        """Check that OpenAlgo is reachable and its API key is accepted."""
+        return self._post("/api/v1/ping", {})
+
+    def quote(self, symbol: str, exchange: str) -> dict:
+        """Read the current quote through OpenAlgo. No order side effect."""
+        if not symbol or not exchange:
+            raise OpenAlgoError("Both symbol and exchange are required for a quote.")
+        return self._post("/api/v1/quotes", {"symbol": symbol, "exchange": exchange}).get("data") or {}
+
+    def place_order(
+        self,
+        *,
+        strategy: str,
+        symbol: str,
+        action: str,
+        exchange: str,
+        pricetype: str = "MARKET",
+        product: str = "MIS",
+        quantity: int = 1,
+        price: float = 0,
+        trigger_price: float = 0,
+        disclosed_quantity: int = 0,
+    ) -> dict:
+        """Route one order through OpenAlgo after the explicit execution gate is enabled.
+
+        TradeALGO never talks to the broker directly. OpenAlgo receives the request
+        and handles broker authentication, routing and broker-specific behaviour.
+        This method deliberately does not retry an order request.
+        """
+        if not self.execution_enabled():
+            raise OpenAlgoError(
+                "OpenAlgo execution is disabled. Set TRADEALGO_EXECUTION_ENABLED=true "
+                "only when you intentionally want TradeALGO to send orders through OpenAlgo."
+            )
+        action = str(action).upper()
+        pricetype = str(pricetype).upper()
+        product = str(product).upper()
+        if action not in {"BUY", "SELL"}:
+            raise OpenAlgoError("action must be BUY or SELL.")
+        if pricetype not in {"MARKET", "LIMIT", "SL", "SL-M"}:
+            raise OpenAlgoError("pricetype must be MARKET, LIMIT, SL or SL-M.")
+        if int(quantity) < 1:
+            raise OpenAlgoError("quantity must be at least 1.")
+        payload = {
+            "strategy": str(strategy or "TradeALGO"),
+            "symbol": str(symbol).strip(),
+            "action": action,
+            "exchange": str(exchange).strip(),
+            "pricetype": pricetype,
+            "product": product,
+            "quantity": int(quantity),
+            "price": float(price),
+            "trigger_price": float(trigger_price),
+            "disclosed_quantity": int(disclosed_quantity),
+        }
+        if not payload["symbol"] or not payload["exchange"]:
+            raise OpenAlgoError("symbol and exchange are required for an order.")
+        return self._post("/api/v1/placeorder", payload)
+
+    def smart_order(
+        self, *, strategy: str, symbol: str, action: str, exchange: str,
+        pricetype: str = "MARKET", product: str = "MIS", quantity: int = 1,
+        position_size: int | None = None,
+    ) -> dict:
+        """Route an OpenAlgo smart order. Never retries order placement."""
+        if not self.execution_enabled():
+            raise OpenAlgoError("OpenAlgo execution is disabled by TRADEALGO_EXECUTION_ENABLED.")
+        if str(action).upper() not in {"BUY", "SELL"}:
+            raise OpenAlgoError("action must be BUY or SELL.")
+        if int(quantity) < 1:
+            raise OpenAlgoError("quantity must be at least 1.")
+        payload = {
+            "strategy": str(strategy or "TradeALGO"),
+            "symbol": str(symbol).strip(),
+            "action": str(action).upper(),
+            "exchange": str(exchange).strip(),
+            "pricetype": str(pricetype).upper(),
+            "product": str(product).upper(),
+            "quantity": int(quantity),
+        }
+        if position_size is not None:
+            payload["position_size"] = int(position_size)
+        return self._post("/api/v1/placesmartorder", payload)
+
+    def order_status(self, orderid: str) -> dict:
+        if not orderid:
+            raise OpenAlgoError("orderid is required.")
+        return self._post("/api/v1/orderstatus", {"orderid": str(orderid)}).get("data") or {}
+
+    def orderbook(self) -> dict | list:
+        return self._post("/api/v1/orderbook", {}).get("data") or []
+
+    def tradebook(self) -> dict | list:
+        return self._post("/api/v1/tradebook", {}).get("data") or []
+
+    def positions(self) -> dict | list:
+        return self._post("/api/v1/positionbook", {}).get("data") or []
+
+    def funds(self) -> dict:
+        return self._post("/api/v1/funds", {}).get("data") or {}
+
+    def modify_order(self, *, orderid: str, strategy: str, symbol: str, action: str,
+                     exchange: str, pricetype: str, product: str, quantity: int,
+                     price: float = 0, trigger_price: float = 0,
+                     disclosed_quantity: int = 0) -> dict:
+        if not self.execution_enabled():
+            raise OpenAlgoError("OpenAlgo execution is disabled by TRADEALGO_EXECUTION_ENABLED.")
+        if not orderid:
+            raise OpenAlgoError("orderid is required.")
+        payload = {
+            "orderid": str(orderid), "strategy": str(strategy or "TradeALGO"),
+            "symbol": str(symbol).strip(), "action": str(action).upper(),
+            "exchange": str(exchange).strip(), "pricetype": str(pricetype).upper(),
+            "product": str(product).upper(), "quantity": int(quantity),
+            "price": float(price), "trigger_price": float(trigger_price),
+            "disclosed_quantity": int(disclosed_quantity),
+        }
+        return self._post("/api/v1/modifyorder", payload)
+
+    def cancel_order(self, orderid: str) -> dict:
+        if not self.execution_enabled():
+            raise OpenAlgoError("OpenAlgo execution is disabled by TRADEALGO_EXECUTION_ENABLED.")
+        if not orderid:
+            raise OpenAlgoError("orderid is required.")
+        return self._post("/api/v1/cancelorder", {"orderid": str(orderid)})
 
     # ---------------------------------------------------------- notifications
     def telegram_notify(self, username: str, message: str, wait_for_delivery: bool = False) -> None:
