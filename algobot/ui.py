@@ -450,18 +450,34 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .ab-check .txt b {{ display:block; }}
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
 
-/* shadcn-inspired top-right navigation drawer */
+/* top-right navigation button: float it into Streamlit's toolbar row,
+   beside Share instead of taking space in the page header */
 .ta-menu-trigger {{
     display:flex;
     justify-content:flex-end;
     align-items:center;
 }}
+.st-key-top_menu {{
+    position:fixed !important;
+    top:8px !important;
+    right:208px !important;
+    z-index:100000 !important;
+    width:auto !important;
+}}
 .st-key-top_menu button {{
     min-height:38px !important;
+    height:38px !important;
     padding:7px 14px !important;
     border-radius:10px !important;
     font-weight:800 !important;
     letter-spacing:.02em !important;
+    white-space:nowrap !important;
+    background:#111923 !important;
+    border:1px solid #263242 !important;
+}}
+.st-key-top_menu button:hover {{
+    border-color:#3B82F6 !important;
+    background:#172231 !important;
 }}
 .st-key-top_menu_drawer {{
     position:fixed !important;
@@ -776,17 +792,19 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
 
-    left, middle, right = st.columns([4.8, 4.2, 1.2], vertical_alignment="center")
+    # Render the trigger as a floating toolbar control so it sits beside
+    # Streamlit's native Share/star/edit controls at the very top.
+    if st.button("☰  Menu", key="top_menu", type="secondary"):
+        st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
+        st.rerun()
+
+    left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
     with left:
         st.markdown('<div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>',
                     unsafe_allow_html=True)
     with middle:
         st.markdown(f'<div class="ab-pills" style="justify-content:flex-end">{"".join(pills)}</div>',
                     unsafe_allow_html=True)
-    with right:
-        if st.button("☰  Menu", key="top_menu", type="secondary", width="stretch"):
-            st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
-            st.rerun()
 
     st.markdown(f"## {title}")
     if subtitle:
