@@ -672,6 +672,7 @@ def _menu() -> None:
                 ("📲", "Signal Alerts", "pages/20_Signal_Alerts.py"),
             ]),
             ("More", [
+                ("👤", "My Profile", "pages/22_Profile.py"),
                 ("💬", "Feedback", "pages/8_Feedback.py"),
             ]),
             ("Execution", [
