@@ -64,7 +64,7 @@ class AnthropicProvider(AIProvider):
         body = json.dumps({"model":self.model,"max_tokens":2400,"system":system_prompt,
                            "messages":[{"role":"user","content":user_prompt}]}).encode()
         req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
-            headers={"Content-Type":"application/json","x-api-key":self.key,"anthropic-version":"2023-06-01"})
+            headers={"Content-Type":"application/json","x-api-key":self.key,"anthropic-version":"2023-06-01","User-Agent":"TradeALGO/1.0"})
         data = _send(req, self.timeout, "Anthropic")
         out = "".join(x.get("text","") for x in data.get("content",[])
                       if isinstance(x,dict) and x.get("type")=="text")
@@ -87,6 +87,7 @@ def _chat_completion(url, key, model, system_prompt, user_prompt, timeout, vendo
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {key}",
+            "User-Agent": "TradeALGO/1.0",
         },
     )
     data = _send(req, timeout, vendor)
