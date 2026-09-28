@@ -483,9 +483,19 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     z-index:100000 !important;
     width:auto !important;
 }}
-.st-key-top_profile button {{
+.st-key-top_profile {{
+    display:flex !important;
+    align-items:center !important;
+}}
+.st-key-top_profile [data-testid="stPageLink"] {{
+    margin:0 !important;
+}}
+.st-key-top_profile [data-testid="stPageLink"] a {{
     min-height:38px !important;
     height:38px !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
     padding:7px 14px !important;
     border-radius:10px !important;
     font-weight:800 !important;
@@ -493,8 +503,9 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     white-space:nowrap !important;
     background:#111923 !important;
     border:1px solid #263242 !important;
+    text-decoration:none !important;
 }}
-.st-key-top_profile button:hover {{
+.st-key-top_profile [data-testid="stPageLink"] a:hover {{
     border-color:#16C784 !important;
     background:#17251f !important;
 }}
@@ -546,8 +557,9 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
         right:10px !important;
         width:calc(100vw - 20px) !important;
     }}
-    .st-key-top_profile button {{
+    .st-key-top_profile [data-testid="stPageLink"] a {{
         width:100% !important;
+        justify-content:center !important;
     }}
     .st-key-top_menu_drawer {{
         top:62px !important;
@@ -828,10 +840,15 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
 
-    # Render compact controls in the top toolbar area: Profile sits immediately
-    # beside Menu, keeping the most-used account destination one tap away.
-    if st.button("👤  Profile", key="top_profile", type="secondary"):
-        st.switch_page("pages/22_Profile.py")
+    # Use a native Streamlit page link for Profile so navigation does not
+    # depend on a widget callback or rerun timing. st.page_link is designed
+    # for multipage navigation and preserves the current Streamlit session.
+    with st.container(key="top_profile"):
+        st.page_link(
+            "pages/22_Profile.py",
+            label="👤  Profile",
+            use_container_width=False,
+        )
 
     if st.button("☰  Menu", key="top_menu", type="secondary"):
         st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
