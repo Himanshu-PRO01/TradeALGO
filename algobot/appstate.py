@@ -161,6 +161,24 @@ def paper_scope():
             log.close_db()
 
 
+
+@contextmanager
+def strategies_scope():
+    """Saved strategy/backtest library: per-user in hosted mode, local file otherwise."""
+    from .strategy_library import StrategyLibrary
+    if is_hosted():
+        library = st.session_state.get("_ab_strategy_library")
+        if library is None:
+            library = StrategyLibrary(":memory:", check_same_thread=False)
+            st.session_state["_ab_strategy_library"] = library
+        yield library
+    else:
+        library = StrategyLibrary(os.environ.get("ALGOBOT_STRATEGIES", "strategies.db"))
+        try:
+            yield library
+        finally:
+            library.close_db()
+
 def storage_note() -> str:
     if is_hosted():
         return "Kept only while this browser tab is open. Download your journal to keep it."
