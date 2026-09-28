@@ -667,7 +667,6 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
                 label=f"STEP {i+1:02d} · {name}",
                 icon="✓" if i < index else ("●" if i == index else "○"),
                 use_container_width=False,
-                help=descriptions[i],
             )
             if i < total - 1:
                 st.markdown("›")
