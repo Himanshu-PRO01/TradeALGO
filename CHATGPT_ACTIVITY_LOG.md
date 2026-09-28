@@ -30,6 +30,7 @@ This file records changes, checks, and important project decisions made by ChatG
 - Legacy entry point: `dashboard.py`
 - UI pages live under `pages/`.
 - Shared UI styling lives in `algobot/ui.py`.
+- Website test strategy: `WEBSITE_TEST_STRATEGY.md`. Offline site checks: `tests/test_site_integrity.py`. Live-site browser check: `scripts/check_live_site.py` (scheduled by `.github/workflows/site-health.yml`).
 
 ---
 
@@ -783,3 +784,50 @@ Full suite: 369 passed, 1 failed (pre-existing yfinance network block in this sa
 
 ### Notes
 - This was a syntax-only fix. No trading, risk, broker, OpenAlgo, or live-order logic was changed.
+
+
+## Activity: Website test strategy, site integrity tests, live-site health check
+
+**Source:** Claude (Anthropic), working on the uploaded `TradeALGO-main.zip` snapshot.
+
+**Date:** 2026-09-28
+
+### Files changed
+- `WEBSITE_TEST_STRATEGY.md` (new): the five-layer plan for checking the site works, a 10-minute manual checklist, expected-vs-real failure table, and known issues.
+- `tests/test_site_integrity.py` (new): offline checks that read source files only (no server, no internet).
+- `scripts/check_live_site.py` (new): checks a DEPLOYED site over HTTP and in a real headless browser (Playwright).
+- `.github/workflows/site-health.yml` (new): runs the live check every 6 hours and on demand; GitHub emails the owner if it fails.
+- `.gitignore`: added `site-check-artifacts/` (failure screenshots).
+- `CHATGPT_ACTIVITY_LOG.md`: this entry, plus one handover bullet under "Current Repository".
+
+### What changed
+- Integrity tests check that every page (and `Trading_Desk.py`) calls `ui.setup()` before drawing anything (the password gate lives inside it), that every `pages/...py` path mentioned in code exists, that page web addresses are unique, that no `.env`/`.db`/`secrets.toml`/`feedback.csv` or key-looking strings are in the project, that deploy files exist, and that every imported package is in `requirements.txt` (`altair` is allowed because Streamlit installs it).
+- The live check tests: site responds, `/_stcore/health` says ok, then every page in a browser. It wakes a sleeping app, handles Streamlit Cloud's iframe, logs in, and fails on a Streamlit exception box or a JavaScript error. It stops early on a wrong or missing password, and reports if a password was given but no password screen appeared (site open to anyone). Failure screenshots go to `site-check-artifacts/`.
+- No application code was changed.
+
+### Why
+- The existing tests run each page in Streamlit's simulator and cannot see deployment problems (sleeping app, wrong main file, missing server package, browser-only pieces such as the TradingView widget and swipe menu).
+
+### Safety
+- No trading, risk, audit, broker, OpenAlgo, kill-switch or live-order code was touched. Live orders remain locked.
+- No credentials were added to any file. The live check reads `SITE_URL` and `SITE_PASSWORD` from GitHub Actions secrets (or the command line). They must never be written into code, config or this log.
+
+### Tests
+- `python -m pytest -q tests`
+- Result: NOT RUN
+- Details: Streamlit and pytest could not be installed in this session (no internet), so the existing suite was not run. **Do not assume it passes. Run it first.**
+- What WAS run: the new integrity-test functions, through a small pytest stand-in, against the real project. All 19 pages plus `Trading_Desk.py` passed the password-gate check; two deliberately broken fake pages were caught and then deleted. The live-check script ran in real headless Chromium against a fake Streamlit-shaped site (right, wrong and missing password; sleeping app behind a wake button inside an iframe; Python error box; JS crash; site down; site with no password screen) and behaved correctly. It has NOT been run against a real Streamlit Cloud app. Its selectors are in one `SELECTORS` block at the top of the file and may need a small tweak on the first real run (`--headed` shows the browser).
+- Expect exactly one `xfail` in the new tests (see issue 1 below). That is not a failure.
+
+### Commit
+- Not committed yet. To be committed by the project owner or the next agent.
+
+### Known issues found (not fixed here, by design)
+1. The front page (`Trading_Desk.py`, two places) tells visitors to open a "Live Markets" page. No such page exists and the menu has none. This log records `pages/12_Market_Charts.py` (2026-09-25) which is absent from this snapshot, and no entry records its removal. Check GitHub `main`, then either add the page (`algobot/live_data.py` is ready for it) or reword the text. `test_pages_named_in_visitor_text_actually_exist` is marked `xfail` until then.
+2. Main-file mismatch: `HOSTING.md` and this log say the entry point is `Trading_Desk.py`, but a comment in `algobot/ui.py` (`_menu`) says `dashboard.py` is the registered entry point on Cloud, and the menu's "Trading Desk" link points at it. Click that menu item on the live site; if it fails, change the Streamlit Cloud main file to `dashboard.py`.
+3. `ui.setup()` draws the menu before `password_gate()`, so visitors see page names and "HOSTED / LIVE OFF" without logging in. No data leaks and every page is still gated. Moving `password_gate()` earlier is optional and needs owner approval.
+4. `requirements.txt` says `streamlit>=1.40` but the code uses `st.iframe` (see the 2026-09-26 entry). The minimum version that provides it was not confirmed; pin it from a version where the suite passes.
+
+### Notes / follow-up
+- Next agent: (1) run `python -m pytest -q tests` and record the real result here; (2) owner adds GitHub secrets `SITE_URL` and `SITE_PASSWORD`, then runs the "Site health check" workflow once from the Actions tab; (3) decide issues 1 to 4.
+- The new workflow file must live in `.github/workflows/` to run.
