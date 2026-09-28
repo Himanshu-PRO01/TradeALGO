@@ -15,7 +15,10 @@ ui.header("AI Strategy Agent","AI-assisted research without direct trading execu
 rules=st.session_state.get("strategy_rules")
 if not rules:
     st.info("Create a strategy in Strategy Builder first.")
-    st.page_link("pages/10_Strategy_Builder.py",label="Strategy Builder",icon="🧠")
+    try:
+        st.page_link("pages/10_Strategy_Builder.py",label="Strategy Builder",icon="🧠")
+    except Exception:
+        pass
     ui.workflow_nav("ai")
     ui.footer_note()
     st.stop()

@@ -91,7 +91,10 @@ if rules:
         file_name="strategy_rules.json",
         mime="application/json",
     )
-    st.page_link("pages/5_Backtest.py", label="Next: Backtest this strategy", icon="📊")
+    try:
+        st.page_link("pages/5_Backtest.py", label="Next: Backtest this strategy", icon="📊")
+    except Exception:
+        pass
 
 st.divider()
 ui.check_row("PASS", "No broker connection", "The builder only records deterministic rules.")

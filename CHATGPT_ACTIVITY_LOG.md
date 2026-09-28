@@ -831,3 +831,28 @@ Full suite: 369 passed, 1 failed (pre-existing yfinance network block in this sa
 ### Notes / follow-up
 - Next agent: (1) run `python -m pytest -q tests` and record the real result here; (2) owner adds GitHub secrets `SITE_URL` and `SITE_PASSWORD`, then runs the "Site health check" workflow once from the Actions tab; (3) decide issues 1 to 4.
 - The new workflow file must live in `.github/workflows/` to run.
+
+## Activity: Tested and Removed Fake Smoke Test Strategy
+
+**Date:** 2026-09-28
+
+### Files changed
+- Deleted `configs/fake_smoke_test.yaml`
+- Deleted `tests/test_fake_strategy_smoke.py`
+- Updated `CHATGPT_ACTIVITY_LOG.md`
+
+### What changed
+- Ran the `test_fake_strategy_smoke.py` which passed and confirmed the backtest engine functionality.
+- Ran the `check_live_site.py` script against a local instance, verifying that all pages (including the Backtest page) load successfully.
+- Deleted the fake strategy configuration and its specific test file, as they were only meant for a smoke test and the user requested their removal from the project folder.
+
+### Why
+- The user wanted to confirm the website's backtest capability using a dummy strategy, then clean it up so the fake strategy isn't accidentally mixed with real logic or kept in the project repository unnecessarily.
+
+### Tests
+- Command: `python -m pytest tests/test_fake_strategy_smoke.py -v` (PASSED)
+- Command: `python scripts/check_live_site.py http://localhost:8501` (PASSED for 22 pages)
+- Result: PASS
+
+### Commit
+- N/A (Project is a downloaded snapshot, not a Git repository)

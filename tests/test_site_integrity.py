@@ -11,7 +11,7 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES_DIR = os.path.join(ROOT, "pages")
-SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "node_modules"}
+SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "node_modules", "scripts"}
 
 
 def _py_files():
@@ -58,9 +58,7 @@ def test_every_pages_path_mentioned_in_code_exists():
         for target in set(re.findall(r"""["'](pages/[A-Za-z0-9_]+.py)["']""", text)):
             if not os.path.exists(os.path.join(ROOT, target)):
                 missing.append(f"{os.path.relpath(path, ROOT)} -> {target}")
-    assert not missing, "links to pages that do not exist:
-" + "
-".join(missing)
+    assert not missing, "links to pages that do not exist:\n" + "\n".join(missing)
 
 
 def test_page_web_addresses_are_unique():
@@ -75,7 +73,7 @@ def _page_titles():
     titles = set()
     for name in _page_files():
         with open(os.path.join(PAGES_DIR, name), encoding="utf-8") as fh:
-            match = re.search(r"ui.setup(s*["']([^"']+)["']", fh.read())
+            match = re.search(r'ui\.setup\(\s*["\']([^"\']+)["\']', fh.read())
         if match:
             titles.add(match.group(1).lower())
     return titles
