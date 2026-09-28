@@ -144,3 +144,39 @@ def score_result(metrics: dict, min_trades: int = 5) -> float:
 def rank_scanner_rows(rows: list[dict]) -> list[dict]:
     """Sort scanner result rows best-first by `score`, descending."""
     return sorted(rows, key=lambda r: r.get("score", float("-inf")), reverse=True)
+
+
+# Controlled train/test and walk-forward helpers for AI research.
+def train_test_split_df(df, train_fraction=0.7):
+    if not 0.0 < float(train_fraction) < 1.0:
+        raise ValueError("train_fraction must be between 0 and 1.")
+    if df is None or len(df) < 2:
+        raise ValueError("At least two rows are required.")
+    cut=max(1,min(len(df)-1,int(len(df)*float(train_fraction))))
+    train=df.iloc[:cut].copy(); test=df.iloc[cut:].copy()
+    return train,test
+
+def walk_forward_windows(df, test_windows=3):
+    n=int(test_windows)
+    if n < 1 or df is None or len(df) <= n:
+        raise ValueError("Not enough rows for requested walk-forward windows.")
+    block=len(df)//(n+1)
+    if block < 1: raise ValueError("Not enough rows for walk-forward testing.")
+    out=[]
+    for i in range(n):
+        train_end=block*(i+1); test_end=block*(i+2) if i<n-1 else len(df)
+        train=df.iloc[:train_end].copy(); test=df.iloc[train_end:test_end].copy()
+        if train.empty or test.empty: raise ValueError("A walk-forward window is empty.")
+        out.append((train,test))
+    return out
+
+def overfitting_flags(train, test):
+    flags=[]
+    if int(test.get("trades",0) or 0) < 5: flags.append("Small sample: out-of-sample trades are fewer than 5.")
+    if train.get("profit_factor") is not None and test.get("profit_factor") is not None and float(test["profit_factor"]) < float(train["profit_factor"]):
+        flags.append("Profit factor fell out-of-sample.")
+    if train.get("expectancy_per_trade") is not None and test.get("expectancy_per_trade") is not None and float(test["expectancy_per_trade"]) < float(train["expectancy_per_trade"]):
+        flags.append("Expectancy fell out-of-sample.")
+    if train.get("max_drawdown_pct") is not None and test.get("max_drawdown_pct") is not None and abs(float(test["max_drawdown_pct"])) > abs(float(train["max_drawdown_pct"])):
+        flags.append("Out-of-sample drawdown increased.")
+    return flags
