@@ -91,8 +91,9 @@ else:
         "Upload an option-chain CSV",
         type=["csv"],
         help=(
-            "Required underlying columns: datetime, open, high, low, close. "
-            "Option columns should follow CE_24500_open/high/low/close and PE_24500_open/high/low/close."
+            "Wide format: datetime + underlying open/high/low/close plus CE_24500_open/high/low/close "
+            "and PE equivalents. Long historical format: datetime, strike, option_type, option open/high/low/close, "
+            "plus underlying_open/high/low/close; one expiry per file."
         ),
         key="dynamic_options_upload",
     )
