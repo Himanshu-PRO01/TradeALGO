@@ -443,3 +443,29 @@ Live order routing is **locked by default** with `TRADEALGO_EXECUTION_ENABLED=fa
 This software is for learning and testing. Trading can lose money, and no
 backtest guarantees future results. Check current SEBI and broker rules before
 any live use. This is not financial or legal advice.
+
+## Upstox V3 live market data (read-only)
+
+TradeALGO's Tick Engine can consume live Upstox Market Data Feed V3 ticks for research and paper rehearsal. Upstox's Analytics Token is read-only and currently supports market-data/WebSocket access; it cannot place or modify orders.
+
+### Configure the token
+
+Never commit the token to GitHub. For Streamlit Community Cloud, add this secret:
+
+TOML example:
+UPSTOX_ACCESS_TOKEN = "YOUR_UPSTOX_TOKEN"
+
+For local development, set the environment variable:
+
+export UPSTOX_ACCESS_TOKEN="YOUR_UPSTOX_TOKEN"
+
+Then open **Tick Engine → Upstox Live V3**.
+
+Enter the exact Upstox instrument key for the underlying and map option labels to their instrument keys, for example:
+
+CE 24500 = NSE_FO|<instrument-key>
+PE 24500 = NSE_FO|<instrument-key>
+
+Use **full** mode when you want LTP plus best bid/ask and option Greeks. Upstox V3 uses a WebSocket feed and supports ltpc, full, full_d30, and option_greeks modes, subject to its connection/subscription limits.
+
+This integration is deliberately read-only. The Tick Engine does not place broker orders.
