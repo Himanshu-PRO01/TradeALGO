@@ -15,6 +15,12 @@ def fresh():
     return at
 
 
+def own_rules(at):
+    """Switch the page to 'Write my own rules', where the rules box and the confirm gate live."""
+    at.radio(key="strategy_kind").set_value("Write my own rules (advanced)").run()
+    return at
+
+
 def texts(elements):
     return " ".join(str(getattr(e, "value", "")) for e in elements)
 
@@ -24,14 +30,21 @@ def test_dashboard_starts_without_errors_and_shows_the_plain_english_readback():
     assert not at.exception
     assert any("Buy (go long) when" in t.value for t in at.text)
     assert any("Short selling is NOT allowed" in t.value for t in at.text)
-    # Buttons stay locked until the trader confirms the readback.
+    # Ready-made ideas need no confirmation, so the run button is ready straight away.
+    assert not at.button(key="btn_run").disabled
+
+
+def test_own_rules_stay_locked_until_the_trader_confirms_the_readback():
+    at = own_rules(fresh())
+    assert not at.exception
     assert at.button(key="btn_run").disabled
     assert at.button(key="btn_lookahead").disabled
-
-
-def test_confirming_unlocks_the_buttons_and_a_backtest_shows_results():
-    at = fresh()
     at.checkbox(key="confirm").check().run()
+    assert not at.button(key="btn_run").disabled
+
+
+def test_a_backtest_shows_results_without_any_extra_ticking():
+    at = fresh()
     assert not at.button(key="btn_run").disabled
     at.button(key="btn_run").click().run()
     assert not at.exception
@@ -42,21 +55,20 @@ def test_confirming_unlocks_the_buttons_and_a_backtest_shows_results():
 
 def test_lookahead_button_reports_green_checks_for_honest_rules():
     at = fresh()
-    at.checkbox(key="confirm").check().run()
     at.button(key="btn_lookahead").click().run()
     assert not at.exception
     assert len(at.success) == 3 and len(at.error) == 0
 
 
 def test_a_bad_rule_gives_a_friendly_error_not_a_crash():
-    at = fresh()
+    at = own_rules(fresh())
     at.text_area(key="rules_text").set_value('entry_long: "close > nonexistent_column"').run()
     assert not at.exception
     assert any("could not be evaluated" in e.value for e in at.error)
 
 
 def test_dangerous_rule_syntax_is_refused():
-    at = fresh()
+    at = own_rules(fresh())
     at.text_area(key="rules_text").set_value('entry_long: "close.shift(-1) > close"').run()
     assert not at.exception
     assert any("not allowed" in e.value for e in at.error)
@@ -68,7 +80,7 @@ def test_bad_time_and_bad_yaml_are_reported():
     assert not at.exception
     assert any("must be a time" in e.value for e in at.error)
 
-    at = fresh()
+    at = own_rules(fresh())
     at.text_area(key="rules_text").set_value("entry_long: [unclosed").run()
     assert not at.exception
     assert len(at.error) == 1
@@ -76,9 +88,17 @@ def test_bad_time_and_bad_yaml_are_reported():
 
 def test_sma_demo_mode_runs():
     at = fresh()
-    at.radio(key="strategy_kind").set_value("SMA crossover (demo)").run()
+    at.radio(key="strategy_kind").set_value("Moving-average crossover (ready-made)").run()
     assert not at.exception
-    at.checkbox(key="confirm").check().run()
+    at.button(key="btn_run").click().run()
+    assert not at.exception
+    assert any(m.label == "Trades" for m in at.metric)
+
+
+def test_new_era_strategy_runs_instead_of_crashing():
+    at = fresh()
+    at.radio(key="strategy_kind").set_value("New Era Strategy 1.0").run()
+    assert not at.exception
     at.button(key="btn_run").click().run()
     assert not at.exception
     assert any(m.label == "Trades" for m in at.metric)

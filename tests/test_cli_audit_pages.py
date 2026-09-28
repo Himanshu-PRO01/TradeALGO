@@ -122,7 +122,6 @@ def test_option_breakeven_and_ruin_page():
 def test_main_dashboard_now_logs_variants_and_hands_over_to_the_reality_check():
     at = AppTest.from_file(os.path.join(ROOT, "pages", "5_Backtest.py"), default_timeout=90)
     at.run()
-    at.checkbox(key="confirm").check().run()
     at.button(key="btn_run").click().run()
     assert not at.exception
     assert at.session_state["variants_tried"] == 1 and "last_raw" in at.session_state

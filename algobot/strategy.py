@@ -24,7 +24,7 @@ from typing import Callable, Optional
 import pandas as pd
 
 from .config import ConfigError
-from .indicators import add_indicators, add_prev_columns, sma
+from .indicators import add_indicators, add_prev_columns, ema, rsi, sma
 
 BUY, SELL, EXIT = "BUY", "SELL", "EXIT"
 
