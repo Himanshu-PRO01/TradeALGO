@@ -15,7 +15,7 @@ ui.header(
 
 st.info(
     "🟢 DATA SOURCE · Candles come from Upstox V3 OHLC history. "
-    "The live feed updates the current 1-minute candle; TradeALGO does not generate market prices."
+    "The live feed supplies the current LTP separately; chart candles remain official Upstox OHLCV."
 )
 
 token = market_data_token()
@@ -95,7 +95,7 @@ def market_panel():
         ])
 
     if bars.empty:
-        st.info("Waiting for the first Upstox tick. The live chart will populate automatically.")
+        st.info("Official Upstox OHLC candles are not loaded yet. The chart will appear when the candle API returns data.")
         return
 
     analysis = bars.copy()
@@ -188,7 +188,7 @@ def market_panel():
     session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
     signal_text = "signals enabled" if signal_mode else "signals hidden"
     st.caption(
-        f"Session: {session_date} · Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles · {signal_text}. "
+        f"Session: {session_date} · Official Upstox V3 OHLCV candles · live LTP shown separately · {timeframe}-minute candles · {signal_text}. "
         "EMA 20/50, VWAP, previous-session levels and live price are overlays. "
         "Signals are research rules, not predictions; risk lines are reference levels."
     )
@@ -234,13 +234,13 @@ with c:
 
 st.markdown("### Data integrity")
 ui.check_row("PASS", "Official OHLCV", "Historical candles come from Upstox V3 historical/intraday candle APIs.")
-ui.check_row("PASS", "Live updates", "The V3 market feed supplies the latest traded price and updates the current minute.")
+ui.check_row("PASS", "Live updates", "The V3 market feed supplies the latest traded price separately from the official OHLC candle series.")
 ui.check_row("PASS", "No synthetic prices", "TradeALGO does not create or randomize market prices.")
 ui.check_row("PASS", "No live orders", "This Market Desk only visualizes data and supports research/paper trading.")
 
 st.info(storage_note())
 st.markdown(
     "V3 note: Upstox sends market status first, then a market-data snapshot, followed by live updates. "
-    "The current TradeALGO market hub consumes the live price stream and builds one-minute research candles."
+    "The current TradeALGO market hub uses Upstox OHLC history as the chart source and keeps the live price stream separate."
 )
 ui.footer_note("Upstox market data + research only. No live orders.")
