@@ -28,7 +28,8 @@ def _style(chart):
 
 
 def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines: Optional[dict] = None,
-                height: int = 340, max_bars: int = 400, volume: bool = True):
+                height: int = 340, max_bars: int = 400, volume: bool = True,
+                interval_minutes: Optional[int] = None):
     """Candles (green up, red down) with optional volume, horizontal levels and trade markers.
 
     trades: the engine's trade table (entry_time, exit_time, side, entry_price, exit_price, net_pnl).
@@ -41,7 +42,12 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
     d = d.reset_index()
     d["time"] = d["datetime"].dt.strftime("%d %b %Y %H:%M")
     d["bar_start"] = d["datetime"]
-    d["bar_end"] = d["datetime"] + pd.Timedelta(minutes=1)
+    inferred_minutes = int(interval_minutes or 1)
+    if inferred_minutes < 1 and len(d) >= 2:
+        diffs = d["datetime"].diff().dropna().dt.total_seconds().div(60)
+        if len(diffs):
+            inferred_minutes = max(1, int(diffs.mode().iloc[0]))
+    d["bar_end"] = d["datetime"] + pd.Timedelta(minutes=inferred_minutes)
     d["direction"] = np.where(d["close"] >= d["open"], "up", "down")
     colour = alt.Color("direction:N", scale=alt.Scale(domain=["up", "down"], range=[UP, DOWN]), legend=None)
     x = alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None))
@@ -63,7 +69,7 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
         layers += [rule, text]
 
     if trades is not None and len(trades):
-        pos = pd.Series(d["bar"].to_numpy(), index=pd.DatetimeIndex(d["datetime"]))
+        pos = pd.Series(d.index.to_numpy(), index=pd.DatetimeIndex(d["datetime"]))
         rows = []
         for t in trades.itertuples():
             entry, exit_ = pd.Timestamp(t.entry_time), pd.Timestamp(t.exit_time)
