@@ -478,6 +478,47 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     }
 }
 
+/* global interactive hover effects */
+.stButton > button,
+.stDownloadButton > button,
+[data-testid="stFormSubmitButton"] > button,
+[data-testid="stPageLink"] a {
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease,
+                background-color .16s ease, filter .16s ease !important;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-2px) !important;
+    border-color: #3B82F6 !important;
+    box-shadow: 0 7px 18px rgba(0,0,0,.22) !important;
+}
+.stButton > button:active,
+.stDownloadButton > button:active,
+[data-testid="stFormSubmitButton"] > button:active {
+    transform: translateY(0) scale(.98) !important;
+}
+[data-testid="stPageLink"] a:hover {
+    transform: translateX(3px) !important;
+    border-color: #3B82F6 !important;
+    background: rgba(59,130,246,.08) !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,.16) !important;
+}
+[data-testid="stPageLink"] a:active {
+    transform: translateX(1px) scale(.99) !important;
+}
+[data-testid="stExpander"] {
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease !important;
+}
+[data-testid="stExpander"]:hover {
+    border-color: #3B82F655 !important;
+    box-shadow: 0 7px 20px rgba(0,0,0,.16) !important;
+}
+.st-key-mobile_menu button:hover {
+    transform: translateY(-2px) rotate(-2deg) !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.38) !important;
+}
+
 /* floating back-to-top control */
 .st-key-back_to_top {
     position: fixed !important;
