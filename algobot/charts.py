@@ -29,7 +29,7 @@ def _style(chart):
 
 def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines: Optional[dict] = None,
                 height: int = 340, max_bars: int = 400, volume: bool = True,
-                interval_minutes: Optional[int] = None):
+                interval_minutes: Optional[int] = None, overlays: Optional[dict] = None):
     """Candles (green up, red down) with optional volume, horizontal levels and trade markers.
 
     trades: the engine's trade table (entry_time, exit_time, side, entry_price, exit_price, net_pnl).
@@ -58,6 +58,33 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
         x=alt.X("bar_start:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
         x2="bar_end:T", y="open:Q", y2="close:Q", color=colour, tooltip=tip)
     layers = [wick, body]
+
+    overlay_styles = {
+        "EMA 20": BLUE,
+        "EMA 50": WARN,
+        "VWAP": TEXT_LINE,
+        "Live price": UP,
+    }
+    for label, column in (overlays or {}).items():
+        if column not in d.columns:
+            continue
+        overlay = d[["datetime", column]].dropna()
+        if overlay.empty:
+            continue
+        layers.append(
+            alt.Chart(overlay).mark_line(
+                color=overlay_styles.get(label, BLUE),
+                strokeWidth=1.8 if label != "Live price" else 1.4,
+                strokeDash=[6, 3] if label == "Live price" else [1, 0],
+            ).encode(
+                x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
+                y=alt.Y(f"{column}:Q", scale=alt.Scale(zero=False)),
+                tooltip=[
+                    alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"),
+                    alt.Tooltip(f"{column}:Q", title=label, format=",.2f"),
+                ],
+            )
+        )
 
     for label, price in (hlines or {}).items():
         if price is None or not np.isfinite(price):
