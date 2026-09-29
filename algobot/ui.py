@@ -704,7 +704,7 @@ html::-webkit-scrollbar-corner {{
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
 
 /* clean utility/action bar */
-.st-key-utility_bar {
+.st-key-utility_bar {{
     width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 0 12px 0 !important;
@@ -712,19 +712,19 @@ html::-webkit-scrollbar-corner {{
     border: 1px solid {BORDER} !important;
     border-radius: 12px !important;
     background: {PANEL} !important;
-}
-.st-key-utility_bar [data-testid="stHorizontalBlock"] {
+}}
+.st-key-utility_bar [data-testid="stHorizontalBlock"] {{
     align-items: center !important;
-}
-.st-key-utility_bar .stCaption {
+}}
+.st-key-utility_bar .stCaption {{
     margin-right: auto !important;
     color: {MUTED} !important;
     font-size: .72rem !important;
     font-weight: 800 !important;
     letter-spacing: .12em !important;
-}
+}}
 .st-key-utility_bar [data-testid="stPageLink"] a,
-.st-key-utility_bar .stButton > button {
+.st-key-utility_bar .stButton > button {{
     min-height: 36px !important;
     height: 36px !important;
     padding: 6px 13px !important;
@@ -734,31 +734,31 @@ html::-webkit-scrollbar-corner {{
     font-size: .82rem !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
-}
+}}
 .st-key-utility_bar [data-testid="stPageLink"] a:hover,
-.st-key-utility_bar .stButton > button:hover {
+.st-key-utility_bar .stButton > button:hover {{
     background: rgba(59,130,246,.10) !important;
     border-color: #3B82F6 !important;
     transform: translateY(-1px) !important;
-}
-.st-key-desk_header {
+}}
+.st-key-desk_header {{
     margin-top: 0 !important;
-}
-@media (max-width:768px) {
-    .st-key-utility_bar {
+}}
+@media (max-width:768px) {{
+    .st-key-utility_bar {{
         overflow-x: auto !important;
         padding: 6px 8px !important;
-    }
-    .st-key-utility_bar [data-testid="stHorizontalBlock"] {
+    }}
+    .st-key-utility_bar [data-testid="stHorizontalBlock"] {{
         min-width: max-content !important;
-    }
+    }}
     .st-key-utility_bar [data-testid="stPageLink"] a,
-    .st-key-utility_bar .stButton > button {
+    .st-key-utility_bar .stButton > button {{
         min-height: 40px !important;
         height: 40px !important;
         padding: 7px 11px !important;
-    }
-}
+    }}
+}}
 /* guided workflow */
 .ta-workflow {{
     width: 100%;
