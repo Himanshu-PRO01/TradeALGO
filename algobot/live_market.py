@@ -74,6 +74,40 @@ def _number(value):
     except (TypeError, ValueError):
         return None
 
+def _authorize_market_feed(token: str) -> str:
+    """Get Upstox's one-time authorized WebSocket URL before connecting."""
+    import requests
+
+    url = "https://api.upstox.com/v3/feed/market-data-feed/authorize"
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+    resp = requests.get(url, headers=headers, timeout=10)
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"Upstox WebSocket authorization HTTP {resp.status_code}: {resp.text[:180]}"
+        )
+    payload = resp.json()
+    redirect_uri = ((payload.get("data") or {}).get("authorized_redirect_uri"))
+    if not redirect_uri:
+        raise RuntimeError("Upstox WebSocket authorization returned no authorized_redirect_uri.")
+    return redirect_uri
+
+
+def _decode_market_feed_message(message):
+    """Decode Upstox V3 protobuf bytes into the dict consumed by _ingest()."""
+    if isinstance(message, str):
+        try:
+            return json.loads(message)
+        except json.JSONDecodeError:
+            return None
+    try:
+        from google.protobuf.json_format import MessageToDict
+        from upstox_client.feeder.proto import MarketDataFeedV3_pb2
+
+        decoded = MarketDataFeedV3_pb2.FeedResponse.FromString(message)
+        return MessageToDict(decoded)
+    except Exception:
+        return None
+
 
 class LiveMarketHub:
     """One market stream per process, shared by all Streamlit sessions.
@@ -115,60 +149,77 @@ class LiveMarketHub:
             self._start_backfill(key)
 
     def _run(self, keys):
+        """Connect through Upstox's V3 authorization endpoint, then open the one-time WebSocket URL.
+
+        The SDK's direct websocket path can receive a 403 handshake. Upstox documents the
+        authorize-then-connect flow for V3, so TradeALGO performs that flow explicitly.
+        """
         try:
-            import upstox_client
+            import requests
+            import websocket
         except ImportError as exc:
             with self._lock:
-                self._last_error = "upstox-python-sdk is not installed."
+                self._last_error = f"Realtime websocket dependencies are unavailable: {exc}"
+            self._start_polling(keys)
             return
 
-        try:
-            configuration = upstox_client.Configuration()
-            configuration.access_token = self.token
-            streamer = upstox_client.MarketDataStreamerV3(
-                upstox_client.ApiClient(configuration), list(keys), "full"
-            )
-            self._streamer = streamer
-
-            def on_open():
-                with self._lock:
-                    self._connected = True
-                    self._last_error = ""
-                try:
-                    streamer.subscribe(list(keys), "full")
-                except Exception:
-                    pass
-
-            def on_close(*_):
-                with self._lock:
-                    self._connected = False
-
-            def on_error(error):
-                with self._lock:
-                    self._connected = False
-                    self._last_error = str(error)[:300]
-                if "403" in str(error) or "forbidden" in str(error).lower():
-                    self._start_polling(keys)
-
-            def on_message(message):
-                self._ingest(message)
-
-            streamer.on("open", on_open)
-            streamer.on("close", on_close)
-            streamer.on("error", on_error)
-            streamer.on("message", on_message)
+        while True:
             try:
-                streamer.auto_reconnect(True, 5, 20)
-            except Exception:
-                pass
-            streamer.connect()
-        except Exception as exc:
-            with self._lock:
-                self._connected = False
-                self._last_error = str(exc)[:300]
-            self._start_polling(keys)
-        finally:
-            self._streamer = None
+                ws_url = _authorize_market_feed(self.token)
+
+                def on_open(ws):
+                    with self._lock:
+                        self._connected = True
+                        self._last_error = ""
+                    request = {
+                        "guid": f"tradealgo-{int(time.time() * 1000)}",
+                        "method": "sub",
+                        "data": {"mode": "full", "instrumentKeys": list(keys)},
+                    }
+                    ws.send(json.dumps(request).encode("utf-8"), opcode=websocket.ABNF.OPCODE_BINARY)
+
+                def on_close(_ws, *_):
+                    with self._lock:
+                        self._connected = False
+
+                def on_error(_ws, error):
+                    with self._lock:
+                        self._connected = False
+                        self._last_error = str(error)[:300]
+
+                def on_message(_ws, message):
+                    payload = _decode_market_feed_message(message)
+                    if payload is not None:
+                        self._ingest(payload)
+
+                self._streamer = websocket.WebSocketApp(
+                    ws_url,
+                    on_open=on_open,
+                    on_message=on_message,
+                    on_error=on_error,
+                    on_close=on_close,
+                )
+                self._streamer.run_forever(
+                    sslopt={"cert_reqs": __import__("ssl").CERT_REQUIRED}
+                )
+
+                with self._lock:
+                    connected = self._connected
+                if connected:
+                    continue
+
+                # The authorized URL is single-use. Fetch a fresh one before reconnecting.
+                time.sleep(5)
+            except Exception as exc:
+                with self._lock:
+                    self._connected = False
+                    self._last_error = str(exc)[:300]
+                # REST polling remains the safety fallback if authorization or websocket
+                # connection is unavailable, but it is rate-limited by _poll_loop().
+                self._start_polling(keys)
+                time.sleep(30)
+            finally:
+                self._streamer = None
 
     def _start_polling(self, keys):
         with self._lock:
