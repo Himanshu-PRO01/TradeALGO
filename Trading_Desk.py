@@ -1,166 +1,234 @@
-"""Front page of the trading desk. Start it with:  streamlit run Trading_Desk.py"""
+"""TradeALGO Market Desk: live Upstox market data with a TradingView-style research view."""
 import json
 
 import streamlit as st
 
-from algobot import charts, live_chart, ui
+from algobot import charts, ui
 from algobot.appstate import is_hosted, storage_note
+from algobot.live_market import INSTRUMENTS, get_market_hub, market_data_token
 
-ui.setup("Trading Desk", "🏠")
-ui.header("Trading Desk", "Size it, log it, practise it, test it. A workshop for learning and testing, "
-          "not a signal service and not a broker.")
+ui.setup("Market Desk", "📈")
+ui.header(
+    "Market Desk",
+    "Live market data from Upstox V3, with a TradingView chart option. Research and paper-trading only.",
+    mode="research:Market",
+)
 
-ui.ticker([("Live orders", "OFF", "up"),
-           ("Broker", "OpenAlgo connected (read-only)" if live_chart.openalgo_configured() else "not connected", None),
-           ("Mode", "hosted" if is_hosted() else "local", None), ("Fake markets", "7 kinds", None),
-           ("Journal", "in this browser tab" if is_hosted() else "on this computer", None)])
+st.info(
+    "🟢 MARKET DATA · Upstox Market Data Feed V3 is the live price source. "
+    "The TradingView tab is a separate embedded chart and is not fed by Upstox."
+)
 
+market_tab, tradingview_tab = st.tabs(["⚡ Upstox Live", "📊 TradingView"])
+
+with market_tab:
+    token = market_data_token()
+    if not token:
+        st.warning(
+            "Upstox live data is not configured. Add UPSTOX_ANALYTICS_TOKEN to Streamlit Secrets "
+            "(preferred for read-only market data) or UPSTOX_ACCESS_TOKEN. Never put the token in GitHub."
+        )
+    else:
+        market_label = st.selectbox(
+            "Market",
+            list(INSTRUMENTS),
+            index=0,
+            key="desk_upstox_market",
+        )
+        instrument_key = INSTRUMENTS[market_label]
+        window = st.slider(
+            "Candles",
+            min_value=60,
+            max_value=600,
+            value=240,
+            step=30,
+            key="desk_upstox_window",
+        )
+
+        hub = get_market_hub(token)
+        hub.start([instrument_key])
+        status_box = st.empty()
+
+        @st.fragment(run_every="2s")
+        def market_panel():
+            status = hub.status()
+            latest = hub.latest(instrument_key)
+            bars = hub.snapshot(instrument_key, max_bars=window)
+
+            if status["connected"]:
+                mode = status.get("mode")
+                mode_note = " · REST fallback (~3s)" if mode == "rest-polling" else " · WebSocket"
+                status_box.success(
+                    f"🟢 Upstox live{mode_note} · {len(bars)} one-minute candles · "
+                    f"{status['ticks']:,} ticks cached"
+                )
+            elif status["last_error"]:
+                status_box.error(f"🔴 Upstox feed error: {status['last_error']}")
+            else:
+                status_box.info("🟡 Connecting to Upstox Market Data Feed V3…")
+
+            if latest:
+                previous = bars["close"].iloc[-2] if len(bars) >= 2 else latest["price"]
+                change = latest["price"] - float(previous)
+                ui.ticker([
+                    ("Market", market_label, None),
+                    ("LTP", f"₹{latest['price']:,.2f}", ui.tone(change)),
+                    ("Move", f"{change:+,.2f}", ui.tone(change)),
+                    ("Last tick", latest["datetime"].strftime("%H:%M:%S"), None),
+                    ("Feed", "LIVE", "up"),
+                ])
+
+            if bars.empty:
+                st.info("Waiting for the first Upstox tick. The live chart will populate automatically.")
+                return
+
+            ui.show_chart(charts.candlestick(bars, height=560, max_bars=window, volume=True))
+            st.caption(
+                "Candles are built from observed Upstox V3 ticks in this TradeALGO server process. "
+                "No AI-generated prices and no broker orders are used."
+            )
+
+        market_panel()
+
+with tradingview_tab:
+    tv_symbol = st.selectbox(
+        "TradingView symbol",
+        ["NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK", "NSE:NIFTY1!", "NSE:BANKNIFTY1!"],
+        index=0,
+        key="desk_tv_symbol",
+    )
+    tv_interval = st.selectbox(
+        "Timeframe",
+        ["1", "5", "15", "30", "60", "D", "W"],
+        index=2,
+        format_func=lambda value: {
+            "1": "1 minute",
+            "5": "5 minutes",
+            "15": "15 minutes",
+            "30": "30 minutes",
+            "60": "1 hour",
+            "D": "1 day",
+            "W": "1 week",
+        }[value],
+        key="desk_tv_interval",
+    )
+    tv_height = st.slider(
+        "Chart height",
+        min_value=500,
+        max_value=1100,
+        value=700,
+        step=20,
+        key="desk_tv_height",
+    )
+
+    tv_config = {
+        "autosize": False,
+        "height": tv_height,
+        "symbol": tv_symbol,
+        "interval": tv_interval,
+        "timezone": "exchange",
+        "theme": "dark",
+        "style": "1",
+        "withdateranges": True,
+        "hide_side_toolbar": False,
+        "allow_symbol_change": False,
+        "save_image": True,
+        "hide_volume": False,
+        "details": True,
+        "calendar": False,
+        "support_host": "https://www.tradingview.com",
+        "studies": ["MASimple@tv-basicstudies", "RSI@tv-basicstudies"],
+    }
+    tv_html = f"""
+    <div class="tradingview-widget-container"
+         style="height:{tv_height}px;min-height:{tv_height}px;width:100%;overflow:hidden">
+      <div class="tradingview-widget-container__widget"
+           style="height:{tv_height}px;min-height:{tv_height}px;width:100%;overflow:hidden"></div>
+      <div class="tradingview-widget-copyright"
+           style="font-size:11px;text-align:center;padding-top:4px;">
+        <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
+          Charts by TradingView
+        </a>
+      </div>
+      <script type="text/javascript"
+              src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+              async>
+        {json.dumps(tv_config)}
+      </script>
+    </div>
+    """
+    st.html(tv_html, height=tv_height + 20)
+
+    st.caption(
+        "TradingView is an independent embedded chart. Its feed is supplied by TradingView, "
+        "not by the Upstox V3 connection."
+    )
+
+st.divider()
+
+st.subheader("TradeALGO workspace")
 a, b, c = st.columns(3)
 with a:
-    st.markdown(ui.card("Before a trade", "How many lots fit your loss limit, and are today's limits still open? "
-                        "Then write the trade down.", "🧮"), unsafe_allow_html=True)
+    st.markdown(
+        ui.card(
+            "Before a trade",
+            "Size the position, check your loss limit, and record the idea before taking risk.",
+            "🧮",
+        ),
+        unsafe_allow_html=True,
+    )
     st.page_link("pages/1_Position_size.py", label="Position size", icon="🧮")
     st.page_link("pages/2_Journal_and_report.py", label="Journal and daily report", icon="📒")
 with b:
-    st.markdown(ui.card("Practise", "Buy and sell Nifty options with fake money in a fake market. Feel time decay "
-                        "and spread without paying for the lesson.", "🎯"), unsafe_allow_html=True)
+    st.markdown(
+        ui.card(
+            "Practise",
+            "Use fake money to rehearse option trades and understand time decay and spread.",
+            "🎯",
+        ),
+        unsafe_allow_html=True,
+    )
     st.page_link("pages/3_Practice_room.py", label="Practice room", icon="🎯")
     st.page_link("pages/4_Option_breakeven_and_ruin.py", label="Option breakeven and ruin", icon="⏳")
 with c:
-    st.markdown(ui.card("Research", "Test a rule on past prices, then try to break it before real money does.", "🔬"),
-                unsafe_allow_html=True)
+    st.markdown(
+        ui.card(
+            "Research",
+            "Backtest rules, stress-test them, and inspect whether the evidence survives.",
+            "🔬",
+        ),
+        unsafe_allow_html=True,
+    )
     st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
     st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
     st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
 
-st.markdown("### 📈 Market Chart")
-st.caption("Real market visualization for research. No live orders are placed from this page.")
-
-use_openalgo = st.checkbox(
-    "Use my OpenAlgo broker for this chart (real candles, no TradingView limits)",
-    value=live_chart.openalgo_configured(),
-    disabled=not live_chart.openalgo_configured(),
-    help="Off by default. Needs OPENALGO_API_KEY (and OPENALGO_HOST if OpenAlgo isn't on this machine) "
-         "set as a local .env value or a Streamlit secret -- the site operator's own broker connection, "
-         "never requested from a visitor. When it's connected, every symbol below (including "
-         "NIFTY1!/BANKNIFTY1!) charts your broker's real data instead of TradingView's widget, which "
-         "can't redistribute most NSE data for free.",
-    key="dashboard_use_openalgo",
+st.markdown("### What this market page uses")
+ui.check_row(
+    "PASS",
+    "Upstox V3 market feed",
+    "Live ticks are supplied by Upstox. V3 supports LTPC, option Greeks, full market data and deeper full-D30 feeds depending on subscription mode.",
+)
+ui.check_row(
+    "PASS",
+    "REST fallback",
+    "If the Upstox WebSocket is refused with 403, TradeALGO can fall back to REST LTP polling so the market view can continue updating.",
+)
+ui.check_row(
+    "PASS",
+    "TradingView option",
+    "The embedded TradingView chart remains available separately; it is not mixed with the Upstox data stream.",
+)
+ui.check_row(
+    "PASS",
+    "No live orders",
+    "This Market Desk is for visualization and research. It does not place broker orders.",
 )
 
-chart_controls = st.columns([2, 2, 3])
-with chart_controls[0]:
-    dashboard_symbol = st.selectbox(
-        "Symbol (widget-supported feed)",
-        ["NSE:RELIANCE", "NSE:HDFCBANK", "NSE:ICICIBANK", "NSE:NIFTY1!", "NSE:BANKNIFTY1!"],
-        index=0,
-        key="dashboard_chart_symbol",
-        help="Continuous futures symbols (NIFTY1!/BANKNIFTY1!) often fail with a "
-             "'permission denied' error on TradingView's free anonymous embed -- that's "
-             "a TradingView data-licensing restriction, not a bug here. Equity symbols "
-             "load reliably. For a working NIFTY/Sensex chart with no such restriction, "
-             "use the Live Markets page instead (free delayed data, no TradingView account needed).",
-    )
-with chart_controls[1]:
-    dashboard_interval = st.selectbox(
-        "Timeframe",
-        ["1", "5", "15", "30", "60", "D", "W"],
-        index=2,
-        format_func=lambda x: {
-            "1": "1 minute", "5": "5 minutes", "15": "15 minutes",
-            "30": "30 minutes", "60": "1 hour", "D": "1 day", "W": "1 week"
-        }[x],
-        key="dashboard_chart_interval",
-    )
-with chart_controls[2]:
-    dashboard_height = st.slider(
-        "Chart height",
-        min_value=500,
-        max_value=1200,
-        value=720,
-        step=20,
-        help="Drag this to make the dashboard chart smaller or larger. 720–1000 px works well on phones and desktop; increase it for detailed viewing.",
-        key="dashboard_chart_height",
-    )
-
-dashboard_chart_config = {
-    "autosize": False,
-    "height": dashboard_height,
-    "symbol": dashboard_symbol,
-    "interval": dashboard_interval,
-    "timezone": "exchange",
-    "theme": "dark",
-    "style": "1",
-    "withdateranges": True,
-    "hide_side_toolbar": False,
-    "allow_symbol_change": False,
-    "save_image": True,
-    "hide_volume": False,
-    "details": True,
-    "calendar": False,
-    "support_host": "https://www.tradingview.com",
-    "studies": ["MASimple@tv-basicstudies", "RSI@tv-basicstudies"],
-}
-
-dashboard_chart_html = f"""
-<div class="tradingview-widget-container" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden">
-  <div class="tradingview-widget-container__widget" style="height:{dashboard_height}px;min-height:{dashboard_height}px;width:100%;overflow:hidden"></div>
-  <div class="tradingview-widget-copyright"
-       style="font-size:11px;text-align:center;padding-top:4px;">
-    <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">
-      Charts by TradingView
-    </a>
-  </div>
-  <script type="text/javascript"
-          src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
-          async>
-    {json.dumps(dashboard_chart_config)}
-  </script>
-</div>
-"""
-
-candles, live_chart_error = (live_chart.fetch_candles(dashboard_symbol, dashboard_interval)
-                              if use_openalgo else (None, None))
-if candles is not None:
-    ui.show_chart(charts.candlestick(candles, height=dashboard_height))
-    st.caption(f"{len(candles):,} real candles for {dashboard_symbol} from your OpenAlgo broker connection. "
-               "Research visualization only; no live orders are placed from this page.")
-else:
-    if use_openalgo:
-        st.warning(f"Couldn't get real candles from OpenAlgo: {live_chart_error} Showing the TradingView "
-                   "widget below instead.")
-    st.iframe(dashboard_chart_html, height=dashboard_height + 15)
-    st.caption("NIFTY1!/BANKNIFTY1! (continuous futures) sometimes get a 'permission denied' error from "
-               "TradingView's free anonymous embed -- that's a TradingView data-licensing limit, not a bug "
-               "here. Equity symbols above are reliable. For an always-working NIFTY/Sensex/Bank Nifty chart "
-               "with no broker needed, use the **Live Markets** page (free delayed data, no TradingView "
-               "restriction), or turn on the OpenAlgo option above once it's connected.")
-
-
-st.markdown("### A 10-minute tour")
-st.markdown("""
-1. **Position size**: enter an option price and a stop. See how many lots fit your loss limit, and what a few losses in a row would do to the account.
-2. **Practice room**: start a market (leave it on *random* so you cannot peek), buy an option with a stop, run the clock, sell, then press *Finish and review*. The review splits every trade into what the market move earned and what time decay, spread and charges took.
-3. **Option breakeven and ruin**: for an at-the-money option with 3 days left, how far must Nifty move just to break even? And how likely is a normal losing streak to wreck a small account?
-4. **Journal and report**: write one practice-style trade down and read the daily report. It flags trades without a stop and broken limits.
-5. **Feedback**: write what is wrong, confusing or missing, in trading words. That is the most useful thing you can do.
-""")
-
-left, right = st.columns(2)
-with left:
-    st.markdown("### The most useful feedback")
-    st.markdown("""
-- **Trading terms that are wrong or unclear** (a label, a formula, a rule)
-- **Numbers that do not match Upstox or TradingView**
-- **Screens you would check every day** and what is missing from them
-- **Your exact rules**: which levels, what triggers an entry, where the stop goes, when you skip a trade
-""")
-with right:
-    st.markdown("### What this tool will never do")
-    st.markdown("""
-- Place an order or connect to your broker account
-- Ask for a password, OTP or API key (if anything ever does, close it)
-- Promise a profit. It can test ideas and enforce your own limits. That is all.
-""")
 st.info(storage_note())
-ui.footer_note()
+st.markdown(
+    "V3 note: Upstox sends market status first, then a market-data snapshot, followed by live updates. "
+    "The feed uses instrument keys and supports subscription modes such as LTPC, option Greeks, full and full D30. "
+    "The current TradeALGO market hub consumes the live price stream and builds one-minute research candles."
+)
+ui.footer_note("Market data + research only. No live orders.")
