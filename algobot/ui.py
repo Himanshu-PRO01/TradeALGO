@@ -27,6 +27,33 @@ _SWIPE_MENU_COMPONENT = None
 _BACK_TO_TOP_COMPONENT = None
 
 
+def is_dark_mode() -> bool:
+    """Return the current TradeALGO appearance preference."""
+    return st.session_state.get("tradealgo_theme", "dark") == "dark"
+
+
+def theme_toggle() -> None:
+    """Compact global dark/light mode toggle shared by every page."""
+    current_dark = is_dark_mode()
+    col1, col2, col3 = st.columns([1, 1.2, 8])
+    with col1:
+        st.caption("🌙" if current_dark else "☀️")
+    with col2:
+        dark = st.toggle(
+            "Dark mode",
+            value=current_dark,
+            key="tradealgo_theme_toggle",
+            label_visibility="collapsed",
+        )
+    new_mode = "dark" if dark else "light"
+    if st.session_state.get("tradealgo_theme") != new_mode:
+        st.session_state["tradealgo_theme"] = new_mode
+        st.rerun()
+    with col3:
+        st.caption("Dark mode" if dark else "Light mode")
+
+
+
 def _swipe_menu_component():
     """Install a tiny mobile edge-swipe listener without changing trading logic."""
     global _SWIPE_MENU_COMPONENT
@@ -929,6 +956,51 @@ html::-webkit-scrollbar-corner {
 """
 
 
+LIGHT_CSS = """
+<style>
+:root {
+    color-scheme: light;
+}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+    background: #f7f9fc !important;
+    color: #172033 !important;
+}
+[data-testid="stHeader"] { background: rgba(247,249,252,.92) !important; }
+[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #d9e0ea !important;
+}
+.ab-card, .ab-hero, .ab-check, .ab-strip, [data-testid="stMetric"],
+.stExpander, [data-testid="stForm"], [data-testid="stVerticalBlockBorderWrapper"] {
+    background: #ffffff !important;
+    border-color: #d9e0ea !important;
+    color: #172033 !important;
+}
+.ab-menu-head { border-bottom-color: #d9e0ea !important; }
+.ab-menu-status, .ab-menu-section, .stCaption, [data-testid="stMetricLabel"] { color: #64748b !important; }
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover { background: #eef4ff !important; }
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] { background: #e8f0ff !important; }
+.stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #cbd5e1 !important;
+}
+.stButton > button:hover, .stDownloadButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover { background: #f1f5f9 !important; }
+.stTextInput input, .stNumberInput input, .stTextArea textarea,
+.stDateInput input, .stTimeInput input, [data-baseweb="select"] {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #cbd5e1 !important;
+}
+[data-baseweb="popover"], [data-baseweb="menu"] { background: #ffffff !important; color: #172033 !important; }
+[data-baseweb="menu"] li:hover { background: #eef4ff !important; }
+code, pre { background: #eef2f7 !important; color: #172033 !important; }
+#algobot-scroll-progress { box-shadow: 0 0 8px rgba(37,99,235,.25) !important; }
+</style>
+"""
+
+
 
 WORKFLOW_STEPS = [
     ("guide", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
@@ -1041,7 +1113,10 @@ def language_toggle() -> None:
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
+    st.session_state.setdefault("tradealgo_theme", "dark")
     st.markdown(CSS, unsafe_allow_html=True)
+    if not is_dark_mode():
+        st.markdown(LIGHT_CSS, unsafe_allow_html=True)
     st.markdown("""
     <script>
     (() => {
@@ -1073,6 +1148,7 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     st.session_state.setdefault("top_menu_open", False)
     _menu()
     language_toggle()
+    theme_toggle()
     swipe_component = _swipe_menu_component()
     if swipe_component is not None:
         try:
