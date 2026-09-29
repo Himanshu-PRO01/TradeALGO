@@ -245,21 +245,31 @@ class LiveMarketHub:
             f"{base}/intraday/{enc}/minutes/1",
         ]
         rows, errors = {}, []
+        endpoint_results = []
         for url in urls:
             try:
                 resp = requests.get(url, headers=headers, timeout=15)
                 if resp.status_code != 200:
-                    raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:100]}")
-                for row in _parse_candles(resp.json()):
+                    raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:180]}")
+                payload = resp.json()
+                parsed = _parse_candles(payload)
+                endpoint_results.append((url, len(parsed)))
+                for row in parsed:
                     rows[row["datetime"]] = row
             except Exception as exc:
-                errors.append(str(exc)[:120])
+                endpoint_results.append((url, 0))
+                errors.append(str(exc)[:180])
+
+        if not rows and not errors:
+            errors.append("Upstox returned 200 but no OHLC candles for this instrument/time range.")
+
         with self._lock:
-            self._history_error = "; ".join(errors) if errors and not rows else ""
+            self._history_error = "; ".join(errors) if errors else ""
         if rows:
             self._merge_history(key, list(rows.values()))
             with self._lock:
                 self._history_bars[key] = len(rows)
+                self._history_error = ""
 
     def _merge_history(self, key, rows):
         with self._lock:
