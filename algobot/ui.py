@@ -1202,6 +1202,17 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
             label="💬 Feedback",
             use_container_width=False,
         )
+        dark = st.toggle(
+            "🌙",
+            value=is_dark_mode(),
+            key="tradealgo_theme_toggle_top",
+            help="Switch between dark and light mode",
+            label_visibility="collapsed",
+        )
+        new_mode = "dark" if dark else "light"
+        if st.session_state.get("tradealgo_theme") != new_mode:
+            st.session_state["tradealgo_theme"] = new_mode
+            st.rerun()
         if st.button("☰ Menu", key="top_menu", type="secondary"):
             st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
             st.rerun()
