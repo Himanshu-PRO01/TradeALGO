@@ -30,7 +30,7 @@ def test_live_market_hub_aggregates_ticks_into_minute_bars():
             },
         }
     )
-    bars = hub.snapshot("NSE_INDEX|Nifty 50")
+    bars = hub.snapshot("NSE_INDEX|Nifty 50", allow_live_fallback=True)
     assert len(bars) == 1
     row = bars.iloc[0]
     assert row["open"] == 25000.0
@@ -81,7 +81,7 @@ def test_history_merge_keeps_live_bars_and_orders_by_time():
             {"datetime": t2, "open": 9, "high": 9, "low": 9, "close": 9, "volume": 1.0},
         ],
     )
-    bars = hub.snapshot(key)
+    bars = hub.snapshot(key, allow_live_fallback=True)
     assert len(bars) == 2
     assert bars["close"].iloc[-1] == 111.0  # live value wins
     assert bars.index.is_monotonic_increasing
