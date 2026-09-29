@@ -94,6 +94,7 @@ class LiveMarketHub:
         self._poll_thread = None
         self._backfilled = set()
         self._history_error = ""
+        self._history_bars = defaultdict(int)
         self._last_error = ""
         self._ticks = defaultdict(lambda: deque(maxlen=_MAX_TICKS))
         self._bars = defaultdict(lambda: deque(maxlen=_MAX_BARS))
@@ -257,6 +258,8 @@ class LiveMarketHub:
             self._history_error = "; ".join(errors) if errors and not rows else ""
         if rows:
             self._merge_history(key, list(rows.values()))
+            with self._lock:
+                self._history_bars[key] = len(rows)
 
     def _merge_history(self, key, rows):
         with self._lock:
@@ -312,13 +315,23 @@ class LiveMarketHub:
                 }
             )
 
-    def snapshot(self, instrument_key: str, max_bars: int = 300) -> pd.DataFrame:
+    def snapshot(self, instrument_key: str, max_bars: int = 300, interval_minutes: int = 1) -> pd.DataFrame:
+        """Return Upstox OHLCV candles, optionally aggregated to a larger timeframe."""
         with self._lock:
             rows = list(self._bars.get(instrument_key, ()))
         if not rows:
             return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
-        df = pd.DataFrame(rows).drop_duplicates("datetime", keep="last").set_index("datetime")
-        return df.tail(max_bars).sort_index()
+        df = pd.DataFrame(rows).drop_duplicates("datetime", keep="last").set_index("datetime").sort_index()
+        interval_minutes = max(1, int(interval_minutes))
+        if interval_minutes > 1:
+            df = df.resample(f"{interval_minutes}min", origin="start_day").agg(
+                open=("open", "first"),
+                high=("high", "max"),
+                low=("low", "min"),
+                close=("close", "last"),
+                volume=("volume", "sum"),
+            ).dropna(subset=["open", "high", "low", "close"])
+        return df.tail(max_bars)
 
     def latest(self, instrument_key: str) -> dict | None:
         with self._lock:
