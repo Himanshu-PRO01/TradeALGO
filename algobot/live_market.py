@@ -130,6 +130,7 @@ class LiveMarketHub:
         self._backfilled = set()
         self._history_error = ""
         self._history_bars = defaultdict(int)
+        self._official_bars = defaultdict(lambda: deque(maxlen=_MAX_BARS))
         self._last_error = ""
         self._ticks = defaultdict(lambda: deque(maxlen=_MAX_TICKS))
         self._bars = defaultdict(lambda: deque(maxlen=_MAX_BARS))
@@ -342,11 +343,23 @@ class LiveMarketHub:
                 self._history_error = ""
 
     def _merge_history(self, key, rows):
+        """Store official Upstox OHLC separately from locally aggregated ticks."""
         with self._lock:
-            merged = {row["datetime"]: row for row in rows}
+            official = {row["datetime"]: row for row in rows}
+            self._official_bars[key] = deque(
+                sorted(official.values(), key=lambda b: b["datetime"]),
+                maxlen=_MAX_BARS,
+            )
+            # Keep the combined cache for live consumers, but official OHLC
+            # remains the source of truth for chart snapshots.
+            merged = dict(official)
             for bar in self._bars[key]:
-                merged[bar["datetime"]] = bar
-            self._bars[key] = deque(sorted(merged.values(), key=lambda b: b["datetime"]), maxlen=_MAX_BARS)
+                if bar["datetime"] not in merged:
+                    merged[bar["datetime"]] = bar
+            self._bars[key] = deque(
+                sorted(merged.values(), key=lambda b: b["datetime"]),
+                maxlen=_MAX_BARS,
+            )
 
     def _ingest(self, raw):
         payload = _as_dict(raw)
@@ -401,10 +414,17 @@ class LiveMarketHub:
         max_bars: int = 300,
         interval_minutes: int = 1,
         latest_session_only: bool = True,
+        allow_live_fallback: bool = False,
     ) -> pd.DataFrame:
-        """Return contiguous Upstox OHLCV candles for the latest trading session by default."""
+        """Return official Upstox OHLCV candles for the latest session.
+
+        Live tick aggregation is only available as an explicit diagnostic
+        fallback; production charts leave it disabled.
+        """
         with self._lock:
-            rows = list(self._bars.get(instrument_key, ()))
+            rows = list(self._official_bars.get(instrument_key, ()))
+            if not rows and allow_live_fallback:
+                rows = list(self._bars.get(instrument_key, ()))
         if not rows:
             return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
 
@@ -415,10 +435,6 @@ class LiveMarketHub:
             .sort_index()
         )
 
-        # A rolling cache can contain several trading sessions. Showing those
-        # sessions on a continuous time axis creates huge overnight/weekend gaps
-        # and makes a live intraday chart look broken. Default to the newest
-        # session; callers can explicitly request the full cached history.
         if latest_session_only and not df.empty:
             latest_date = df.index.normalize().max()
             df = df.loc[df.index.normalize() == latest_date]
@@ -434,10 +450,13 @@ class LiveMarketHub:
             ).dropna(subset=["open", "high", "low", "close"])
         return df.tail(max_bars)
 
+
     def session_levels(self, instrument_key: str) -> dict:
         """Return previous-session high/low from the cached official/live OHLC bars."""
         with self._lock:
-            rows = list(self._bars.get(instrument_key, ()))
+            rows = list(self._official_bars.get(instrument_key, ()))
+            if not rows:
+                rows = list(self._bars.get(instrument_key, ()))
         if not rows:
             return {}
 
