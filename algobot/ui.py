@@ -479,7 +479,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 }
 
 /* reading progress bar */
-#algobot-scroll-progress {
+#algobot-scroll-progress {{
     position: fixed;
     top: 0;
     left: 0;
@@ -490,7 +490,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     box-shadow: 0 0 10px rgba(59,130,246,.45);
     pointer-events: none;
     transition: width .08s linear;
-}
+}}
 
 /* polished global scrollbar */
 html {
