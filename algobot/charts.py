@@ -29,7 +29,8 @@ def _style(chart):
 
 def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines: Optional[dict] = None,
                 height: int = 340, max_bars: int = 400, volume: bool = True,
-                interval_minutes: Optional[int] = None, overlays: Optional[dict] = None):
+                interval_minutes: Optional[int] = None, overlays: Optional[dict] = None,
+                signals: Optional[pd.DataFrame] = None, risk_lines: Optional[dict] = None):
     """Candles (green up, red down) with optional volume, horizontal levels and trade markers.
 
     trades: the engine's trade table (entry_time, exit_time, side, entry_price, exit_price, net_pnl).
@@ -95,6 +96,46 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
             align="left", dx=4, dy=-6, color=WARN, fontSize=11).encode(y="y:Q", text="label:N", x=alt.value(4))
         layers += [rule, text]
 
+    if signals is not None and len(signals):
+        signal_rows = signals.copy()
+        signal_rows["datetime"] = pd.to_datetime(signal_rows["datetime"])
+        signal_rows = signal_rows[signal_rows["datetime"].isin(d["datetime"])]
+        if not signal_rows.empty:
+            layers.append(
+                alt.Chart(signal_rows).mark_point(filled=True, size=130, opacity=0.95).encode(
+                    x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
+                    y=alt.Y("price:Q", scale=alt.Scale(zero=False)),
+                    shape=alt.Shape("shape:N", scale=None, legend=None),
+                    color=alt.Color(
+                        "kind:N",
+                        scale=alt.Scale(
+                            domain=["BUY", "SELL"],
+                            range=[UP, DOWN],
+                        ),
+                        legend=alt.Legend(title="Research signal"),
+                    ),
+                    tooltip=[
+                        alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"),
+                        alt.Tooltip("kind:N", title="Signal"),
+                        alt.Tooltip("price:Q", title="Price", format=",.2f"),
+                        alt.Tooltip("reason:N", title="Reason"),
+                    ],
+                )
+            )
+
+    for label, price in (risk_lines or {}).items():
+        if price is None or not np.isfinite(price):
+            continue
+        layers.append(
+            alt.Chart(pd.DataFrame({"y": [float(price)], "label": [label]}))
+            .mark_rule(
+                strokeDash=[7, 4],
+                color=UP if "Target" in label else DOWN,
+                opacity=0.8,
+            )
+            .encode(y="y:Q")
+        )
+
     if trades is not None and len(trades):
         pos = pd.Series(d.index.to_numpy(), index=pd.DatetimeIndex(d["datetime"]))
         rows = []
@@ -125,6 +166,34 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
     # panned; .interactive() turns on scroll-to-zoom and click-drag-to-pan like a real charting app.
     combo = alt.vconcat(price_chart, vol, spacing=2).resolve_scale(x="shared", y="independent")
     return _style(combo.interactive())
+
+
+def rsi_chart(series: pd.Series, period: int = 14, height: int = 170):
+    """Render RSI with 30/70 reference levels."""
+    if series is None or len(series) < max(period + 2, 16):
+        return None
+    values = pd.to_numeric(series, errors="coerce").dropna()
+    if len(values) < period + 2:
+        return None
+    delta = values.diff()
+    gain = delta.clip(lower=0).ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+    loss = (-delta.clip(upper=0)).ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+    rsi = rsi.fillna(50)
+    rsi_df = pd.DataFrame({"datetime": rsi.index, "rsi": rsi.to_numpy()})
+    line = alt.Chart(rsi_df).mark_line(color=BLUE, strokeWidth=1.7).encode(
+        x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
+        y=alt.Y("rsi:Q", scale=alt.Scale(domain=[0, 100]), title="RSI"),
+        tooltip=[
+            alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"),
+            alt.Tooltip("rsi:Q", title="RSI", format=".1f"),
+        ],
+    )
+    refs = alt.Chart(pd.DataFrame({"y": [30, 70]})).mark_rule(
+        strokeDash=[5, 4], color=MUTED, opacity=0.7
+    ).encode(y="y:Q")
+    return _style((line + refs).properties(height=height, width="container").interactive())
 
 
 def equity_drawdown(equity: pd.Series, height: int = 300):
