@@ -857,46 +857,313 @@ LIGHT_CSS = """
 :root {
     color-scheme: light;
 }
+
+/* ---------- App surfaces ---------- */
 html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-    background: #f7f9fc !important;
+    background: #f6f8fb !important;
     color: #172033 !important;
 }
-[data-testid="stHeader"] { background: rgba(247,249,252,.92) !important; }
+[data-testid="stHeader"] {
+    background: rgba(246,248,251,.94) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+[data-testid="stToolbar"] {
+    background: transparent !important;
+}
+.block-container {
+    color: #172033 !important;
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3, h4, h5, h6,
+p, label, [data-testid="stMarkdownContainer"],
+[data-testid="stText"], [data-testid="stCaptionContainer"] {
+    color: #172033;
+}
+.stCaption, [data-testid="stCaptionContainer"] {
+    color: #64748b !important;
+}
+a {
+    color: #2563eb !important;
+}
+
+/* ---------- Sidebar / navigation ---------- */
 [data-testid="stSidebar"] {
     background: #ffffff !important;
-    border-right: 1px solid #d9e0ea !important;
+    border-right: 1px solid #dbe3ee !important;
 }
-.ab-card, .ab-hero, .ab-check, .ab-strip, [data-testid="stMetric"],
-.stExpander, [data-testid="stForm"], [data-testid="stVerticalBlockBorderWrapper"] {
+[data-testid="stSidebar"] > div:first-child {
     background: #ffffff !important;
-    border-color: #d9e0ea !important;
+}
+.ab-menu-head {
+    border-bottom-color: #e2e8f0 !important;
+}
+.ab-menu-brand {
     color: #172033 !important;
 }
-.ab-menu-head { border-bottom-color: #d9e0ea !important; }
-.ab-menu-status, .ab-menu-section, .stCaption, [data-testid="stMetricLabel"] { color: #64748b !important; }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover { background: #eef4ff !important; }
-[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] { background: #e8f0ff !important; }
-.stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {
+.ab-menu-brand span {
+    color: #059669 !important;
+}
+.ab-menu-status, .ab-menu-section {
+    color: #64748b !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a {
+    color: #334155 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+    background: #eef4ff !important;
+    color: #1d4ed8 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
+    background: #e8f0ff !important;
+    border-left-color: #2563eb !important;
+    color: #1d4ed8 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a p {
+    color: inherit !important;
+}
+
+/* ---------- Utility / header ---------- */
+[data-testid="stHorizontalBlock"] {
+    color: #172033;
+}
+.st-key-utility_bar {
+    background: #ffffff !important;
+    border-color: #dbe3ee !important;
+}
+.st-key-utility_bar [data-testid="stCaptionContainer"] {
+    color: #475569 !important;
+}
+.st-key-desk_header {
+    color: #172033 !important;
+}
+.ab-brand {
+    color: #172033 !important;
+}
+.ab-brand span {
+    color: #059669 !important;
+}
+.ab-pill {
+    border-color: #cbd5e1 !important;
+}
+
+/* ---------- Cards / panels ---------- */
+.ab-card, .ab-hero, .ab-check, .ab-strip,
+[data-testid="stMetric"],
+[data-testid="stExpander"],
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stForm"] {
+    background: #ffffff !important;
+    border-color: #dbe3ee !important;
+    color: #172033 !important;
+}
+.ab-card h4, .ab-card p,
+.ab-check b, .ab-check .txt,
+.ab-strip .lab {
+    color: #172033 !important;
+}
+.ab-check .txt span {
+    color: #64748b !important;
+}
+.ab-strip .val {
+    color: #172033 !important;
+}
+[data-testid="stMetricLabel"] {
+    color: #64748b !important;
+}
+[data-testid="stMetricValue"] {
+    color: #172033 !important;
+}
+[data-testid="stMetricDelta"] {
+    color: #475569 !important;
+}
+
+/* ---------- Buttons ---------- */
+.stButton > button,
+.stDownloadButton > button,
+[data-testid="stFormSubmitButton"] > button {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 2px rgba(15,23,42,.04) !important;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+    background: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+.stButton > button:focus-visible,
+.stDownloadButton > button:focus-visible {
+    outline: 2px solid rgba(37,99,235,.28) !important;
+    outline-offset: 2px !important;
+}
+/* Preserve semantic trading buttons. */
+.st-key-pr_buy button {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    border-color: #16a34a !important;
+}
+.st-key-pr_close button {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+
+/* ---------- Inputs ---------- */
+.stTextInput input,
+.stNumberInput input,
+.stTextArea textarea,
+.stDateInput input,
+.stTimeInput input {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #cbd5e1 !important;
+    caret-color: #2563eb !important;
+}
+.stTextInput input::placeholder,
+.stNumberInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: #94a3b8 !important;
+}
+[data-baseweb="select"] > div {
     background: #ffffff !important;
     color: #172033 !important;
     border-color: #cbd5e1 !important;
 }
-.stButton > button:hover, .stDownloadButton > button:hover,
-[data-testid="stFormSubmitButton"] > button:hover { background: #f1f5f9 !important; }
-.stTextInput input, .stNumberInput input, .stTextArea textarea,
-.stDateInput input, .stTimeInput input, [data-baseweb="select"] {
+[data-baseweb="select"] input,
+[data-baseweb="select"] [role="combobox"] {
+    color: #172033 !important;
+}
+[data-baseweb="select"] svg {
+    fill: #64748b !important;
+}
+[data-baseweb="popover"],
+[data-baseweb="menu"],
+[data-baseweb="modal"] {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #dbe3ee !important;
+}
+[data-baseweb="menu"] li {
+    color: #172033 !important;
+}
+[data-baseweb="menu"] li:hover,
+[data-baseweb="option"]:hover {
+    background: #eef4ff !important;
+}
+[data-baseweb="tag"] {
+    background: #e8f0ff !important;
+    color: #1d4ed8 !important;
+}
+[data-testid="stSlider"] [role="slider"] {
+    background: #2563eb !important;
+}
+
+/* ---------- Tabs / expanders / alerts ---------- */
+.stTabs [data-baseweb="tab-list"] {
+    border-bottom-color: #dbe3ee !important;
+}
+.stTabs [data-baseweb="tab"] {
+    color: #64748b !important;
+}
+.stTabs [aria-selected="true"] {
+    color: #1d4ed8 !important;
+}
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary p {
+    color: #172033 !important;
+}
+[data-testid="stAlert"] {
+    border-color: #dbe3ee !important;
+}
+
+/* ---------- Dataframes / tables ---------- */
+[data-testid="stDataFrame"] {
+    background: #ffffff !important;
+    border-color: #dbe3ee !important;
+}
+[data-testid="stDataFrame"] iframe {
+    background: #ffffff !important;
+}
+
+/* ---------- Code ---------- */
+code, pre {
+    background: #eef2f7 !important;
+    color: #172033 !important;
+    border-color: #dbe3ee !important;
+}
+
+/* ---------- Workflow cards ---------- */
+[class*="st-key-workflow_step_"] > button {
+    background: #ffffff !important;
+    color: #172033 !important;
+    border-color: #dbe3ee !important;
+    box-shadow: 0 2px 8px rgba(15,23,42,.05) !important;
+}
+[class*="st-key-workflow_step_"] > button:hover {
+    background: #f8fbff !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 10px 24px rgba(15,23,42,.10) !important;
+}
+[class*="st-key-workflow_step_"] > button::after {
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,246,252,.99)) !important;
+    color: #526176 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 10px 26px rgba(15,23,42,.14) !important;
+}
+[class*="st-key-workflow_step_"] > button:disabled {
+    background: #e8f0ff !important;
+    color: #1d4ed8 !important;
+    border-color: #93c5fd !important;
+}
+
+/* ---------- Mobile menu ---------- */
+.st-key-mobile_menu button {
     background: #ffffff !important;
     color: #172033 !important;
     border-color: #cbd5e1 !important;
+    box-shadow: 0 8px 24px rgba(15,23,42,.12) !important;
 }
-[data-baseweb="popover"], [data-baseweb="menu"] { background: #ffffff !important; color: #172033 !important; }
-[data-baseweb="menu"] li:hover { background: #eef4ff !important; }
-code, pre { background: #eef2f7 !important; color: #172033 !important; }
-#algobot-scroll-progress { box-shadow: 0 0 8px rgba(37,99,235,.25) !important; }
-.st-key-appearance_toolbar {
-    background: rgba(255,255,255,.96) !important;
-    border-color: #d9e0ea !important;
-    box-shadow: 0 8px 24px rgba(15,23,42,.10) !important;
+.st-key-mobile_menu button:hover {
+    background: #f1f5f9 !important;
+    border-color: #2563eb !important;
+}
+.st-key-mobile_menu_drawer {
+    background: linear-gradient(180deg,#ffffff 0%,#f6f8fb 100%) !important;
+    border-color: #dbe3ee !important;
+    box-shadow: 0 24px 70px rgba(15,23,42,.16) !important;
+}
+.st-key-mobile_menu_drawer [data-testid="stPageLink"] a {
+    color: #334155 !important;
+}
+.st-key-mobile_menu_drawer [data-testid="stPageLink"] a:hover {
+    background: #eef4ff !important;
+}
+
+/* ---------- Scrollbars / floating controls ---------- */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #eef2f7;
+}
+html::-webkit-scrollbar-track {
+    background: #eef2f7;
+}
+html::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border: 2px solid #eef2f7;
+}
+html::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+.ta-workflow, .ab-strip, .stTabs [data-baseweb="tab-list"],
+[data-testid="stDataFrame"] {
+    scrollbar-color: #94a3b8 #eef2f7;
+}
+#algobot-scroll-progress {
+    background: linear-gradient(90deg, #2563eb, #16a34a) !important;
+    box-shadow: 0 0 8px rgba(37,99,235,.22) !important;
 }
 .ta-back-to-top {
     background: #ffffff !important;
@@ -904,12 +1171,15 @@ code, pre { background: #eef2f7 !important; color: #172033 !important; }
     border-color: #cbd5e1 !important;
     box-shadow: 0 8px 24px rgba(15,23,42,.12) !important;
 }
-.ta-back-to-top:hover { background: #f1f5f9 !important; color: #172033 !important; }
+.ta-back-to-top:hover {
+    background: #f1f5f9 !important;
+    color: #172033 !important;
+}
 
+/* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
     margin-bottom: 4px !important;
 }
-
 </style>
 """
 
