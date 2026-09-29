@@ -33,6 +33,18 @@ with mid:
     timeframe = st.selectbox("Timeframe", [1, 3, 5, 15, 30], index=0, format_func=lambda x: f"{x} min", key="desk_timeframe")
 with right:
     window = st.slider("Candles", 60, 500, 240, step=20, key="desk_upstox_window")
+
+with st.expander("📐 Analysis controls", expanded=False):
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        signal_mode = st.toggle("Research signals", value=True, key="desk_signal_mode")
+    with c2:
+        rsi_period = st.number_input("RSI period", min_value=5, max_value=30, value=14, step=1, key="desk_rsi_period")
+    with c3:
+        stop_pct = st.number_input("Stop-loss %", min_value=0.1, max_value=5.0, value=0.5, step=0.1, key="desk_stop_pct")
+    with c4:
+        target_pct = st.number_input("Target %", min_value=0.1, max_value=10.0, value=1.0, step=0.1, key="desk_target_pct")
+    st.caption("Signals are rule-based research markers, not predictions or trade instructions. Risk lines are reference levels only.")
 instrument_key = INSTRUMENTS[market_label]
 
 hub = get_market_hub(token)
@@ -116,6 +128,45 @@ def market_panel():
     if live_price is not None:
         overlays["Live price"] = "Live price"
 
+    # Research signal model: EMA crossover + RSI confirmation.
+    delta_ema20 = analysis["EMA 20"].diff()
+    crossed_up = (analysis["EMA 20"] > analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) <= analysis["EMA 50"].shift(1))
+    crossed_down = (analysis["EMA 20"] < analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) >= analysis["EMA 50"].shift(1))
+
+    delta = analysis["close"].diff()
+    gain = delta.clip(lower=0).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
+    loss = (-delta.clip(upper=0)).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
+    rs = gain / loss.replace(0, pd.NA)
+    analysis["RSI"] = (100 - (100 / (1 + rs))).astype(float)
+
+    buy_signal = crossed_up & (analysis["RSI"] >= 50)
+    sell_signal = crossed_down & (analysis["RSI"] <= 50)
+    signal_rows = []
+    for ts, row in analysis.loc[buy_signal].iterrows():
+        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "BUY", "shape": "triangle-up", "reason": "EMA20 crossed above EMA50 with RSI ≥ 50"})
+    for ts, row in analysis.loc[sell_signal].iterrows():
+        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "SELL", "shape": "triangle-down", "reason": "EMA20 crossed below EMA50 with RSI ≤ 50"})
+    signals = pd.DataFrame(signal_rows)
+
+    risk_lines = {}
+    if live_price is not None:
+        latest_signal = signals.iloc[-1]["kind"] if not signals.empty else None
+        if latest_signal == "BUY":
+            risk_lines = {
+                "Long stop": live_price * (1 - stop_pct / 100),
+                "Long target": live_price * (1 + target_pct / 100),
+            }
+        elif latest_signal == "SELL":
+            risk_lines = {
+                "Short stop": live_price * (1 + stop_pct / 100),
+                "Short target": live_price * (1 - target_pct / 100),
+            }
+        else:
+            risk_lines = {
+                "Reference stop": live_price * (1 - stop_pct / 100),
+                "Reference target": live_price * (1 + target_pct / 100),
+            }
+
     ui.show_chart(
         charts.candlestick(
             analysis,
@@ -125,13 +176,22 @@ def market_panel():
             interval_minutes=timeframe,
             overlays=overlays,
             hlines=hlines,
+            signals=signals if signal_mode else None,
+            risk_lines=risk_lines,
         )
     )
+
+    rsi_chart = charts.rsi_chart(analysis["close"], period=rsi_period, height=180)
+    if rsi_chart is not None:
+        st.markdown("#### RSI")
+        ui.show_chart(rsi_chart)
+
     session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
+    signal_text = "signals enabled" if signal_mode else "signals hidden"
     st.caption(
-        f"Session: {session_date} · Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles. "
-        "EMA 20/50, VWAP (when volume is available), previous-session levels and live price are overlays; "
-        "historical candles are not synthesized."
+        f"Session: {session_date} · Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles · {signal_text}. "
+        "EMA 20/50, VWAP, previous-session levels and live price are overlays. "
+        "Signals are research rules, not predictions; risk lines are reference levels."
     )
     with st.expander("Latest OHLCV data", expanded=False):
         table = bars.tail(20).reset_index()
@@ -141,6 +201,18 @@ def market_panel():
             width="stretch",
             hide_index=True,
         )
+
+    st.markdown("### Market analysis")
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.metric("Last", f"₹{live_price:,.2f}" if live_price is not None else "—")
+    with m2:
+        st.metric("EMA 20", f"₹{analysis['EMA 20'].iloc[-1]:,.2f}" if analysis["EMA 20"].notna().any() else "—")
+    with m3:
+        st.metric("EMA 50", f"₹{analysis['EMA 50'].iloc[-1]:,.2f}" if analysis["EMA 50"].notna().any() else "—")
+    with m4:
+        latest_rsi = analysis["RSI"].dropna().iloc[-1] if analysis["RSI"].notna().any() else None
+        st.metric("RSI", f"{latest_rsi:.1f}" if latest_rsi is not None else "—")
 
 market_panel()
 
@@ -160,21 +232,6 @@ with c:
     st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
     st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
     st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
-
-st.markdown("### Market analysis")
-m1, m2, m3, m4 = st.columns(4)
-with m1:
-    st.metric("Last", f"₹{latest['price']:,.2f}" if latest else "—")
-with m2:
-    st.metric("EMA 20", f"₹{analysis['EMA 20'].iloc[-1]:,.2f}" if analysis["EMA 20"].notna().any() else "—")
-with m3:
-    st.metric("EMA 50", f"₹{analysis['EMA 50'].iloc[-1]:,.2f}" if analysis["EMA 50"].notna().any() else "—")
-with m4:
-    st.metric(
-        "Prev. High / Low",
-        f"₹{previous_levels['previous_high']:,.0f} / ₹{previous_levels['previous_low']:,.0f}"
-        if previous_levels else "—",
-    )
 
 st.markdown("### Data integrity")
 ui.check_row("PASS", "Official OHLCV", "Historical candles come from Upstox V3 historical/intraday candle APIs.")
