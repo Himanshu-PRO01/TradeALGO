@@ -24,6 +24,7 @@ from .palette import BG, BLUE, BORDER, DOWN, MUTED, PANEL, TEXT, UP, WARN
 
 
 _SWIPE_MENU_COMPONENT = None
+_BACK_TO_TOP_COMPONENT = None
 
 
 def _swipe_menu_component():
@@ -85,6 +86,32 @@ def _swipe_menu_component():
             """,
         )
     return _SWIPE_MENU_COMPONENT
+
+def _back_to_top_component():
+    """Install a tiny global back-to-top click handler."""
+    global _BACK_TO_TOP_COMPONENT
+    if _components_v2 is None:
+        return None
+    if _BACK_TO_TOP_COMPONENT is None:
+        _BACK_TO_TOP_COMPONENT = _components_v2.component(
+            name="algobot_back_to_top",
+            html="",
+            css="",
+            js="""
+            export default function() {
+                const onClick = (event) => {
+                    const button = event.target?.closest?.('[data-testid="stButton"] button');
+                    if (!button) return;
+                    const wrapper = button.closest('[class*="st-key-back_to_top"]');
+                    if (!wrapper) return;
+                    window.scrollTo({top: 0, behavior: 'smooth'});
+                };
+                document.addEventListener('click', onClick, true);
+                return () => document.removeEventListener('click', onClick, true);
+            }
+            """,
+        )
+    return _BACK_TO_TOP_COMPONENT
 
 CSS = f"""
 <style>
@@ -396,6 +423,36 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .stTabs [data-baseweb="tab"] {{ font-weight: 600; }}
 [data-testid="stExpander"] {{ border: 1px solid {BORDER}; border-radius: 12px; background: {PANEL}; }}
 [data-testid="stDataFrame"] {{ border: 1px solid {BORDER}; border-radius: 10px; }}
+
+/* floating back-to-top control */
+.st-key-back_to_top {
+    position: fixed !important;
+    right: 24px !important;
+    bottom: 24px !important;
+    z-index: 99999 !important;
+    width: auto !important;
+}
+.st-key-back_to_top button {
+    width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: #111923 !important;
+    border: 1px solid #263242 !important;
+    font-size: 1.1rem !important;
+    font-weight: 900 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.32) !important;
+}
+.st-key-back_to_top button:hover {
+    border-color: #3B82F6 !important;
+    background: #172231 !important;
+    transform: translateY(-2px) !important;
+}
+@media (max-width:768px) {
+    .st-key-back_to_top { right: 14px !important; bottom: 14px !important; }
+    .st-key-back_to_top button { width: 44px !important; height: 44px !important; min-height: 44px !important; }
+}
 
 /* top bar, pills, ticker */
 .ab-top {{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
@@ -834,6 +891,16 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
             # Streamlit AppTest does not mount browser-only v2 components.
             # The gesture is progressive enhancement; page rendering must survive without it.
             pass
+
+    back_to_top_component = _back_to_top_component()
+    if back_to_top_component is not None:
+        try:
+            back_to_top_component(key="algobot_back_to_top")
+        except st.errors.StreamlitAPIException:
+            pass
+    if st.button("↑", key="back_to_top", help="Back to top", type="secondary"):
+        st.rerun()
+
     password_gate()
 
 
