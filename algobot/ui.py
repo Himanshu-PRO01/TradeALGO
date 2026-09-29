@@ -424,6 +424,60 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 [data-testid="stExpander"] {{ border: 1px solid {BORDER}; border-radius: 12px; background: {PANEL}; }}
 [data-testid="stDataFrame"] {{ border: 1px solid {BORDER}; border-radius: 10px; }}
 
+/* mobile menu trigger and drawer */
+.st-key-mobile_menu {
+    display: none;
+}
+@media (max-width:768px) {
+    .st-key-mobile_menu {
+        display: block !important;
+        position: fixed !important;
+        top: 8px !important;
+        left: 10px !important;
+        z-index: 100001 !important;
+        width: auto !important;
+    }
+    .st-key-mobile_menu button {
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        padding: 0 !important;
+        border-radius: 12px !important;
+        background: #111923 !important;
+        border: 1px solid #263242 !important;
+        font-size: 1.25rem !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,.28) !important;
+    }
+    .st-key-mobile_menu button:hover {
+        border-color: #3B82F6 !important;
+        background: #172231 !important;
+    }
+    .st-key-mobile_menu_drawer {
+        position: fixed !important;
+        top: 60px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        max-height: calc(100vh - 74px) !important;
+        overflow-y: auto !important;
+        z-index: 100000 !important;
+        padding: 16px !important;
+        border: 1px solid #263242 !important;
+        border-radius: 18px !important;
+        background: linear-gradient(180deg,#111923 0%,#0d131b 100%) !important;
+        box-shadow: 0 24px 70px rgba(0,0,0,.58) !important;
+    }
+    .st-key-mobile_menu_drawer [data-testid="stPageLink"] a {
+        min-height: 46px !important;
+        padding: 10px 12px !important;
+        border-radius: 11px !important;
+        font-size: .92rem !important;
+    }
+    .st-key-mobile_menu_drawer [data-testid="stPageLink"] a:hover {
+        background: rgba(255,255,255,.06);
+    }
+}
+
 /* floating back-to-top control */
 .st-key-back_to_top {
     position: fixed !important;
@@ -900,6 +954,20 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
             pass
     if st.button("↑", key="back_to_top", help="Back to top", type="secondary"):
         st.rerun()
+
+    if st.button("☰", key="mobile_menu", help="Open navigation menu", type="secondary"):
+        st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
+        st.rerun()
+    if st.session_state.get("top_menu_open", False):
+        with st.container(key="mobile_menu_drawer"):
+            st.markdown('<div class="ta-drawer-title">TRADEALGO</div>', unsafe_allow_html=True)
+            st.markdown('<div class="ta-drawer-subtitle">Quick navigation</div>', unsafe_allow_html=True)
+            if st.button("✕  Close", key="mobile_menu_close", width="stretch"):
+                st.session_state["top_menu_open"] = False
+                st.rerun()
+            st.divider()
+            for icon_, label, path in _top_menu_links():
+                page_link(path, label=f"{icon_}  {label}", use_container_width=True)
 
     password_gate()
 
