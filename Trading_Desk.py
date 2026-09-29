@@ -50,6 +50,7 @@ def market_panel():
         latest_session_only=True,
     )
     history_count = int(status.get("history_bars", {}).get(instrument_key, 0))
+    previous_levels = hub.session_levels(instrument_key)
 
     if status.get("history_error"):
         mode_note = "WebSocket" if status.get("mode") == "websocket" else ("REST LTP fallback" if status.get("mode") == "rest-polling" else "offline")
@@ -85,19 +86,52 @@ def market_panel():
         st.info("Waiting for the first Upstox tick. The live chart will populate automatically.")
         return
 
+    analysis = bars.copy()
+    analysis["EMA 20"] = analysis["close"].ewm(span=20, adjust=False, min_periods=20).mean()
+    analysis["EMA 50"] = analysis["close"].ewm(span=50, adjust=False, min_periods=50).mean()
+
+    volume_total = float(analysis["volume"].fillna(0).sum())
+    if volume_total > 0:
+        typical = (analysis["high"] + analysis["low"] + analysis["close"]) / 3.0
+        analysis["VWAP"] = (typical * analysis["volume"].fillna(0)).cumsum() / analysis["volume"].fillna(0).cumsum()
+    else:
+        analysis["VWAP"] = pd.NA
+
+    live_price = float(latest["price"]) if latest else None
+    if live_price is not None:
+        analysis["Live price"] = live_price
+
+    hlines = {}
+    if previous_levels.get("previous_high") is not None:
+        hlines["Previous high"] = previous_levels["previous_high"]
+    if previous_levels.get("previous_low") is not None:
+        hlines["Previous low"] = previous_levels["previous_low"]
+
+    overlays = {
+        "EMA 20": "EMA 20",
+        "EMA 50": "EMA 50",
+    }
+    if analysis["VWAP"].notna().any():
+        overlays["VWAP"] = "VWAP"
+    if live_price is not None:
+        overlays["Live price"] = "Live price"
+
     ui.show_chart(
         charts.candlestick(
-            bars,
+            analysis,
             height=600,
             max_bars=window,
             volume=True,
             interval_minutes=timeframe,
+            overlays=overlays,
+            hlines=hlines,
         )
     )
     session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
     st.caption(
         f"Session: {session_date} · Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles. "
-        "Historical candles are not synthesized; live ticks only update the current 1-minute bar."
+        "EMA 20/50, VWAP (when volume is available), previous-session levels and live price are overlays; "
+        "historical candles are not synthesized."
     )
     with st.expander("Latest OHLCV data", expanded=False):
         table = bars.tail(20).reset_index()
@@ -126,6 +160,21 @@ with c:
     st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
     st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
     st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
+
+st.markdown("### Market analysis")
+m1, m2, m3, m4 = st.columns(4)
+with m1:
+    st.metric("Last", f"₹{latest['price']:,.2f}" if latest else "—")
+with m2:
+    st.metric("EMA 20", f"₹{analysis['EMA 20'].iloc[-1]:,.2f}" if analysis["EMA 20"].notna().any() else "—")
+with m3:
+    st.metric("EMA 50", f"₹{analysis['EMA 50'].iloc[-1]:,.2f}" if analysis["EMA 50"].notna().any() else "—")
+with m4:
+    st.metric(
+        "Prev. High / Low",
+        f"₹{previous_levels['previous_high']:,.0f} / ₹{previous_levels['previous_low']:,.0f}"
+        if previous_levels else "—",
+    )
 
 st.markdown("### Data integrity")
 ui.check_row("PASS", "Official OHLCV", "Historical candles come from Upstox V3 historical/intraday candle APIs.")
