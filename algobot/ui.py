@@ -703,173 +703,62 @@ html::-webkit-scrollbar-corner {{
 .ab-check .txt b {{ display:block; }}
 .ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
 
-/* top-right navigation button: float it into Streamlit's toolbar row,
-   beside Share instead of taking space in the page header */
-.ta-menu-trigger {{
-    display:flex;
-    justify-content:flex-end;
-    align-items:center;
-}}
-.st-key-top_menu {{
-    position:fixed !important;
-    top:8px !important;
-    right:208px !important;
-    z-index:100000 !important;
-    width:auto !important;
-}}
-.st-key-top_menu button {{
-    min-height:38px !important;
-    height:38px !important;
-    padding:7px 14px !important;
-    border-radius:10px !important;
-    font-weight:800 !important;
-    letter-spacing:.02em !important;
-    white-space:nowrap !important;
-    background:#111923 !important;
-    border:1px solid #263242 !important;
-}}
-/* Profile sits immediately beside the Menu control in the top toolbar. */
-.st-key-top_profile {{
-    position:fixed !important;
-    top:8px !important;
-    right:320px !important;
-    z-index:100000 !important;
-    width:auto !important;
-}}
-.st-key-top_feedback {{
-    position:fixed !important;
-    top:8px !important;
-    right:438px !important;
-    z-index:100000 !important;
-    width:auto !important;
-}}
-.st-key-top_feedback {{
-    display:flex !important;
-    align-items:center !important;
-}}
-.st-key-top_feedback [data-testid="stPageLink"] {{
-    margin:0 !important;
-}}
-.st-key-top_feedback [data-testid="stPageLink"] a {{
-    min-height:38px !important;
-    height:38px !important;
-    box-sizing:border-box !important;
-    display:flex !important;
-    align-items:center !important;
-    padding:7px 14px !important;
-    border-radius:10px !important;
-    font-weight:800 !important;
-    letter-spacing:.02em !important;
-    white-space:nowrap !important;
-    background:#111923 !important;
-    border:1px solid #263242 !important;
-    text-decoration:none !important;
-}}
-.st-key-top_feedback [data-testid="stPageLink"] a:hover {{
-    border-color:#3B82F6 !important;
-    background:#172231 !important;
-}}
-.st-key-top_profile {{
-    display:flex !important;
-    align-items:center !important;
-}}
-.st-key-top_profile [data-testid="stPageLink"] {{
-    margin:0 !important;
-}}
-.st-key-top_profile [data-testid="stPageLink"] a {{
-    min-height:38px !important;
-    height:38px !important;
-    box-sizing:border-box !important;
-    display:flex !important;
-    align-items:center !important;
-    padding:7px 14px !important;
-    border-radius:10px !important;
-    font-weight:800 !important;
-    letter-spacing:.02em !important;
-    white-space:nowrap !important;
-    background:#111923 !important;
-    border:1px solid #263242 !important;
-    text-decoration:none !important;
-}}
-.st-key-top_profile [data-testid="stPageLink"] a:hover {{
-    border-color:#16C784 !important;
-    background:#17251f !important;
-}}
-
-.st-key-top_menu button:hover {{
-    border-color:#3B82F6 !important;
-    background:#172231 !important;
-}}
-.st-key-top_menu_drawer {{
-    position:fixed !important;
-    top:76px !important;
-    right:24px !important;
-    width:min(390px, calc(100vw - 32px)) !important;
-    max-height:calc(100vh - 100px) !important;
-    overflow-y:auto !important;
-    z-index:9999 !important;
-    padding:18px !important;
-    border:1px solid #263242 !important;
-    border-radius:20px !important;
-    background:linear-gradient(180deg,#111923 0%,#0d131b 100%) !important;
-    box-shadow:0 24px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(59,130,246,.08) !important;
-}}
-.st-key-top_menu_drawer [data-testid="stPageLink"] a {{
-    min-height:42px;
-    border-radius:10px;
-    padding:9px 12px !important;
-    transition:background-color .12s ease, transform .12s ease;
-}}
-.st-key-top_menu_drawer [data-testid="stPageLink"] a:hover {{
-    background:rgba(255,255,255,.06);
-    transform:translateX(2px);
-}}
-.ta-drawer-title {{
-    font-size:.72rem;
-    font-weight:900;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:#16C784;
-    margin-bottom:3px;
-}}
-.ta-drawer-subtitle {{
-    color:#8B98A9;
-    font-size:.78rem;
-    margin-bottom:12px;
-}}
-@media (max-width:768px) {{
-    .st-key-top_profile {{
-        top:8px !important;
-        right:232px !important;
-        width:auto !important;
-    }}
-    .st-key-top_profile [data-testid="stPageLink"] a {{
-        width:auto !important;
-        justify-content:center !important;
-        padding-left:10px !important;
-        padding-right:10px !important;
-    }}
-    .st-key-top_feedback {{
-        top:8px !important;
-        right:116px !important;
-        width:auto !important;
-    }}
-    .st-key-top_feedback [data-testid="stPageLink"] a {{
-        padding-left:9px !important;
-        padding-right:9px !important;
-    }}
-    .st-key-top_menu {{
-        top:8px !important;
-        right:10px !important;
-    }}
-    .st-key-top_menu_drawer {{
-        top:62px !important;
-        right:10px !important;
-        width:calc(100vw - 20px) !important;
-        max-height:calc(100vh - 78px) !important;
-        border-radius:16px !important;
-    }}
-}}
+/* clean utility/action bar */
+.st-key-utility_bar {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 0 12px 0 !important;
+    padding: 7px 10px !important;
+    border: 1px solid {BORDER} !important;
+    border-radius: 12px !important;
+    background: {PANEL} !important;
+}
+.st-key-utility_bar [data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+}
+.st-key-utility_bar .stCaption {
+    margin-right: auto !important;
+    color: {MUTED} !important;
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .12em !important;
+}
+.st-key-utility_bar [data-testid="stPageLink"] a,
+.st-key-utility_bar .stButton > button {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 6px 13px !important;
+    border-radius: 9px !important;
+    border: 1px solid {BORDER} !important;
+    background: transparent !important;
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+.st-key-utility_bar [data-testid="stPageLink"] a:hover,
+.st-key-utility_bar .stButton > button:hover {
+    background: rgba(59,130,246,.10) !important;
+    border-color: #3B82F6 !important;
+    transform: translateY(-1px) !important;
+}
+.st-key-desk_header {
+    margin-top: 0 !important;
+}
+@media (max-width:768px) {
+    .st-key-utility_bar {
+        overflow-x: auto !important;
+        padding: 6px 8px !important;
+    }
+    .st-key-utility_bar [data-testid="stHorizontalBlock"] {
+        min-width: max-content !important;
+    }
+    .st-key-utility_bar [data-testid="stPageLink"] a,
+    .st-key-utility_bar .stButton > button {
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 7px 11px !important;
+    }
+}
 /* guided workflow */
 .ta-workflow {{
     width: 100%;
@@ -1280,48 +1169,62 @@ def _top_menu_drawer() -> None:
 
 
 def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
-    """Brand bar with safety pills and a shadcn-inspired top-right drawer trigger."""
-    lang = "Hinglish" if is_hinglish() else "English"
-    pills = [pill("LIVE ORDERS OFF" if is_hinglish() else "NO LIVE ORDERS", "green")]
+    """Render a clean utility bar followed by the trading-desk header."""
+    pills = [pill("NO LIVE ORDERS", "green")]
     if mode:
-        tone = {"practice": "amber", "backtest": "blue", "journal": "green", "research": "blue"}.get(mode.split(":")[0], "blue")
+        tone = {
+            "practice": "amber",
+            "backtest": "blue",
+            "journal": "green",
+            "research": "blue",
+        }.get(mode.split(":")[0], "blue")
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
 
-    # Use a native Streamlit page link for Profile so navigation does not
-    # depend on a widget callback or rerun timing. st.page_link is designed
-    # for multipage navigation and preserves the current Streamlit session.
-    with st.container(key="top_profile"):
+    # One consistent horizontal action bar. Nothing is fixed over the page,
+    # so it never creates a large empty area or overlaps Streamlit's toolbar.
+    with st.container(
+        key="utility_bar",
+        horizontal=True,
+        vertical_alignment="center",
+        horizontal_alignment="right",
+        gap="small",
+        border=True,
+    ):
+        st.caption("TRADEALGO")
         st.page_link(
             "pages/22_Profile.py",
-            label="👤  Profile",
+            label="👤 Profile",
             use_container_width=False,
         )
-
-    with st.container(key="top_feedback"):
         st.page_link(
             "pages/8_Feedback.py",
-            label="💬  Feedback",
+            label="💬 Feedback",
             use_container_width=False,
         )
+        if st.button("☰ Menu", key="top_menu", type="secondary"):
+            st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
+            st.rerun()
 
-    if st.button("☰  Menu", key="top_menu", type="secondary"):
-        st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
-        st.rerun()
+    with st.container(key="desk_header"):
+        left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
+        with left:
+            st.markdown(
+                '<div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>',
+                unsafe_allow_html=True,
+            )
+        with middle:
+            st.markdown(
+                f'<div class="ab-pills" style="justify-content:flex-end">{"".join(pills)}</div>',
+                unsafe_allow_html=True,
+            )
 
-    left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
-    with left:
-        st.markdown('<div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>',
-                    unsafe_allow_html=True)
-    with middle:
-        st.markdown(f'<div class="ab-pills" style="justify-content:flex-end">{"".join(pills)}</div>',
-                    unsafe_allow_html=True)
-
-    st.markdown(f"## {title}")
-    if subtitle:
-        st.caption(subtitle)
+        st.markdown(f"## {title}")
+        if subtitle:
+            st.caption(subtitle)
 
     _top_menu_drawer()
+
 
 
 def ticker(items: Iterable) -> None:
