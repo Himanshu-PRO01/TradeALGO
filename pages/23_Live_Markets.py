@@ -63,6 +63,8 @@ def live_panel():
         status_box.error(f"🔴 Live feed error: {status['last_error']}")
     else:
         status_box.info("🟡 Connecting to Upstox Market Data Feed V3…")
+    if status.get("history_error"):
+        st.caption(f"Past candles could not be loaded: {status['history_error']}")
 
     if latest:
         ui.ticker([
