@@ -478,6 +478,59 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     }
 }
 
+/* polished global scrollbar */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #3B82F6 #0B0F14;
+}
+html::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+html::-webkit-scrollbar-track {
+    background: #0B0F14;
+}
+html::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3B82F6, #263242);
+    border: 2px solid #0B0F14;
+    border-radius: 999px;
+}
+html::-webkit-scrollbar-thumb:hover {
+    background: #3B82F6;
+}
+html::-webkit-scrollbar-corner {
+    background: #0B0F14;
+}
+
+/* keep horizontal workflow scrolling easy to discover */
+.ta-workflow,
+.ab-strip,
+.stTabs [data-baseweb="tab-list"],
+[data-testid="stDataFrame"] {
+    scrollbar-width: thin;
+    scrollbar-color: #3B82F6 #111923;
+}
+.ta-workflow::-webkit-scrollbar,
+.ab-strip::-webkit-scrollbar,
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
+[data-testid="stDataFrame"]::-webkit-scrollbar {
+    height: 7px;
+}
+.ta-workflow::-webkit-scrollbar-track,
+.ab-strip::-webkit-scrollbar-track,
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track,
+[data-testid="stDataFrame"]::-webkit-scrollbar-track {
+    background: #111923;
+    border-radius: 999px;
+}
+.ta-workflow::-webkit-scrollbar-thumb,
+.ab-strip::-webkit-scrollbar-thumb,
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb,
+[data-testid="stDataFrame"]::-webkit-scrollbar-thumb {
+    background: #3B82F6;
+    border-radius: 999px;
+}
+
 /* global interactive hover effects */
 .stButton > button,
 .stDownloadButton > button,
