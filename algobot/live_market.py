@@ -92,6 +92,8 @@ class LiveMarketHub:
         self._polling = False
         self._poll_ok = False
         self._poll_thread = None
+        self._backfilled = set()
+        self._history_error = ""
         self._last_error = ""
         self._ticks = defaultdict(lambda: deque(maxlen=_MAX_TICKS))
         self._bars = defaultdict(lambda: deque(maxlen=_MAX_BARS))
@@ -107,6 +109,8 @@ class LiveMarketHub:
                 target=self._run, args=(keys,), name="tradealgo-market-feed", daemon=True
             )
             self._thread.start()
+        for key in keys:
+            self._start_backfill(key)
 
     def _run(self, keys):
         try:
@@ -128,7 +132,6 @@ class LiveMarketHub:
                 with self._lock:
                     self._connected = True
                     self._last_error = ""
-                # Re-subscribe explicitly after reconnect/open.
                 try:
                     streamer.subscribe(list(keys), "full")
                 except Exception:
@@ -187,15 +190,10 @@ class LiveMarketHub:
                     self._poll_ok = False
                     return
             try:
-                resp = requests.get(
-                    url,
-                    headers=headers,
-                    params={"instrument_key": ",".join(keys)},
-                    timeout=10,
-                )
+                resp = requests.get(url, headers=headers, params={"instrument_key": ",".join(keys)}, timeout=10)
                 if resp.status_code != 200:
                     raise RuntimeError(f"REST quote HTTP {resp.status_code}: {resp.text[:120]}")
-                self._ingest_rest(resp.json())
+                self._ingest_rest(resp.json(), keys)
                 with self._lock:
                     self._poll_ok = True
                     self._last_error = ""
@@ -205,9 +203,11 @@ class LiveMarketHub:
                     self._last_error = f"REST fallback failed: {str(exc)[:250]}"
             time.sleep(interval)
 
-    def _ingest_rest(self, payload):
+    def _ingest_rest(self, payload, keys=(), now=None):
         data = (payload or {}).get("data") or {}
-        now = pd.Timestamp.now(tz="Asia/Kolkata").tz_localize(None)
+        if now is None:
+            now = pd.Timestamp.now(tz="Asia/Kolkata").tz_localize(None)
+        in_session = now.weekday() < 5 and (9, 0) <= (now.hour, now.minute) <= (15, 35)
         for key, item in data.items():
             if not isinstance(item, dict):
                 continue
@@ -215,9 +215,55 @@ class LiveMarketHub:
             if price is None:
                 continue
             instrument = item.get("instrument_token") or str(key).replace(":", "|", 1)
+            if keys and instrument not in keys and len(keys) == 1:
+                instrument = keys[0]
             with self._lock:
                 self._ticks[instrument].append({"datetime": now, "price": price, "quantity": 0.0})
-                self._update_bar(instrument, now, price, 0.0)
+                if in_session:
+                    self._update_bar(instrument, now, price, 0.0)
+
+    def _start_backfill(self, key):
+        with self._lock:
+            if key in self._backfilled:
+                return
+            self._backfilled.add(key)
+        threading.Thread(
+            target=self._backfill_history, args=(key,), name="tradealgo-backfill", daemon=True
+        ).start()
+
+    def _backfill_history(self, key):
+        import requests
+        from urllib.parse import quote
+
+        headers = {"Accept": "application/json", "Authorization": f"Bearer {self.token}"}
+        base = "https://api.upstox.com/v3/historical-candle"
+        enc = quote(key, safe="")
+        today = pd.Timestamp.now(tz="Asia/Kolkata").date()
+        urls = [
+            f"{base}/{enc}/minutes/1/{today}/{today - pd.Timedelta(days=7)}",
+            f"{base}/intraday/{enc}/minutes/1",
+        ]
+        rows, errors = {}, []
+        for url in urls:
+            try:
+                resp = requests.get(url, headers=headers, timeout=15)
+                if resp.status_code != 200:
+                    raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:100]}")
+                for row in _parse_candles(resp.json()):
+                    rows[row["datetime"]] = row
+            except Exception as exc:
+                errors.append(str(exc)[:120])
+        with self._lock:
+            self._history_error = "; ".join(errors) if errors and not rows else ""
+        if rows:
+            self._merge_history(key, list(rows.values()))
+
+    def _merge_history(self, key, rows):
+        with self._lock:
+            merged = {row["datetime"]: row for row in rows}
+            for bar in self._bars[key]:
+                merged[bar["datetime"]] = bar
+            self._bars[key] = deque(sorted(merged.values(), key=lambda b: b["datetime"]), maxlen=_MAX_BARS)
 
     def _ingest(self, raw):
         payload = _as_dict(raw)
@@ -231,7 +277,6 @@ class LiveMarketHub:
             ltpc = feed.get("ltpc") or {}
             price = _number(ltpc.get("ltp"))
             if price is None:
-                # Some SDK payloads nest LTPC under fullFeed/marketFF.
                 full = feed.get("fullFeed") or {}
                 market = full.get("marketFF") or {}
                 ltpc = market.get("ltpc") or {}
@@ -286,6 +331,7 @@ class LiveMarketHub:
         with self._lock:
             return {
                 "connected": self._connected or self._poll_ok,
+                "history_error": self._history_error,
                 "mode": "websocket" if self._connected else ("rest-polling" if self._poll_ok else "none"),
                 "started_at": self._started_at,
                 "last_error": self._last_error,
@@ -300,8 +346,6 @@ _HUBS_LOCK = threading.Lock()
 def get_market_hub(token: str) -> LiveMarketHub:
     if not token:
         raise ValueError("No Upstox market-data token is configured.")
-    # A token hash is used only as an in-process cache key; the token itself is
-    # never logged or returned.
     import hashlib
 
     key = hashlib.sha256(token.encode()).hexdigest()
@@ -311,3 +355,27 @@ def get_market_hub(token: str) -> LiveMarketHub:
             hub = LiveMarketHub(token)
             _HUBS[key] = hub
         return hub
+
+
+def _parse_candles(payload):
+    """Upstox candle rows: [timestamp, open, high, low, close, volume, oi]."""
+    candles = ((payload or {}).get("data") or {}).get("candles") or []
+    out = []
+    for c in candles:
+        try:
+            ts = pd.Timestamp(c[0])
+            if ts.tzinfo is not None:
+                ts = ts.tz_convert("Asia/Kolkata").tz_localize(None)
+            out.append(
+                {
+                    "datetime": ts.floor("min"),
+                    "open": float(c[1]),
+                    "high": float(c[2]),
+                    "low": float(c[3]),
+                    "close": float(c[4]),
+                    "volume": float(c[5]) if len(c) > 5 and c[5] is not None else 0.0,
+                }
+            )
+        except (TypeError, ValueError, IndexError):
+            continue
+    return out
