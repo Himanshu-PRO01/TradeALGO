@@ -7,6 +7,7 @@ from algobot import ui
 from algobot.config import ConfigError, load_config, validate_config
 from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
 from algobot.paper_trading import evaluate, split_open_and_closed
+from algobot.upstox_bod_instruments import UpstoxBODResolver
 from algobot.upstox_sandbox import (
     UpstoxSandboxClient,
     UpstoxSandboxError,
@@ -149,18 +150,80 @@ elif "sandbox_signal_snapshot" in st.session_state and _snapshot is None:
     st.caption("Strategy is flat right now -- no open signal to suggest.")
 
 st.divider()
-st.markdown("### 3. Place a sandbox order")
+st.markdown("### 3. Select the sandbox instrument")
 st.caption(
-    "Use an instrument token supplied by Upstox. Do not guess a NIFTY/BANKNIFTY option token; "
-    "the token must match the exact sandbox instrument."
+    "TradeALGO can resolve the exact NIFTY CE/PE instrument key from Upstox's published NSE "
+    "instrument file. This lookup is read-only; the selected key is only passed to the sandbox order form."
 )
 
-with st.form("upstox_sandbox_order"):
+resolver = UpstoxBODResolver()
+instrument_token = ""
+instrument_ref = None
+
+try:
+    @st.cache_data(ttl=300, show_spinner=False)
+    def _nifty_option_expiries():
+        return UpstoxBODResolver().expiries()
+
+    expiries = _nifty_option_expiries()
+except ConfigError as exc:
+    expiries = []
+    st.error(str(exc))
+
+if expiries:
+    i1, i2, i3 = st.columns(3)
+    with i1:
+        sandbox_option_type = st.selectbox("Option", ["CE", "PE"], key="sandbox_option_type")
+    with i2:
+        sandbox_expiry = st.selectbox("Expiry", expiries, key="sandbox_option_expiry")
+    try:
+        @st.cache_data(ttl=300, show_spinner=False)
+        def _nifty_option_contracts(option_type, expiry):
+            return UpstoxBODResolver().find_options(option_type, expiry)
+
+        contracts = _nifty_option_contracts(sandbox_option_type, sandbox_expiry)
+    except ConfigError as exc:
+        contracts = []
+        st.error(str(exc))
+
+    if contracts:
+        strikes = [float(c.strike_price) for c in contracts if c.strike_price is not None]
+        with i3:
+            selected_strike = st.selectbox(
+                "Strike",
+                strikes,
+                format_func=lambda x: f"{x:g}",
+                key="sandbox_option_strike",
+            )
+        selected = next((c for c in contracts if c.strike_price == float(selected_strike)), None)
+        if selected:
+            instrument_ref = selected
+            instrument_token = selected.instrument_key
+            st.success(
+                f"Resolved: **{selected.trading_symbol}** · {selected.instrument_key} · "
+                f"lot size {selected.lot_size or 'n/a'}"
+            )
+            st.caption("The instrument token below is filled automatically from Upstox BOD data.")
+    else:
+        st.warning("No NIFTY contracts were found for the selected option type and expiry.")
+else:
+    st.warning("Could not load current NIFTY option contracts. You can use manual token entry below.")
+
+manual_token = st.checkbox(
+    "Enter an instrument token manually",
+    value=False,
+    key="sandbox_manual_token",
+)
+if manual_token:
     instrument_token = st.text_input(
         "Instrument token",
+        value=instrument_token,
         placeholder="Example: NSE_FO|...",
-        help="Use the exact instrument_token supplied by Upstox for the contract you are testing.",
+        help="Use the exact instrument_key/instrument_token supplied by Upstox for the contract you are testing.",
+        key="sandbox_manual_instrument_token",
     )
+
+with st.form("upstox_sandbox_order"):
     c1, c2 = st.columns(2)
     with c1:
         quantity = st.number_input("Quantity", min_value=1, value=1, step=1)
