@@ -46,16 +46,18 @@ def market_panel():
     bars = hub.snapshot(instrument_key, max_bars=window, interval_minutes=timeframe)
     history_count = int(status.get("history_bars", {}).get(instrument_key, 0))
 
-    if status["connected"]:
+    if status.get("history_error"):
+        mode_note = "WebSocket" if status.get("mode") == "websocket" else ("REST LTP fallback" if status.get("mode") == "rest-polling" else "offline")
+        status_box.error(
+            f"🔴 HISTORICAL OHLC UNAVAILABLE · {status['history_error']} · Live feed: {mode_note}"
+        )
+    elif status["connected"] and history_count:
         mode_note = "WebSocket" if status.get("mode") == "websocket" else "REST LTP fallback"
-        if history_count:
-            status_box.success(
-                f"🟢 LIVE · {mode_note} · {history_count:,} official Upstox 1-min OHLC candles loaded"
-            )
-        else:
-            status_box.warning("🟡 LIVE · official historical OHLC candles are not loaded yet")
-    elif status.get("history_error"):
-        status_box.error(f"🔴 Historical OHLC error: {status['history_error']}")
+        status_box.success(
+            f"🟢 LIVE · {mode_note} · {history_count:,} official Upstox 1-min OHLC candles loaded"
+        )
+    elif status["connected"]:
+        status_box.warning("🟡 LIVE FEED CONNECTED · waiting for official Upstox OHLC history")
     elif status["last_error"]:
         status_box.error(f"🔴 Upstox feed error: {status['last_error']}")
     else:
