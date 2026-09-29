@@ -11,6 +11,7 @@ from algobot.data import generate_sample_data
 from algobot.dynamic_options import generate_synthetic_option_chain
 from algobot.tick_engine import load_tick_csv, run_tick_strategy
 from algobot.upstox_market_data import UpstoxMarketData
+from algobot.upstox_option_contracts import UpstoxOptionContracts
 
 ui.setup("Tick Engine", "⚡")
 ui.header(
@@ -80,22 +81,63 @@ if source == "Upstox Live V3":
         help="Use full for LTP + best bid/ask + option Greeks.",
         key="upstox_feed_mode",
     )
-    option_keys_text = st.text_area(
-        "Option instrument keys (one per line)",
-        placeholder="CE 24500 = NSE_FO|<instrument-key>\nPE 24500 = NSE_FO|<instrument-key>",
-        help="Format each line as LABEL = INSTRUMENT_KEY. Labels should identify CE/PE and strike, e.g. CE 24500.",
-        key="upstox_option_keys",
-        height=110,
+    expiry = st.selectbox(
+        "Option expiry",
+        ["current_week", "next_week", "current_month", "next_month"],
+        help="Upstox resolves these relative expiry keywords automatically.",
+        key="upstox_option_expiry",
     )
-    option_map = {}
-    for raw in option_keys_text.splitlines():
-        if "=" in raw:
-            label, key = raw.split("=", 1)
-            label, key = label.strip(), key.strip()
-            if label and key:
-                option_map[label] = key
+    refresh_contracts = st.button("🔄 Find current CE/PE contracts", key="refresh_option_contracts")
 
-    all_keys = [underlying_key.strip()] + list(option_map.values())
+    if "upstox_option_contracts" not in st.session_state or refresh_contracts:
+        if token and underlying_key.strip():
+            try:
+                resolver = UpstoxOptionContracts(token, underlying_key.strip())
+                st.session_state["upstox_option_contracts"] = resolver.fetch(expiry)
+                st.session_state["upstox_option_contract_expiry"] = expiry
+            except ConfigError as exc:
+                st.session_state["upstox_option_contracts_error"] = str(exc)
+        else:
+            st.session_state["upstox_option_contracts_error"] = "Configure an Upstox token and underlying instrument key first."
+
+    contracts = st.session_state.get("upstox_option_contracts", [])
+    if st.session_state.get("upstox_option_contracts_error"):
+        st.warning(st.session_state["upstox_option_contracts_error"])
+    if contracts:
+        st.success(f"Found {len(contracts)} current {st.session_state.get('upstox_option_contract_expiry', expiry)} CE/PE contracts automatically.")
+        option_type = st.selectbox("Option side", ["CE", "PE"], key="upstox_option_side")
+        available_strikes = sorted({c.strike_price for c in contracts if c.instrument_type == option_type})
+        target_strike = st.number_input(
+            "Target strike",
+            min_value=float(min(available_strikes)) if available_strikes else 0.0,
+            max_value=float(max(available_strikes)) if available_strikes else 999999.0,
+            value=float(available_strikes[len(available_strikes)//2]) if available_strikes else 0.0,
+            step=50.0,
+            key="upstox_target_strike",
+        )
+        resolver = UpstoxOptionContracts(token, underlying_key.strip())
+        mapping = resolver.by_strike(contracts, option_type)
+        if mapping:
+            selected_strike = resolver.nearest_strike(list(mapping), target_strike)
+            selected = mapping[selected_strike]
+            st.session_state["upstox_option_map"] = {
+                f"{c.instrument_type} {c.strike_price:g}": c.instrument_key for c in contracts
+            }
+            st.dataframe(
+                pd.DataFrame([{
+                    "Side": selected.instrument_type,
+                    "Strike": selected.strike_price,
+                    "Expiry": selected.expiry,
+                    "Trading symbol": selected.trading_symbol,
+                    "Instrument key": selected.instrument_key,
+                    "Lot size": selected.lot_size,
+                }]),
+                width="stretch",
+                hide_index=True,
+            )
+            st.caption("The Tick Engine can now use the returned instrument key instead of a manually entered token.")
+    option_map = st.session_state.get("upstox_option_map", {})
+    
     if token and underlying_key.strip() and option_map:
         resource_key = token + "|" + feed_mode + "|" + "|".join(all_keys)
 
