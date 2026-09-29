@@ -364,6 +364,30 @@ class LiveMarketHub:
             ).dropna(subset=["open", "high", "low", "close"])
         return df.tail(max_bars)
 
+    def session_levels(self, instrument_key: str) -> dict:
+        """Return previous-session high/low from the cached official/live OHLC bars."""
+        with self._lock:
+            rows = list(self._bars.get(instrument_key, ()))
+        if not rows:
+            return {}
+
+        df = pd.DataFrame(rows)
+        if "datetime" not in df.columns or df.empty:
+            return {}
+        df["datetime"] = pd.to_datetime(df["datetime"])
+        df = df.dropna(subset=["datetime", "high", "low"]).sort_values("datetime")
+        dates = list(df["datetime"].dt.normalize().drop_duplicates())
+        if len(dates) < 2:
+            return {}
+        previous = df.loc[df["datetime"].dt.normalize() == dates[-2]]
+        if previous.empty:
+            return {}
+        return {
+            "previous_high": float(previous["high"].max()),
+            "previous_low": float(previous["low"].min()),
+            "previous_date": dates[-2].strftime("%d %b %Y"),
+        }
+
     def latest(self, instrument_key: str) -> dict | None:
         with self._lock:
             ticks = self._ticks.get(instrument_key)
