@@ -43,7 +43,12 @@ status_box = st.empty()
 def market_panel():
     status = hub.status()
     latest = hub.latest(instrument_key)
-    bars = hub.snapshot(instrument_key, max_bars=window, interval_minutes=timeframe)
+    bars = hub.snapshot(
+        instrument_key,
+        max_bars=window,
+        interval_minutes=timeframe,
+        latest_session_only=True,
+    )
     history_count = int(status.get("history_bars", {}).get(instrument_key, 0))
 
     if status.get("history_error"):
@@ -80,9 +85,18 @@ def market_panel():
         st.info("Waiting for the first Upstox tick. The live chart will populate automatically.")
         return
 
-    ui.show_chart(charts.candlestick(bars, height=600, max_bars=window, volume=True))
+    ui.show_chart(
+        charts.candlestick(
+            bars,
+            height=600,
+            max_bars=window,
+            volume=True,
+            interval_minutes=timeframe,
+        )
+    )
+    session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
     st.caption(
-        f"Source: Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles. "
+        f"Session: {session_date} · Upstox V3 historical OHLCV + live market feed · {timeframe}-minute candles. "
         "Historical candles are not synthesized; live ticks only update the current 1-minute bar."
     )
     with st.expander("Latest OHLCV data", expanded=False):
