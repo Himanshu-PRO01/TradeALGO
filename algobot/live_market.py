@@ -325,13 +325,34 @@ class LiveMarketHub:
                 }
             )
 
-    def snapshot(self, instrument_key: str, max_bars: int = 300, interval_minutes: int = 1) -> pd.DataFrame:
-        """Return Upstox OHLCV candles, optionally aggregated to a larger timeframe."""
+    def snapshot(
+        self,
+        instrument_key: str,
+        max_bars: int = 300,
+        interval_minutes: int = 1,
+        latest_session_only: bool = True,
+    ) -> pd.DataFrame:
+        """Return contiguous Upstox OHLCV candles for the latest trading session by default."""
         with self._lock:
             rows = list(self._bars.get(instrument_key, ()))
         if not rows:
             return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
-        df = pd.DataFrame(rows).drop_duplicates("datetime", keep="last").set_index("datetime").sort_index()
+
+        df = (
+            pd.DataFrame(rows)
+            .drop_duplicates("datetime", keep="last")
+            .set_index("datetime")
+            .sort_index()
+        )
+
+        # A rolling cache can contain several trading sessions. Showing those
+        # sessions on a continuous time axis creates huge overnight/weekend gaps
+        # and makes a live intraday chart look broken. Default to the newest
+        # session; callers can explicitly request the full cached history.
+        if latest_session_only and not df.empty:
+            latest_date = df.index.normalize().max()
+            df = df.loc[df.index.normalize() == latest_date]
+
         interval_minutes = max(1, int(interval_minutes))
         if interval_minutes > 1:
             df = df.resample(f"{interval_minutes}min", origin="start_day").agg(
