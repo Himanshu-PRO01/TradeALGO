@@ -39,17 +39,18 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
     d = df.tail(max_bars).copy()
     d.index.name = "datetime"
     d = d.reset_index()
-    d["bar"] = np.arange(len(d))
-    d["time"] = d["datetime"].dt.strftime("%d %b %H:%M")
+    d["time"] = d["datetime"].dt.strftime("%d %b %Y %H:%M")
+    d["bar_start"] = d["datetime"]
+    d["bar_end"] = d["datetime"] + pd.Timedelta(minutes=1)
     d["direction"] = np.where(d["close"] >= d["open"], "up", "down")
     colour = alt.Color("direction:N", scale=alt.Scale(domain=["up", "down"], range=[UP, DOWN]), legend=None)
-    x = alt.X("bar:Q", axis=alt.Axis(labels=False, ticks=False, title=None),
-              scale=alt.Scale(domain=[-1, len(d)], nice=False))
-    tip = [alt.Tooltip("time:N", title="time"), "open:Q", "high:Q", "low:Q", "close:Q"]
+    x = alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None))
+    tip = [alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"), "open:Q", "high:Q", "low:Q", "close:Q"]
     wick = alt.Chart(d).mark_rule().encode(
         x=x, y=alt.Y("low:Q", scale=alt.Scale(zero=False), title=None), y2="high:Q", color=colour, tooltip=tip)
     body = alt.Chart(d).mark_bar(size=max(2.0, min(10.0, 560.0 / max(len(d), 1)))).encode(
-        x=x, y="open:Q", y2="close:Q", color=colour, tooltip=tip)
+        x=alt.X("bar_start:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
+        x2="bar_end:T", y="open:Q", y2="close:Q", color=colour, tooltip=tip)
     layers = [wick, body]
 
     for label, price in (hlines or {}).items():
@@ -67,16 +68,16 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
         for t in trades.itertuples():
             entry, exit_ = pd.Timestamp(t.entry_time), pd.Timestamp(t.exit_time)
             if entry in pos.index:
-                rows.append({"bar": int(pos[entry]), "price": float(t.entry_price), "kind": "entry",
+                rows.append({"datetime": entry, "price": float(t.entry_price), "kind": "entry",
                              "shape": "triangle-up" if t.side == "LONG" else "triangle-down",
                              "note": f"{t.side} entry {t.entry_price:,.2f}"})
             if exit_ in pos.index:
-                rows.append({"bar": int(pos[exit_]), "price": float(t.exit_price), "kind": "win" if t.net_pnl > 0 else "loss",
+                rows.append({"datetime": exit_, "price": float(t.exit_price), "kind": "win" if t.net_pnl > 0 else "loss",
                              "shape": "cross", "note": f"exit {t.exit_price:,.2f}, net {t.net_pnl:,.0f}"})
         if rows:
             m = pd.DataFrame(rows)
             layers.append(alt.Chart(m).mark_point(filled=True, size=90, opacity=0.95).encode(
-                x=x, y=alt.Y("price:Q", scale=alt.Scale(zero=False)),
+                x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)), y=alt.Y("price:Q", scale=alt.Scale(zero=False)),
                 shape=alt.Shape("shape:N", scale=None, legend=None),
                 color=alt.Color("kind:N", scale=alt.Scale(domain=["entry", "win", "loss"], range=[BLUE, UP, DOWN]), legend=None),
                 tooltip=["note:N"]))
@@ -85,7 +86,7 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
     if not volume or "volume" not in d.columns or float(d["volume"].sum()) == 0.0:
         return _style(price_chart.interactive())
     vol = alt.Chart(d).mark_bar(opacity=0.5).encode(
-        x=alt.X("bar:Q", axis=alt.Axis(labels=False, ticks=False, title=None), scale=alt.Scale(domain=[-1, len(d)], nice=False)),
+        x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
         y=alt.Y("volume:Q", title=None, axis=alt.Axis(labels=False, ticks=False)), color=colour).properties(height=60, width="container")
     # resolve_scale(x="shared") keeps the price and volume panels lined up while zoomed or
     # panned; .interactive() turns on scroll-to-zoom and click-drag-to-pan like a real charting app.
