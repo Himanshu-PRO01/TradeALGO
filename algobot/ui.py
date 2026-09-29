@@ -1020,19 +1020,24 @@ def language_toggle() -> None:
         st.rerun()
 
 
+def _apply_theme_from_toggle(key: str) -> None:
+    """Apply a theme toggle before Streamlit reruns the app."""
+    st.session_state["tradealgo_theme"] = (
+        "dark" if st.session_state.get(key, True) else "light"
+    )
+
+
 def theme_toggle() -> None:
     """Compact global dark/light mode switch."""
     current_dark = is_dark_mode()
-    dark = st.toggle(
+    st.toggle(
         "Dark",
         value=current_dark,
         key="tradealgo_theme_toggle",
         help="Switch between dark and light mode",
+        on_change=_apply_theme_from_toggle,
+        args=("tradealgo_theme_toggle",),
     )
-    new_mode = "dark" if dark else "light"
-    if st.session_state.get("tradealgo_theme") != new_mode:
-        st.session_state["tradealgo_theme"] = new_mode
-        st.rerun()
 
 
 def appearance_controls() -> None:
@@ -1040,16 +1045,14 @@ def appearance_controls() -> None:
     with st.sidebar:
         st.markdown("**Appearance**")
         current_dark = is_dark_mode()
-        dark = st.toggle(
+        st.toggle(
             "Dark mode",
             value=current_dark,
             key="tradealgo_theme_toggle",
             help="Switch between dark and light mode",
+            on_change=_apply_theme_from_toggle,
+            args=("tradealgo_theme_toggle",),
         )
-        new_mode = "dark" if dark else "light"
-        if st.session_state.get("tradealgo_theme") != new_mode:
-            st.session_state["tradealgo_theme"] = new_mode
-            st.rerun()
 
 
 
@@ -1202,17 +1205,15 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
             label="💬 Feedback",
             use_container_width=False,
         )
-        dark = st.toggle(
+        st.toggle(
             "🌙",
             value=is_dark_mode(),
             key="tradealgo_theme_toggle_top",
             help="Switch between dark and light mode",
             label_visibility="collapsed",
+            on_change=_apply_theme_from_toggle,
+            args=("tradealgo_theme_toggle_top",),
         )
-        new_mode = "dark" if dark else "light"
-        if st.session_state.get("tradealgo_theme") != new_mode:
-            st.session_state["tradealgo_theme"] = new_mode
-            st.rerun()
         if st.button("☰ Menu", key="top_menu", type="secondary"):
             st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
             st.rerun()
