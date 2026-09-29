@@ -478,6 +478,20 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
     }
 }
 
+/* reading progress bar */
+#algobot-scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    z-index: 1000000;
+    background: linear-gradient(90deg, #3B82F6, #16C784);
+    box-shadow: 0 0 10px rgba(59,130,246,.45);
+    pointer-events: none;
+    transition: width .08s linear;
+}
+
 /* polished global scrollbar */
 html {
     scrollbar-width: thin;
@@ -1028,6 +1042,34 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown("""
+    <script>
+    (() => {
+        const updateProgress = () => {
+            const doc = document.documentElement;
+            const body = document.body;
+            const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+            const scrollHeight = Math.max(
+                doc.scrollHeight, body.scrollHeight,
+                doc.offsetHeight, body.offsetHeight
+            );
+            const viewport = window.innerHeight || doc.clientHeight;
+            const maxScroll = Math.max(scrollHeight - viewport, 1);
+            const progress = Math.min(100, Math.max(0, (scrollTop / maxScroll) * 100));
+            let bar = document.getElementById("algobot-scroll-progress");
+            if (!bar) {
+                bar = document.createElement("div");
+                bar.id = "algobot-scroll-progress";
+                document.body.appendChild(bar);
+            }
+            bar.style.width = progress + "%";
+        };
+        window.addEventListener("scroll", updateProgress, {passive: true});
+        window.addEventListener("resize", updateProgress, {passive: true});
+        requestAnimationFrame(updateProgress);
+    })();
+    </script>
+    """, unsafe_allow_html=True)
     st.session_state.setdefault("top_menu_open", False)
     _menu()
     language_toggle()
