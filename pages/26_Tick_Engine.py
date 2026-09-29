@@ -89,7 +89,8 @@ if source == "Upstox Live V3":
     )
     refresh_contracts = st.button("🔄 Find current CE/PE contracts", key="refresh_option_contracts")
 
-    if "upstox_option_contracts" not in st.session_state or refresh_contracts:
+    stored_expiry = st.session_state.get("upstox_option_contract_expiry")
+    if "upstox_option_contracts" not in st.session_state or refresh_contracts or stored_expiry != expiry:
         if token and underlying_key.strip():
             try:
                 resolver = UpstoxOptionContracts(token, underlying_key.strip())
@@ -137,7 +138,8 @@ if source == "Upstox Live V3":
             )
             st.caption("The Tick Engine can now use the returned instrument key instead of a manually entered token.")
     option_map = st.session_state.get("upstox_option_map", {})
-    
+    all_keys = [underlying_key.strip()] + list(option_map.values())
+
     if token and underlying_key.strip() and option_map:
         resource_key = token + "|" + feed_mode + "|" + "|".join(all_keys)
 
