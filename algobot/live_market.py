@@ -183,9 +183,12 @@ class LiveMarketHub:
                         self._connected = False
 
                 def on_error(_ws, error):
+                    message = str(error)
                     with self._lock:
                         self._connected = False
-                        self._last_error = str(error)[:300]
+                        self._last_error = message[:300]
+                    if "403" in message or "forbidden" in message.lower():
+                        self._start_polling(keys)
 
                 def on_message(_ws, message):
                     payload = _decode_market_feed_message(message)
