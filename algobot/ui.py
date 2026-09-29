@@ -453,7 +453,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 /* mobile menu trigger and drawer */
 .st-key-mobile_menu {{
-    display: none;
+    display: none !important;
 }}
 @media (max-width:768px) {{
     .st-key-mobile_menu {{
