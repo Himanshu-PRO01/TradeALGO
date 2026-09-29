@@ -355,6 +355,7 @@ class LiveMarketHub:
             return {
                 "connected": self._connected or self._poll_ok,
                 "history_error": self._history_error,
+                "history_bars": dict(self._history_bars),
                 "mode": "websocket" if self._connected else ("rest-polling" if self._poll_ok else "none"),
                 "started_at": self._started_at,
                 "last_error": self._last_error,
