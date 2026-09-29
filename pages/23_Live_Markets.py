@@ -54,8 +54,9 @@ def live_panel():
     bars = hub.snapshot(instrument_key, max_bars=window)
 
     if status["connected"]:
+        mode_note = " (REST polling every ~3s: WebSocket was refused)" if status.get("mode") == "rest-polling" else ""
         status_box.success(
-            f"🟢 Live feed connected · {len(bars)} one-minute candles · "
+            f"🟢 Live feed connected{mode_note} · {len(bars)} one-minute candles · "
             f"{status['ticks']:,} ticks cached in this server process"
         )
     elif status["last_error"]:

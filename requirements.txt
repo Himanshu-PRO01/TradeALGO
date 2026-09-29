@@ -6,3 +6,4 @@ streamlit>=1.48
 pytest>=7.0
 upstox-python-sdk>=2.23.0
 yfinance>=0.2.40
+requests>=2.31

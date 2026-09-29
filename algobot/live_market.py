@@ -89,6 +89,9 @@ class LiveMarketHub:
         self._streamer = None
         self._started_at = None
         self._connected = False
+        self._polling = False
+        self._poll_ok = False
+        self._poll_thread = None
         self._last_error = ""
         self._ticks = defaultdict(lambda: deque(maxlen=_MAX_TICKS))
         self._bars = defaultdict(lambda: deque(maxlen=_MAX_BARS))
@@ -139,6 +142,8 @@ class LiveMarketHub:
                 with self._lock:
                     self._connected = False
                     self._last_error = str(error)[:300]
+                if "403" in str(error) or "forbidden" in str(error).lower():
+                    self._start_polling(keys)
 
             def on_message(message):
                 self._ingest(message)
@@ -156,8 +161,63 @@ class LiveMarketHub:
             with self._lock:
                 self._connected = False
                 self._last_error = str(exc)[:300]
+            self._start_polling(keys)
         finally:
             self._streamer = None
+
+    def _start_polling(self, keys):
+        with self._lock:
+            if self._polling:
+                return
+            self._polling = True
+            self._poll_thread = threading.Thread(
+                target=self._poll_loop, args=(tuple(keys),), name="tradealgo-rest-poll", daemon=True
+            )
+            self._poll_thread.start()
+
+    def _poll_loop(self, keys, interval: float = 3.0):
+        import requests
+
+        headers = {"Accept": "application/json", "Authorization": f"Bearer {self.token}"}
+        url = "https://api.upstox.com/v3/market-quote/ltp"
+        while True:
+            with self._lock:
+                if self._connected:
+                    self._polling = False
+                    self._poll_ok = False
+                    return
+            try:
+                resp = requests.get(
+                    url,
+                    headers=headers,
+                    params={"instrument_key": ",".join(keys)},
+                    timeout=10,
+                )
+                if resp.status_code != 200:
+                    raise RuntimeError(f"REST quote HTTP {resp.status_code}: {resp.text[:120]}")
+                self._ingest_rest(resp.json())
+                with self._lock:
+                    self._poll_ok = True
+                    self._last_error = ""
+            except Exception as exc:
+                with self._lock:
+                    self._poll_ok = False
+                    self._last_error = f"REST fallback failed: {str(exc)[:250]}"
+            time.sleep(interval)
+
+    def _ingest_rest(self, payload):
+        data = (payload or {}).get("data") or {}
+        now = pd.Timestamp.now(tz="Asia/Kolkata").tz_localize(None)
+        for key, item in data.items():
+            if not isinstance(item, dict):
+                continue
+            price = _number(item.get("last_price"))
+            if price is None:
+                continue
+            instrument = item.get("instrument_token") or str(key).replace(":", "|", 1)
+            with self._lock:
+                self._ticks[instrument].append({"datetime": now, "price": price, "quantity": 0.0})
+                self._update_bar(instrument, now, price, 0.0)
 
     def _ingest(self, raw):
         payload = _as_dict(raw)
@@ -225,7 +285,8 @@ class LiveMarketHub:
     def status(self) -> dict:
         with self._lock:
             return {
-                "connected": self._connected,
+                "connected": self._connected or self._poll_ok,
+                "mode": "websocket" if self._connected else ("rest-polling" if self._poll_ok else "none"),
                 "started_at": self._started_at,
                 "last_error": self._last_error,
                 "ticks": sum(len(v) for v in self._ticks.values()),
