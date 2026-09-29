@@ -129,14 +129,13 @@ def market_panel():
         overlays["Live price"] = "Live price"
 
     # Research signal model: EMA crossover + RSI confirmation.
-    delta_ema20 = analysis["EMA 20"].diff()
     crossed_up = (analysis["EMA 20"] > analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) <= analysis["EMA 50"].shift(1))
     crossed_down = (analysis["EMA 20"] < analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) >= analysis["EMA 50"].shift(1))
 
     delta = analysis["close"].diff()
     gain = delta.clip(lower=0).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
     loss = (-delta.clip(upper=0)).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
-    rs = gain / loss.replace(0, pd.NA)
+    rs = gain / loss.replace(0, float("nan"))
     analysis["RSI"] = (100 - (100 / (1 + rs))).astype(float)
 
     buy_signal = crossed_up & (analysis["RSI"] >= 50)
