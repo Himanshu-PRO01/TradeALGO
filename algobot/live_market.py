@@ -92,6 +92,7 @@ class LiveMarketHub:
         self._polling = False
         self._poll_ok = False
         self._poll_thread = None
+        self._poll_backoff = 3.0
         self._backfilled = set()
         self._history_error = ""
         self._history_bars = defaultdict(int)
@@ -179,30 +180,45 @@ class LiveMarketHub:
             )
             self._poll_thread.start()
 
-    def _poll_loop(self, keys, interval: float = 3.0):
+    def _poll_loop(self, keys, interval: float = 10.0):
         import requests
 
         headers = {"Accept": "application/json", "Authorization": f"Bearer {self.token}"}
         url = "https://api.upstox.com/v3/market-quote/ltp"
+        backoff = max(10.0, float(interval))
         while True:
             with self._lock:
                 if self._connected:
                     self._polling = False
                     self._poll_ok = False
                     return
+            sleep_for = backoff
             try:
                 resp = requests.get(url, headers=headers, params={"instrument_key": ",".join(keys)}, timeout=10)
-                if resp.status_code != 200:
-                    raise RuntimeError(f"REST quote HTTP {resp.status_code}: {resp.text[:120]}")
-                self._ingest_rest(resp.json(), keys)
-                with self._lock:
-                    self._poll_ok = True
-                    self._last_error = ""
+                if resp.status_code == 429:
+                    retry_after = _number(resp.headers.get("Retry-After"))
+                    sleep_for = max(30.0, retry_after or 30.0)
+                    with self._lock:
+                        self._poll_ok = False
+                        self._last_error = (
+                            f"Upstox REST rate limit (429). Waiting {int(sleep_for)}s before retry."
+                        )
+                elif resp.status_code != 200:
+                    raise RuntimeError(f"REST quote HTTP {resp.status_code}: {resp.text[:160]}")
+                else:
+                    self._ingest_rest(resp.json(), keys)
+                    with self._lock:
+                        self._poll_ok = True
+                        self._last_error = ""
+                    backoff = max(10.0, float(interval))
+                    sleep_for = backoff
             except Exception as exc:
                 with self._lock:
                     self._poll_ok = False
                     self._last_error = f"REST fallback failed: {str(exc)[:250]}"
-            time.sleep(interval)
+                backoff = min(120.0, max(15.0, backoff * 2.0))
+                sleep_for = backoff
+            time.sleep(sleep_for)
 
     def _ingest_rest(self, payload, keys=(), now=None):
         data = (payload or {}).get("data") or {}
