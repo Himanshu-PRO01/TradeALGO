@@ -29,7 +29,7 @@ _BACK_TO_TOP_COMPONENT = None
 
 def is_dark_mode() -> bool:
     """Return the current TradeALGO appearance preference."""
-    return st.session_state.get("tradealgo_theme", "dark") == "dark"
+    return st.session_state.get("tradealgo_theme", "light") == "dark"
 
 
 def theme_toggle() -> None:
@@ -142,6 +142,21 @@ def _back_to_top_component():
 
 CSS = f"""
 <style>
+:root{--ta-green:#318616;--ta-ink:#171717;--ta-muted:#4d5761;--ta-surface:#fff;--ta-raised:#f7f8f6;--ta-border:#e5e7eb}
+body,.stApp{font-family:Lexend,sans-serif}
+.ta-auth-shell{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:28px 16px 56px}
+.ta-auth-grid{width:min(980px,100%);display:grid;grid-template-columns:1.05fr .95fr;background:var(--ta-surface);border:1px solid var(--ta-border);border-radius:24px;overflow:hidden;box-shadow:0 18px 55px rgba(20,30,20,.1)}
+.ta-auth-brand{padding:54px;background:linear-gradient(145deg,#f2f8ed 0%,#fff 72%);border-right:1px solid var(--ta-border)}
+.ta-auth-logo{font-size:1.55rem;font-weight:900;letter-spacing:-.04em;color:var(--ta-ink)}.ta-auth-logo span{color:var(--ta-green)}
+.ta-auth-kicker{margin-top:58px;color:var(--ta-green);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+.ta-auth-title{margin:12px 0 14px;color:var(--ta-ink);font-size:clamp(2rem,4vw,3.35rem);line-height:1.04;font-weight:850;letter-spacing:-.055em}
+.ta-auth-copy{max-width:470px;color:var(--ta-muted);font-size:1rem;line-height:1.7}.ta-auth-features{margin-top:28px;display:grid;gap:10px}
+.ta-auth-feature{display:flex;gap:10px;align-items:center;color:var(--ta-ink);font-size:.9rem;font-weight:600}
+.ta-auth-check{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:#eaf5e5;color:var(--ta-green);font-weight:900}
+.ta-auth-form{padding:54px;display:flex;flex-direction:column;justify-content:center}.ta-auth-form h2{margin:0 0 7px;color:var(--ta-ink);font-size:1.65rem;letter-spacing:-.035em}
+.ta-auth-form .ta-auth-sub{color:var(--ta-muted);margin-bottom:24px;font-size:.9rem;line-height:1.5}.ta-auth-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--ta-raised);color:var(--ta-muted);font-size:.78rem;line-height:1.5}
+.ta-auth-footer{margin-top:24px;text-align:center;color:#6b7280;font-size:.72rem}
+@media(max-width:760px){.ta-auth-grid{grid-template-columns:1fr}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form{padding:30px 24px 34px}}
 .block-container {{ padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }}
 h1, h2, h3 {{ letter-spacing: -0.01em; }}
 [data-testid="stSidebar"] {{ background: {PANEL}; border-right: 1px solid {BORDER}; }}
@@ -1329,7 +1344,7 @@ def appearance_controls() -> None:
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
-    st.session_state.setdefault("tradealgo_theme", "dark")
+    st.session_state.setdefault("tradealgo_theme", "light")
     st.markdown('<div id="algobot-page-top"></div>', unsafe_allow_html=True)
     st.markdown(CSS, unsafe_allow_html=True)
     if not is_dark_mode():
@@ -1492,7 +1507,7 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
         with left:
             st.markdown(
-                '<div class="ab-brand">ALGO<span>BOT</span> &nbsp;·&nbsp; TRADING DESK</div>',
+                '<div class="ab-brand">TRADE<span>ALGO</span> &nbsp;·&nbsp; TRADING RESEARCH</div>',
                 unsafe_allow_html=True,
             )
         with middle:
