@@ -47,32 +47,52 @@ def configured_password():
 
 
 def password_gate(max_attempts: int = 5) -> None:
-    """Stop the page with a password screen unless a password is set and has been entered."""
+    """Render the branded TradeALGO login when a hosted password is configured."""
     password = configured_password()
     if not password or st.session_state.get("_ab_authed"):
         return
-    st.markdown("<div style='max-width:420px;margin:12vh auto 0 auto'>"
-                "<h2 style='margin-bottom:0'>ALGOBOT</h2><p style='color:#8B98A9'>Private trading desk. "
-                "Enter the password you were given.</p></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ta-auth-shell"><div class="ta-auth-grid">
+      <section class="ta-auth-brand">
+        <div class="ta-auth-logo">TRADE<span>ALGO</span></div>
+        <div class="ta-auth-kicker">Systematic trading research</div>
+        <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
+        <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
+        <div class="ta-auth-features">
+          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Research before execution</div>
+          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Backtest with transparent assumptions</div>
+          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Connect execution through OpenAlgo</div>
+        </div>
+      </section>
+      <section class="ta-auth-form">
+        <h2>Welcome back</h2>
+        <div class="ta-auth-sub">Sign in to continue to your TradeALGO workspace.</div>
+    </div></div></div>
+    """, unsafe_allow_html=True)
+
     attempts = st.session_state.get("_ab_attempts", 0)
-    left, mid, right = st.columns([1, 1.2, 1])
-    with mid:
-        if attempts >= max_attempts:
-            st.error("Too many wrong tries in this session. Close the tab and open the link again later.")
-            st.stop()
-        with st.form("ab_login"):
-            entered = st.text_input("Password", type="password", key="ab_pw")
-            submitted = st.form_submit_button("Enter", key="ab_login_btn")
-        from .dom_fixups import fix_password_autocomplete
-        fix_password_autocomplete()
-        if submitted:
-            if hmac.compare_digest(entered.encode("utf-8"), str(password).encode("utf-8")):
-                st.session_state["_ab_authed"] = True
-                st.session_state["_ab_attempts"] = 0
-                st.rerun()
-            st.session_state["_ab_attempts"] = attempts + 1
-            time.sleep(1.0)                                   # slows down guessing
-            st.error("That password is not right.")
+    if attempts >= max_attempts:
+        st.error("Too many incorrect attempts in this session. Close the tab and try again later.")
+        st.stop()
+    with st.form("ab_login"):
+        entered = st.text_input("Workspace password", type="password", key="ab_pw", placeholder="Enter your password")
+        submitted = st.form_submit_button("Continue to TradeALGO", key="ab_login_btn", use_container_width=True)
+    from .dom_fixups import fix_password_autocomplete
+    fix_password_autocomplete()
+    if submitted:
+        if hmac.compare_digest(entered.encode("utf-8"), str(password).encode("utf-8")):
+            st.session_state["_ab_authed"] = True
+            st.session_state["_ab_attempts"] = 0
+            st.rerun()
+        st.session_state["_ab_attempts"] = attempts + 1
+        time.sleep(1.0)
+        st.error("That password is not correct. Please try again.")
+    st.markdown("""
+        <div class="ta-auth-note">🔒 Your workspace is protected. TradeALGO does not ask for broker passwords on this login screen.</div>
+        <div class="ta-auth-footer">TRADEALGO · Research, validation and paper trading</div>
+        </section></div></div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 
