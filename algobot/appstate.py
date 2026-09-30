@@ -47,9 +47,9 @@ def configured_password():
 
 
 def password_gate(max_attempts: int = 5) -> None:
-    """Render the branded TradeALGO login when a hosted password is configured."""
-    password = configured_password()
-    if not password or st.session_state.get("_ab_authed"):
+    """Render the branded TradeALGO login when a hosted secret is configured."""
+    secret = configured_password()
+    if not secret or st.session_state.get("_ab_authed"):
         return
 
     st.markdown("""
@@ -68,7 +68,8 @@ def password_gate(max_attempts: int = 5) -> None:
       <section class="ta-auth-form">
         <h2>Welcome back</h2>
         <div class="ta-auth-sub">Sign in to continue to your TradeALGO workspace.</div>
-    </div></div></div>
+      </section>
+    </div></div>
     """, unsafe_allow_html=True)
 
     attempts = st.session_state.get("_ab_attempts", 0)
@@ -76,22 +77,21 @@ def password_gate(max_attempts: int = 5) -> None:
         st.error("Too many incorrect attempts in this session. Close the tab and try again later.")
         st.stop()
     with st.form("ab_login"):
-        entered = st.text_input("Workspace password", type="password", key="ab_pw", placeholder="Enter your password")
+        entered = st.text_input("Workspace access", type="password", key="ab_pw", placeholder="Enter your access key")
         submitted = st.form_submit_button("Continue to TradeALGO", key="ab_login_btn", use_container_width=True)
     from .dom_fixups import fix_password_autocomplete
     fix_password_autocomplete()
     if submitted:
-        if hmac.compare_digest(entered.encode("utf-8"), str(password).encode("utf-8")):
+        if hmac.compare_digest(entered.encode("utf-8"), str(secret).encode("utf-8")):
             st.session_state["_ab_authed"] = True
             st.session_state["_ab_attempts"] = 0
             st.rerun()
         st.session_state["_ab_attempts"] = attempts + 1
         time.sleep(1.0)
-        st.error("That password is not correct. Please try again.")
+        st.error("That access key is not correct. Please try again.")
     st.markdown("""
-        <div class="ta-auth-note">🔒 Your workspace is protected. TradeALGO does not ask for broker passwords on this login screen.</div>
+        <div class="ta-auth-note" style="max-width:470px;margin:16px auto 0;">🔒 Your TradeALGO workspace is protected.</div>
         <div class="ta-auth-footer">TRADEALGO · Research, validation and paper trading</div>
-        </section></div></div>
     """, unsafe_allow_html=True)
     st.stop()
 
