@@ -1343,7 +1343,7 @@ def appearance_controls() -> None:
 
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
-    st.set_page_config(page_title=f"{title} | Algobot", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
+    st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.session_state.setdefault("tradealgo_theme", "light")
     st.markdown('<div id="algobot-page-top"></div>', unsafe_allow_html=True)
     st.markdown(CSS, unsafe_allow_html=True)
