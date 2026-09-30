@@ -8,3 +8,4 @@ upstox-python-sdk>=2.30.0
 yfinance>=0.2.40
 requests>=2.31
 websocket-client>=1.8
+protobuf>=4.25

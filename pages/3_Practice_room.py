@@ -3,9 +3,21 @@
 Now has three modes:
   1. Fake (synthetic)  — generated price path, fully offline
   2. Real market (historical replay) — past bars replayed bar-by-bar
-  3. ★ LIVE (real-time) ★  — streams the current index every 60 s via yfinance,
-     lets your brother place REAL Upstox Sandbox orders (fake money, real API),
-     and shows an AI suggestion panel that analyses live conditions.
+  3. ★ LIVE (real-time) ★  — streams the current index, lets your brother place
+     REAL Upstox Sandbox orders (fake money, real API), and shows an AI
+     suggestion panel that analyses live conditions.
+
+     Live mode's price feed is one of two things:
+       - an Upstox Analytics/market-data token is configured (Streamlit Secrets
+         or env var UPSTOX_ANALYTICS_TOKEN / UPSTOX_ACCESS_TOKEN) -> true
+         real-time ticks via the shared algobot.live_market hub, the same feed
+         pages/23_Live_Markets.py and pages/26_Tick_Engine.py use.
+       - no token configured -> falls back to yfinance, polled every 60 s
+         (delayed, free data). This is the only option shown when no token
+         is set.
+     The market-data token is read-only and is never displayed or logged.
+     It is separate from the Upstox Sandbox order token entered below, which
+     places practice orders.
 
 The AI panel uses the algobot.ai_advisor module: Black-Scholes + EMA/RSI
 signals — no external LLM, no internet call beyond live price data.
@@ -24,6 +36,7 @@ from algobot.ai_advisor import TradeIdea, analyse, format_idea
 from algobot.charts import candlestick, pnl_bars, premium_line
 from algobot.gate import check_gate
 from algobot.live_data import LiveDataError, fetch_ohlc
+from algobot.live_market import get_market_hub, market_data_token
 from algobot.options import bs_greeks, bs_price
 from algobot.practice import (PracticeBlocked, PracticeError, PracticeSession,
                                PracticeSettings, format_practice_report)
@@ -43,16 +56,21 @@ REAL_INTERVALS = {
     "15 minutes": ("15m", "1mo"),
     "1 hour":     ("60m", "3mo"),
 }
-# Instrument tokens for Upstox Sandbox (MARKET order on the INDEX itself)
-# Real option instrument tokens would need to be fetched from Upstox's instrument
-# master — these are the NSE index instrument tokens used in sandbox testing.
+# Instrument tokens for Upstox Sandbox (MARKET order on the INDEX itself), reused
+# below as the same instrument's live market-data feed key — Upstox uses one
+# instrument-key format ("NSE_INDEX|Nifty 50" etc.) for both sandbox orders and
+# the market-data WebSocket, so one mapping covers both.
 SANDBOX_TOKENS = {
     "Nifty 50":   "NSE_INDEX|Nifty 50",
     "Bank Nifty": "NSE_INDEX|Nifty Bank",
     "Sensex":     "BSE_INDEX|SENSEX",
 }
 
-LIVE_REFRESH_SECS = 60   # auto-refresh interval for live mode
+LIVE_REFRESH_SECS = 60        # auto-refresh interval for live mode when using yfinance
+UPSTOX_TICK_REFRESH_SECS = 2  # refresh cadence when streaming real ticks from Upstox
+UPSTOX_FEED_TOKEN = market_data_token()   # read-only; never rendered or logged
+UPSTOX_FEED_LABEL = "🟢 Upstox real-time ticks (recommended)"
+YAHOO_FEED_LABEL = "Yahoo Finance (delayed, refreshes every 60s)"
 
 # ── page setup ────────────────────────────────────────────────────────────────
 ui.setup("Practice room", "🎯")
@@ -175,9 +193,26 @@ with st.expander(
                 )
             with timeframe_col:
                 interval_label = st.selectbox(
-                    "Timeframe", list(REAL_INTERVALS), key="pr_live_interval"
+                    "Timeframe (Yahoo Finance feed only)", list(REAL_INTERVALS), key="pr_live_interval"
                 )
             regime_choice, seed, days = "random (hidden)", 1, 3
+
+            if UPSTOX_FEED_TOKEN:
+                feed_choice = st.radio(
+                    "Price feed", [UPSTOX_FEED_LABEL, YAHOO_FEED_LABEL],
+                    key="pr_live_feed", horizontal=True,
+                    help="Upstox streams real ticks and rebuilds this page every "
+                         f"{UPSTOX_TICK_REFRESH_SECS}s. Yahoo Finance is free delayed "
+                         "data, refreshed every 60s. Upstox ignores the Timeframe above "
+                         "and always streams 1-minute candles.",
+                )
+            else:
+                feed_choice = YAHOO_FEED_LABEL
+                st.caption(
+                    "Using delayed Yahoo Finance data. For true real-time ticks, add "
+                    "UPSTOX_ANALYTICS_TOKEN to this app's Streamlit Secrets (Manage app → "
+                    "Settings → Secrets) — never paste a token into chat or commit it to GitHub."
+                )
 
         elif data_source == "Real market (historical replay)":
             market_col, timeframe_col = st.columns(2)
@@ -325,15 +360,11 @@ with st.expander(
     if start_new_market:
         if data_source == "⚡ Live (real-time + AI)":
             ticker, strike_step = REAL_MARKETS[market_label]
-            yf_interval, yf_period = REAL_INTERVALS[interval_label]
+            use_upstox = feed_choice == UPSTOX_FEED_LABEL and bool(UPSTOX_FEED_TOKEN)
             try:
-                bars = _live_bars(ticker, yf_interval, yf_period)
-                st.session_state["live_bars"]          = bars
-                st.session_state["live_ticker"]        = ticker
-                st.session_state["live_interval"]      = yf_interval
-                st.session_state["live_period"]        = yf_period
-                st.session_state["live_market"]        = market_label
-                st.session_state["live_strike_step"]   = strike_step
+                st.session_state["live_data_source"]    = "upstox" if use_upstox else "yfinance"
+                st.session_state["live_market"]         = market_label
+                st.session_state["live_strike_step"]    = strike_step
                 st.session_state["live_iv"]             = float(iv)
                 st.session_state["live_dte_initial"]    = float(dte)
                 st.session_state["live_started_at"]     = datetime.now()
@@ -351,6 +382,22 @@ with st.expander(
                 st.session_state["practice_report"]     = None
                 st.session_state["ai_idea"]             = None
                 st.session_state["ai_checked"]          = False
+                if use_upstox:
+                    instrument_key = SANDBOX_TOKENS[market_label]
+                    hub = get_market_hub(UPSTOX_FEED_TOKEN)
+                    hub.start([instrument_key])
+                    st.session_state["live_instrument_key"] = instrument_key
+                    st.session_state["live_ticker"]          = ticker
+                    # Bars may still be empty right after the stream starts — the main
+                    # body below waits for the first tick instead of erroring on it.
+                    st.session_state["live_bars"] = hub.snapshot(instrument_key, max_bars=600)
+                else:
+                    yf_interval, yf_period = REAL_INTERVALS[interval_label]
+                    bars = _live_bars(ticker, yf_interval, yf_period)
+                    st.session_state["live_bars"]     = bars
+                    st.session_state["live_ticker"]   = ticker
+                    st.session_state["live_interval"] = yf_interval
+                    st.session_state["live_period"]   = yf_period
                 st.rerun()
             except LiveDataError as exc:
                 st.error(str(exc))
@@ -378,13 +425,25 @@ with st.expander(
 #  LIVE MODE MAIN BODY
 # ═══════════════════════════════════════════════════════════════════════════════
 if st.session_state.get("live_bars") is not None:
-    # ── auto-refresh every LIVE_REFRESH_SECS ──────────────────────────────────
+    data_source_live = st.session_state.get("live_data_source", "yfinance")
+    is_upstox_live = data_source_live == "upstox"
+
+    # ── auto-refresh ────────────────────────────────────────────────────────
+    # Same self-pacing timer for both feeds, just with a much shorter interval for
+    # Upstox: once refreshed, live_last_refresh resets, so time_left goes back above
+    # zero on the very next run and the auto-rerun loop below stops by itself until
+    # the interval elapses again — it never spins in a tight loop.
+    # Yahoo: free data is delayed and rate-limited, so LIVE_REFRESH_SECS is 60s.
+    # Upstox: the hub streams continuously in the background, so UPSTOX_TICK_REFRESH_SECS
+    # is just 2s -- each refresh reads its latest in-memory snapshot, which is cheap.
+    refresh_secs = UPSTOX_TICK_REFRESH_SECS if is_upstox_live else LIVE_REFRESH_SECS
     elapsed = time.time() - st.session_state.get("live_last_refresh", 0)
-    time_left = max(0, LIVE_REFRESH_SECS - int(elapsed))
+    time_left = max(0, refresh_secs - int(elapsed))
+    hub_status_live, latest_tick_live = None, None
 
     # top banner
     market_label_live = st.session_state["live_market"]
-    ticker_live       = st.session_state["live_ticker"]
+    ticker_live       = st.session_state.get("live_ticker")
     strike_step_live  = st.session_state["live_strike_step"]
     iv_live           = st.session_state["live_iv"]
     # DTE counts down against real elapsed time, exactly like the fake/historical
@@ -402,8 +461,32 @@ if st.session_state.get("live_bars") is not None:
     position_live     = st.session_state.get("live_position")
     closed_live       = st.session_state.get("live_closed", [])
 
-    # refresh bars if stale
-    if elapsed >= LIVE_REFRESH_SECS:
+    # refresh bars. Bars already on the page (from the previous run) are always the
+    # fallback, so a slow or failed refresh never blanks the chart.
+    bars_live = st.session_state["live_bars"]
+    if is_upstox_live:
+        # Status and the exact last-tick time are cheap in-memory reads, so read
+        # them every render regardless of the snapshot refresh cadence below —
+        # otherwise the very first render right after "Start" (which already has
+        # fresh bars from the start click) would show neither.
+        instrument_key = st.session_state["live_instrument_key"]
+        hub = get_market_hub(UPSTOX_FEED_TOKEN)
+        hub.start([instrument_key])                    # no-op once already streaming
+        hub_status_live = hub.status()
+        latest_tick_live = hub.latest(instrument_key)
+    if is_upstox_live and (elapsed >= refresh_secs or len(bars_live) < 1):
+        bars_live = hub.snapshot(instrument_key, max_bars=600)
+        st.session_state["live_bars"]         = bars_live
+        st.session_state["live_last_refresh"] = time.time()
+        if len(bars_live) < 1:
+            if hub_status_live["last_error"]:
+                st.error(f"🔴 Live feed error: {hub_status_live['last_error']}")
+            else:
+                st.info("🟡 Connecting to the Upstox live feed…")
+            st.caption(f"Waiting for the first tick — this refreshes itself every {UPSTOX_TICK_REFRESH_SECS}s.")
+            time.sleep(1)
+            st.rerun()
+    elif not is_upstox_live and elapsed >= refresh_secs:
         try:
             bars_live = _live_bars(ticker_live,
                                    st.session_state["live_interval"],
@@ -414,8 +497,6 @@ if st.session_state.get("live_bars") is not None:
             st.session_state["ai_checked"]        = False
         except LiveDataError:
             bars_live = st.session_state["live_bars"]
-    else:
-        bars_live = st.session_state["live_bars"]
 
     spot_live  = float(bars_live["close"].iloc[-1])
     # Same lot-size constant the fake/historical Practice Room modes use, so numbers
@@ -446,12 +527,25 @@ if st.session_state.get("live_bars") is not None:
             st.session_state["ai_checked"] = False
             st.rerun()
     with col_timer:
-        st.caption(f"Auto-refresh in **{time_left}s**")
+        if is_upstox_live:
+            if hub_status_live and hub_status_live["connected"]:
+                st.caption("🟢 Live")
+            elif hub_status_live and hub_status_live["last_error"]:
+                st.caption("🔴 Reconnecting…")
+            else:
+                st.caption("🟡 Connecting…")
+        else:
+            st.caption(f"Auto-refresh in **{time_left}s**")
+
+    if is_upstox_live and latest_tick_live:
+        updated_label, updated_value = "Last tick", latest_tick_live["datetime"].strftime("%H:%M:%S")
+    else:
+        updated_label, updated_value = "Updated", bars_live.index[-1].strftime("%d %b %H:%M")
 
     ui.ticker([
         (market_label_live, f"{spot_live:,.1f}", ui.tone(change_live)),
         ("Change today", f"{change_live:+,.1f} ({change_live/day_open_live*100:+.2f}%)", ui.tone(change_live)),
-        ("Updated", bars_live.index[-1].strftime("%d %b %H:%M"), None),
+        (updated_label, updated_value, None),
         ("Cash (fake)", ui.inr(cash_live), None),
         ("Account total", ui.inr(equity_live), ui.tone(net_live)),
         ("Net P&L", ui.inr(net_live, sign=True), ui.tone(net_live)),
@@ -528,6 +622,11 @@ if st.session_state.get("live_bars") is not None:
 
     # ── chart ─────────────────────────────────────────────────────────────────
     st.markdown("### 📊 Live Chart")
+    st.caption(
+        f"Streaming real-time ticks from Upstox ({hub_status_live['ticks']:,} ticks cached this session)."
+        if is_upstox_live and hub_status_live
+        else "Yahoo Finance data, delayed and refreshed every 60 seconds."
+    )
     window_live = st.slider("Bars shown", 30, 300, 100, key="pr_live_window")
     markers_live = []
     for tr in closed_live:
@@ -715,7 +814,10 @@ if st.session_state.get("live_bars") is not None:
 
     ui.footer_note()
 
-    # Auto-rerun for live refresh (uses st.rerun with a small sleep to avoid hammering)
+    # Auto-rerun for live refresh (uses st.rerun with a small sleep to avoid hammering).
+    # Self-limiting for both feeds: refreshing resets live_last_refresh, so time_left
+    # is back above zero on the very next run and this stops looping on its own —
+    # it does not spin in a tight loop, it just waits for the next interval.
     if time_left == 0:
         time.sleep(1)
         st.rerun()

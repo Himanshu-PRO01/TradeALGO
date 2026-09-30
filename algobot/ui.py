@@ -1471,6 +1471,11 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
 
     # One consistent horizontal action bar. Nothing is fixed over the page,
     # so it never creates a large empty area or overlaps Streamlit's toolbar.
+    # Profile/Feedback are routed through the page_link() wrapper (not raw
+    # st.page_link) so they get the same AppTest-safe fallback as every other
+    # nav link — a direct st.page_link call here previously broke every
+    # single page under Streamlit's AppTest harness (see page_link()'s
+    # docstring above), which is also what GitHub Actions CI runs.
     with st.container(
         key="utility_bar",
         horizontal=True,
@@ -1480,16 +1485,8 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         border=True,
     ):
         st.caption("TRADEALGO")
-        st.page_link(
-            "pages/22_Profile.py",
-            label="👤 Profile",
-            use_container_width=False,
-        )
-        st.page_link(
-            "pages/8_Feedback.py",
-            label="💬 Feedback",
-            use_container_width=False,
-        )
+        page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
+        page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
         st.toggle(
             "🌙",
             value=is_dark_mode(),
