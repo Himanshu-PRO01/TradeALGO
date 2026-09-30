@@ -140,7 +140,7 @@ def _back_to_top_component():
         )
     return _BACK_TO_TOP_COMPONENT
 
-CSS = f"""
+CSS = """
 <style>
 :root{--ta-green:#318616;--ta-ink:#171717;--ta-muted:#4d5761;--ta-surface:#fff;--ta-raised:#f7f8f6;--ta-border:#e5e7eb}
 body,.stApp{font-family:Lexend,sans-serif}
@@ -159,13 +159,13 @@ body,.stApp{font-family:Lexend,sans-serif}
 @media(max-width:760px){.ta-auth-grid{grid-template-columns:1fr}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form{padding:30px 24px 34px}}
 .block-container {{ padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }}
 h1, h2, h3 {{ letter-spacing: -0.01em; }}
-[data-testid="stSidebar"] {{ background: {PANEL}; border-right: 1px solid {BORDER}; }}
+[data-testid="stSidebar"] {{ background: #121923; border-right: 1px solid #1F2A37; }}
 [data-testid="stSidebarNav"] {{ display:none; }}
-.ab-menu-head {{ padding:4px 6px 12px; border-bottom:1px solid {BORDER}; margin-bottom:10px; }}
+.ab-menu-head {{ padding:4px 6px 12px; border-bottom:1px solid #1F2A37; margin-bottom:10px; }}
 .ab-menu-brand {{ font-weight:900; letter-spacing:.12em; font-size:1rem; }}
-.ab-menu-brand span {{ color:{UP}; }}
-.ab-menu-status {{ color:{MUTED}; font-size:.72rem; margin-top:4px; }}
-.ab-menu-section {{ color:{MUTED}; font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:14px 6px 5px; }}
+.ab-menu-brand span {{ color:#16C784; }}
+.ab-menu-status {{ color:#8B98A9; font-size:.72rem; margin-top:4px; }}
+.ab-menu-section {{ color:#8B98A9; font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:14px 6px 5px; }}
 
 /* lightweight sidebar navigation -- flat surfaces only, no blur/shadow stacking,
    so the menu stays smooth to scroll and repaint on low-end and mobile devices */
@@ -189,7 +189,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {{
     background: rgba(59,130,246,.12);
-    border-left: 2px solid {BLUE};
+    border-left: 2px solid #3B82F6;
 }}
 [data-testid="stSidebar"] [data-testid="stPageLink"] a p {{
     font-size: .93rem;
@@ -354,16 +354,16 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 }}
 
 /* metric cards */
-[data-testid="stMetric"] {{ background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px; padding: 12px 16px; }}
-[data-testid="stMetricLabel"] {{ color: {MUTED}; text-transform: uppercase; font-size: 0.72rem; letter-spacing: .06em; }}
+[data-testid="stMetric"] {{ background: #121923; border: 1px solid #1F2A37; border-radius: 12px; padding: 12px 16px; }}
+[data-testid="stMetricLabel"] {{ color: #8B98A9; text-transform: uppercase; font-size: 0.72rem; letter-spacing: .06em; }}
 [data-testid="stMetricValue"] {{ font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums; font-weight: 600; }}
 
 /* buttons */
 .stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {{
-    border-radius: 9px; font-weight: 600; border: 1px solid {BORDER}; }}
-.st-key-pr_buy button {{ background: {UP}; color: #03130C; border: 0; }}
-.st-key-pr_close button {{ background: {DOWN}; color: #fff; border: 0; }}
+    border-radius: 9px; font-weight: 600; border: 1px solid #1F2A37; }}
+.st-key-pr_buy button {{ background: #16C784; color: #03130C; border: 0; }}
+.st-key-pr_close button {{ background: #EA3943; color: #fff; border: 0; }}
 .st-key-pr_buy button:hover {{ filter: brightness(1.1); }}
 .st-key-pr_close button:hover {{ filter: brightness(1.1); }}
 
@@ -463,8 +463,8 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 
 /* tabs, expanders, dataframes */
 .stTabs [data-baseweb="tab"] {{ font-weight: 600; }}
-[data-testid="stExpander"] {{ border: 1px solid {BORDER}; border-radius: 12px; background: {PANEL}; }}
-[data-testid="stDataFrame"] {{ border: 1px solid {BORDER}; border-radius: 10px; }}
+[data-testid="stExpander"] {{ border: 1px solid #1F2A37; border-radius: 12px; background: #121923; }}
+[data-testid="stDataFrame"] {{ border: 1px solid #1F2A37; border-radius: 10px; }}
 
 /* mobile menu trigger and drawer */
 .st-key-mobile_menu {{
@@ -667,21 +667,21 @@ html::-webkit-scrollbar-corner {{
 
 /* top bar, pills, ticker */
 .ab-top {{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
-    padding: 6px 2px 10px 2px; border-bottom: 1px solid {BORDER}; margin-bottom: 8px; }}
+    padding: 6px 2px 10px 2px; border-bottom: 1px solid #1F2A37; margin-bottom: 8px; }}
 .ab-brand {{ font-weight: 800; letter-spacing: .18em; font-size: 0.95rem; }}
-.ab-brand span {{ color: {UP}; }}
+.ab-brand span {{ color: #16C784; }}
 .ab-pills {{ display:flex; gap:8px; flex-wrap:wrap; }}
 .ab-pill {{ display:inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
     letter-spacing: .07em; border: 1px solid; }}
-.ab-pill.green {{ color:{UP}; border-color:{UP}55; background:{UP}14; }}
-.ab-pill.amber {{ color:{WARN}; border-color:{WARN}55; background:{WARN}14; }}
-.ab-pill.blue  {{ color:{BLUE}; border-color:{BLUE}55; background:{BLUE}14; }}
-.ab-pill.red   {{ color:{DOWN}; border-color:{DOWN}55; background:{DOWN}14; }}
-.ab-strip {{ display:flex; gap:26px; flex-wrap:wrap; padding: 10px 16px; background:{PANEL}; border:1px solid {BORDER};
+.ab-pill.green {{ color:#16C784; border-color:#16C78455; background:#16C78414; }}
+.ab-pill.amber {{ color:#F5A524; border-color:#F5A52455; background:#F5A52414; }}
+.ab-pill.blue  {{ color:#3B82F6; border-color:#3B82F655; background:#3B82F614; }}
+.ab-pill.red   {{ color:#EA3943; border-color:#EA394355; background:#EA394314; }}
+.ab-strip {{ display:flex; gap:26px; flex-wrap:wrap; padding: 10px 16px; background:#121923; border:1px solid #1F2A37;
     border-radius: 12px; margin: 4px 0 14px 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }}
-.ab-strip .lab {{ color:{MUTED}; font-size: 0.68rem; text-transform: uppercase; letter-spacing:.08em; }}
+.ab-strip .lab {{ color:#8B98A9; font-size: 0.68rem; text-transform: uppercase; letter-spacing:.08em; }}
 .ab-strip .val {{ font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }}
-.up {{ color: {UP}; }} .down {{ color: {DOWN}; }} .warn {{ color: {WARN}; }}
+.up {{ color: #16C784; }} .down {{ color: #EA3943; }} .warn {{ color: #F5A524; }}
 
 /* polished dashboard surfaces */
 [data-testid="stAppViewContainer"] {{ background: radial-gradient(circle at 85% 0%, #16243a 0%, #0B0F14 34%); }}
@@ -710,13 +710,13 @@ html::-webkit-scrollbar-corner {{
 .ab-nav-card h4 {{ margin:7px 0 4px; }}
 .ab-nav-card p {{ margin:0; color:#8B98A9; font-size:.84rem; line-height:1.45; }}
 /* cards */
-.ab-card {{ background:{PANEL}; border:1px solid {BORDER}; border-radius:14px; padding:16px 18px; min-height:170px; margin-bottom:10px; }}
+.ab-card {{ background:#121923; border:1px solid #1F2A37; border-radius:14px; padding:16px 18px; min-height:170px; margin-bottom:10px; }}
 .ab-card h4 {{ margin: 0 0 6px 0; }}
-.ab-card p {{ color:{MUTED}; margin: 0; font-size: .92rem; }}
-.ab-check {{ display:flex; gap:12px; align-items:flex-start; background:{PANEL}; border:1px solid {BORDER};
+.ab-card p {{ color:#8B98A9; margin: 0; font-size: .92rem; }}
+.ab-check {{ display:flex; gap:12px; align-items:flex-start; background:#121923; border:1px solid #1F2A37;
     border-radius:12px; padding:10px 14px; margin-bottom:8px; }}
 .ab-check .txt b {{ display:block; }}
-.ab-check .txt span {{ color:{MUTED}; font-size:.88rem; }}
+.ab-check .txt span {{ color:#8B98A9; font-size:.88rem; }}
 
 /* clean utility/action bar */
 .st-key-utility_bar {{
@@ -724,16 +724,16 @@ html::-webkit-scrollbar-corner {{
     box-sizing: border-box !important;
     margin: 0 0 12px 0 !important;
     padding: 7px 10px !important;
-    border: 1px solid {BORDER} !important;
+    border: 1px solid #1F2A37 !important;
     border-radius: 12px !important;
-    background: {PANEL} !important;
+    background: #121923 !important;
 }}
 .st-key-utility_bar [data-testid="stHorizontalBlock"] {{
     align-items: center !important;
 }}
 .st-key-utility_bar .stCaption {{
     margin-right: auto !important;
-    color: {MUTED} !important;
+    color: #8B98A9 !important;
     font-size: .72rem !important;
     font-weight: 800 !important;
     letter-spacing: .12em !important;
@@ -744,7 +744,7 @@ html::-webkit-scrollbar-corner {{
     height: 36px !important;
     padding: 6px 13px !important;
     border-radius: 9px !important;
-    border: 1px solid {BORDER} !important;
+    border: 1px solid #1F2A37 !important;
     background: transparent !important;
     font-size: .82rem !important;
     font-weight: 700 !important;
@@ -1626,5 +1626,5 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
             st.success("✅ Workflow complete — you have reached Live Trading.")
 
 def footer_note(text: str = "Practice and research tool. Not advice. It never places orders and never asks for broker keys.") -> None:
-    st.markdown(f'<p style="color:{MUTED};font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; algobot v{escape(__version__)}</p>',
+    st.markdown(f'<p style="color:#8B98A9;font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; algobot v{escape(__version__)}</p>',
                 unsafe_allow_html=True)
