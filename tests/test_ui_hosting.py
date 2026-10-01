@@ -197,10 +197,12 @@ def test_password_screen_blocks_every_page_until_the_right_password(monkeypatch)
     at.run()
     assert not at.exception
     assert not list(at.metric)                                                      # the page content is not shown
-    assert any("Private trading desk" in m.value for m in at.markdown)
+    # "Private trading desk" was the pre-rebrand login copy; the branded
+    # TradeALGO login (commit 56ef10d) replaced it with this sign-in heading.
+    assert any("Sign in to continue to your TradeALGO workspace" in m.value for m in at.markdown)
     at.text_input(key="ab_pw").set_value("wrong")
     at.button(key="ab_login_btn").click().run()
-    assert any("not right" in e.value for e in at.error) and not list(at.metric)
+    assert any("not correct" in e.value for e in at.error) and not list(at.metric)
     at.text_input(key="ab_pw").set_value("open-sesame")
     at.button(key="ab_login_btn").click().run()
     assert not at.exception and [m.label for m in at.metric][0] == "Lots allowed"
@@ -215,7 +217,7 @@ def test_too_many_wrong_passwords_lock_the_session(monkeypatch):
         at.text_input(key="ab_pw").set_value("nope")
         at.button(key="ab_login_btn").click().run()
     at.run()
-    assert any("Too many wrong tries" in e.value for e in at.error)
+    assert any("Too many incorrect attempts" in e.value for e in at.error)
     assert not [w for w in at.text_input if w.key == "ab_pw"]                       # the box is gone
 
 
