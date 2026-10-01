@@ -116,3 +116,10 @@ def test_zero_trades_because_of_position_limit_explains_the_real_cause(monkeypat
     assert not at.exception
     assert any("bigger than your limit" in w.value for w in at.warning)
     assert not any("never triggered" in i.value for i in at.info)
+
+def test_market_desk_module_is_valid_python():
+    """Catch accidental syntax regressions before Streamlit Cloud boots the app."""
+    import ast
+
+    with open(os.path.join(ROOT, "Trading_Desk.py"), encoding="utf-8") as fh:
+        ast.parse(fh.read(), filename="Trading_Desk.py")
