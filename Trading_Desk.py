@@ -157,14 +157,13 @@ def market_panel():
     signals = pd.DataFrame(signal_rows)
 
     risk_lines = {}
-    if live_price is not None and not signals.empty:
-        latest_signal = signals.iloc[-1]["kind"]
-        if latest_signal == "BUY":
+    if signal_mode and live_price is not None:
+        if bool(buy_condition.iloc[-1]):
             risk_lines = {
                 "Stop": live_price * (1.0 - stop_pct / 100.0),
                 "Target": live_price * (1.0 + target_pct / 100.0),
             }
-        elif latest_signal == "SELL":
+        elif bool(sell_condition.iloc[-1]):
             risk_lines = {
                 "Stop": live_price * (1.0 + stop_pct / 100.0),
                 "Target": live_price * (1.0 - target_pct / 100.0),
