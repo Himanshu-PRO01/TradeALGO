@@ -83,7 +83,10 @@ def test_history_merge_keeps_live_bars_and_orders_by_time():
     )
     bars = hub.snapshot(key, allow_live_fallback=True)
     assert len(bars) == 2
-    assert bars["close"].iloc[-1] == 111.0  # live value wins
+    # Official Upstox OHLC is the source of truth for any timestamp it covers,
+    # even over a bar already aggregated locally from live ticks -- only a
+    # timestamp official history does NOT cover falls back to the live one.
+    assert bars["close"].iloc[-1] == 9.0
     assert bars.index.is_monotonic_increasing
 
 
@@ -95,6 +98,10 @@ def test_rest_ticks_after_hours_update_price_but_do_not_add_candles():
     payload = {"data": {"NSE_INDEX:Nifty 50": {"last_price": 22716.2, "instrument_token": key}}}
     hub._ingest_rest(payload, (key,), now=pd.Timestamp("2026-09-29 18:22:25"))
     assert hub.latest(key)["price"] == 22716.2
-    assert hub.snapshot(key).empty
+    assert hub.snapshot(key).empty                        # official-only: no backfill ran
+    assert hub.snapshot(key, allow_live_fallback=True).empty  # off-hours: no local bar either
     hub._ingest_rest(payload, (key,), now=pd.Timestamp("2026-09-30 10:00:05"))
-    assert len(hub.snapshot(key)) == 1
+    # Still no official OHLC (nothing ever backfilled it in this test), but the
+    # in-session tick above now has exactly one locally-aggregated live candle.
+    assert hub.snapshot(key).empty
+    assert len(hub.snapshot(key, allow_live_fallback=True)) == 1

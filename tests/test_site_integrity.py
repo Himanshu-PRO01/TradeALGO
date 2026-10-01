@@ -124,7 +124,8 @@ def test_every_import_is_in_requirements():
         wanted = {re.split(r"[<>=!~\[ ]", line.strip(), maxsplit=1)[0].lower().replace("-", "_")
                   for line in fh if line.strip() and not line.startswith("#")}
     aliases = {"yaml": "pyyaml", "upstox_client": "upstox_python_sdk", "pil": "pillow",
-               "google": "protobuf"}  # algobot/upstox_market_data.py uses google.protobuf
+               "google": "protobuf",       # algobot/upstox_market_data.py uses google.protobuf
+               "websocket": "websocket_client"}  # `pip install websocket-client` imports as `websocket`
     local = {"algobot", "helpers", "conftest", "_common"}
     local |= {"altair"}
     stdlib = set(__import__("sys").stdlib_module_names)

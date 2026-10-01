@@ -89,6 +89,42 @@ def test_starting_a_live_session_streams_the_hubs_price_not_a_stale_one(fake_hub
     assert "Last tick" in ticker_html and "09:17:42" in ticker_html
 
 
+def test_live_tick_price_wins_over_a_stale_official_candle(monkeypatch):
+    """algobot.live_market.LiveMarketHub.snapshot() returns only the official,
+    REST-backfilled OHLC candles by default -- those are refreshed once and can
+    trail the live websocket tick by several seconds. The price that drives
+    trading (spot_live: the AI advisor, P&L, stop-loss, order ticket) must come
+    from the live tick, not from that lagging candle, whenever a tick exists."""
+    hub = FakeHub(_bars([24500.0]), {"price": 24533.7, "datetime": pd.Timestamp("2026-09-29 09:20:01")})
+    monkeypatch.setattr(live_market, "get_market_hub", lambda token: hub)
+    monkeypatch.setattr(live_market, "market_data_token", lambda: "fake-token-not-a-real-secret")
+
+    at = _start_live(AppTest.from_file(PAGE, default_timeout=60))
+    assert not at.exception, at.exception
+    ticker_html = "".join(m.value for m in at.markdown if "ab-strip" in m.value)
+    assert "24,533.7" in ticker_html    # the live tick
+    assert "24,500" not in ticker_html  # not the stale official candle's close
+
+
+def test_trading_works_before_the_official_ohlc_backfill_has_landed(monkeypatch):
+    """Right after Start, a live tick can arrive before the one-time official-OHLC
+    backfill does (algobot/live_market.py backfills once, asynchronously, over
+    REST). The page must not block or crash on an empty chart snapshot -- a trader
+    needs the live price, not the chart, to place a trade."""
+    hub = FakeHub(pd.DataFrame(columns=["open", "high", "low", "close", "volume"]),
+                   {"price": 24510.0, "datetime": pd.Timestamp("2026-09-29 09:16:30")})
+    monkeypatch.setattr(live_market, "get_market_hub", lambda token: hub)
+    monkeypatch.setattr(live_market, "market_data_token", lambda: "fake-token-not-a-real-secret")
+
+    at = _start_live(AppTest.from_file(PAGE, default_timeout=60))
+    assert not at.exception, at.exception
+    ticker_html = "".join(m.value for m in at.markdown if "ab-strip" in m.value)
+    assert "24,510.0" in ticker_html
+    # "Change today" must be some finite number (0, with no candle yet to compare
+    # against), not a crash -- this exercises the day_open_live fallback.
+    assert "Change today" in ticker_html
+
+
 def test_the_autorefresh_loop_does_not_hang_the_test_suite(fake_hub):
     """The single most important regression check here: an earlier version of this
     feature called st.rerun() unconditionally at the end of every render for the

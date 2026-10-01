@@ -478,14 +478,18 @@ if st.session_state.get("live_bars") is not None:
         bars_live = hub.snapshot(instrument_key, max_bars=600)
         st.session_state["live_bars"]         = bars_live
         st.session_state["live_last_refresh"] = time.time()
-        if len(bars_live) < 1:
-            if hub_status_live["last_error"]:
-                st.error(f"🔴 Live feed error: {hub_status_live['last_error']}")
-            else:
-                st.info("🟡 Connecting to the Upstox live feed…")
-            st.caption(f"Waiting for the first tick — this refreshes itself every {UPSTOX_TICK_REFRESH_SECS}s.")
-            time.sleep(1)
-            st.rerun()
+    if is_upstox_live and latest_tick_live is None and len(bars_live) < 1:
+        # Nothing at all yet -- no tick, no official candle. Trading needs a live
+        # price, not necessarily a chart, so this only blocks until the FIRST tick
+        # arrives; it does not wait for the one-time official-OHLC backfill, which
+        # can lag behind the live price by a few seconds (see algobot/live_market.py).
+        if hub_status_live["last_error"]:
+            st.error(f"🔴 Live feed error: {hub_status_live['last_error']}")
+        else:
+            st.info("🟡 Connecting to the Upstox live feed…")
+        st.caption(f"Waiting for the first tick — this refreshes itself every {UPSTOX_TICK_REFRESH_SECS}s.")
+        time.sleep(1)
+        st.rerun()
     elif not is_upstox_live and elapsed >= refresh_secs:
         try:
             bars_live = _live_bars(ticker_live,
@@ -498,7 +502,15 @@ if st.session_state.get("live_bars") is not None:
         except LiveDataError:
             bars_live = st.session_state["live_bars"]
 
-    spot_live  = float(bars_live["close"].iloc[-1])
+    # The tradeable price. For Upstox, the live tick (latest_tick_live) is the
+    # true real-time number — it updates every tick over the websocket. The chart's
+    # official OHLC candles (bars_live) are refreshed once via a REST backfill and
+    # can lag a live tick by a few seconds (see algobot/live_market.py), so they
+    # are used for the chart only, never as the trading price, when a tick exists.
+    if is_upstox_live and latest_tick_live:
+        spot_live = float(latest_tick_live["price"])
+    else:
+        spot_live = float(bars_live["close"].iloc[-1])
     # Same lot-size constant the fake/historical Practice Room modes use, so numbers
     # stay consistent across modes. Real lot sizes differ by index and are revised by
     # NSE from time to time; like the rest of this app, this shows the shape of the
@@ -506,9 +518,25 @@ if st.session_state.get("live_bars") is not None:
     lot_size   = NIFTY_LOT_SIZE
 
     # ── live ticker ───────────────────────────────────────────────────────────
-    today_bars_live = bars_live[bars_live.index.date == bars_live.index[-1].date()]
-    day_open_live   = float(today_bars_live["open"].iloc[0])
+    # Official bars for today may not have arrived yet (the one-time backfill can
+    # trail the first live tick by a few seconds) -- "change today" is 0 until then
+    # rather than crashing on an empty chart snapshot.
+    if len(bars_live):
+        today_bars_live = bars_live[bars_live.index.date == bars_live.index[-1].date()]
+        day_open_live   = float(today_bars_live["open"].iloc[0])
+    else:
+        day_open_live   = spot_live
     change_live     = spot_live - day_open_live
+    # Timestamp to record against a trade. Prefer the exact live tick time; fall
+    # back to the chart's last candle, then to right now if neither exists yet
+    # (bars_live can still be empty for Upstox in the few seconds before the
+    # one-time official-OHLC backfill lands -- see the spot_live comment above).
+    if is_upstox_live and latest_tick_live:
+        live_now_ts = latest_tick_live["datetime"]
+    elif len(bars_live):
+        live_now_ts = bars_live.index[-1]
+    else:
+        live_now_ts = datetime.now()
     equity_live     = cash_live + (
         max(bs_price(spot_live, position_live["strike"], dte_live,
                      iv_live / 100.0,
@@ -680,7 +708,7 @@ if st.session_state.get("live_bars") is not None:
             record  = {
                 "kind": p["kind"], "strike": p["strike"], "label": p["label"],
                 "lots": p["lots"], "qty": qty,
-                "entry_ts": p["entry_ts"], "exit_ts": bars_live.index[-1],
+                "entry_ts": p["entry_ts"], "exit_ts": live_now_ts,
                 "entry_price": p["entry_price"], "exit_price": bid,
                 "entry_spot": p["entry_spot"], "exit_spot": spot_live,
                 "reason": "manual", "gross": gross, "net": net_pnl,
@@ -765,7 +793,7 @@ if st.session_state.get("live_bars") is not None:
                     "strike":      strike_live,
                     "lots":        int(lots_live),
                     "qty":         qty_live,
-                    "entry_ts":    bars_live.index[-1],
+                    "entry_ts":    live_now_ts,
                     "entry_price": ask_live,
                     "entry_spot":  spot_live,
                     "stop":        stop_live,

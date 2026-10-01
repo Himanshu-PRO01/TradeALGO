@@ -150,19 +150,35 @@ def test_feedback_page_saves_and_offers_the_text_to_send(tmp_path, monkeypatch):
 
 
 # ------------------------------------------------------------------ front page
-def test_front_page_loads_with_links_and_the_safety_strip():
+def test_front_page_loads_with_links_and_the_safety_strip(monkeypatch):
+    # Trading_Desk.py (now "Market Desk") calls st.stop() right after its safety
+    # strip when no Upstox token is configured, before reaching the Data Integrity
+    # section this test also checks. A dummy token lets it past that gate; the real
+    # hub it starts never reaches the network in this sandboxed test environment,
+    # same as pages/23_Live_Markets.py and Trading_Desk.py already do under AppTest
+    # elsewhere in this suite.
+    import algobot.live_market as live_market
+    monkeypatch.setattr(live_market, "market_data_token", lambda: "fake-token-not-a-real-secret")
     at = app("Trading_Desk.py")
     at.run()
     assert not at.exception
     strip = " ".join(m.value for m in at.markdown)
     assert "Live orders" in strip and "OFF" in strip and "NO LIVE ORDERS" in strip
-    assert "never do" in strip.lower() and "Place an order" in strip
+    # Trading_Desk.py is now the Market Desk (commit 85b6ffd "Replace Trading Desk
+    # chart with Upstox V3 Market Desk") -- it no longer carries its own copy of the
+    # old "never do / Place an order" wording, but still states plainly that this
+    # page only visualizes data and never places a real order.
+    assert "No live orders" in strip
+    assert "only visualizes data" in strip
 
 
 def test_the_old_entry_point_still_starts_the_same_page():
     at = app("dashboard.py")
     at.run()
-    assert not at.exception and any("Trading Desk" in m.value for m in at.markdown)
+    # Trading_Desk.py's own title changed to "Market Desk" (commit 85b6ffd); this
+    # test only cares that the old `streamlit run dashboard.py` entry point still
+    # redirects into it and renders real content, under whatever its current title is.
+    assert not at.exception and any("Market Desk" in m.value for m in at.markdown)
 
 
 def test_every_page_in_the_menu_loads_with_no_exception():
