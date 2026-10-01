@@ -157,10 +157,20 @@ def market_panel():
     signals = pd.DataFrame(signal_rows)
 
     risk_lines = {}
-    if live_price is not None:
-        latest_signal = signals.iloc[-1]["kind"] if not signals.empty else None
+    if live_price is not None and not signals.empty:
+        latest_signal = signals.iloc[-1]["kind"]
         if latest_signal == "BUY":
-            risk_lines =    ui.show_chart(
+            risk_lines = {
+                "Stop": live_price * (1.0 - stop_pct / 100.0),
+                "Target": live_price * (1.0 + target_pct / 100.0),
+            }
+        elif latest_signal == "SELL":
+            risk_lines = {
+                "Stop": live_price * (1.0 + stop_pct / 100.0),
+                "Target": live_price * (1.0 - target_pct / 100.0),
+            }
+
+    ui.show_chart(
         charts.candlestick(
             analysis,
             height=600,
