@@ -35,13 +35,15 @@ with right:
     window = st.slider("Candles", 60, 500, 240, step=20, key="desk_upstox_window")
 
 with st.expander("📐 Signal controls", expanded=False):
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
         signal_mode = st.toggle("Research signals", value=True, key="desk_signal_mode")
     with c2:
         hma_period = st.number_input("HMA period", min_value=5, max_value=100, value=21, step=1, key="desk_hma_period")
     with c3:
         stop_pct = st.number_input("Stop-loss %", min_value=0.1, max_value=5.0, value=0.5, step=0.1, key="desk_stop_pct")
+    with c4:
+        target_pct = st.number_input("Target %", min_value=0.1, max_value=10.0, value=1.0, step=0.1, key="desk_target_pct")
     st.caption("Signals combine HMA direction with a candle-derived order-flow pressure proxy. They are research markers, not predictions or trade instructions.")
 instrument_key = INSTRUMENTS[market_label]
 
