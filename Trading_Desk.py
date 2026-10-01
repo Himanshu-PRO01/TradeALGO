@@ -34,17 +34,15 @@ with mid:
 with right:
     window = st.slider("Candles", 60, 500, 240, step=20, key="desk_upstox_window")
 
-with st.expander("📐 Analysis controls", expanded=False):
-    c1, c2, c3, c4 = st.columns(4)
+with st.expander("📐 Signal controls", expanded=False):
+    c1, c2, c3 = st.columns(3)
     with c1:
         signal_mode = st.toggle("Research signals", value=True, key="desk_signal_mode")
     with c2:
-        rsi_period = st.number_input("RSI period", min_value=5, max_value=30, value=14, step=1, key="desk_rsi_period")
+        hma_period = st.number_input("HMA period", min_value=5, max_value=100, value=21, step=1, key="desk_hma_period")
     with c3:
         stop_pct = st.number_input("Stop-loss %", min_value=0.1, max_value=5.0, value=0.5, step=0.1, key="desk_stop_pct")
-    with c4:
-        target_pct = st.number_input("Target %", min_value=0.1, max_value=10.0, value=1.0, step=0.1, key="desk_target_pct")
-    st.caption("Signals are rule-based research markers, not predictions or trade instructions. Risk lines are reference levels only.")
+    st.caption("Signals combine HMA direction with a candle-derived order-flow pressure proxy. They are research markers, not predictions or trade instructions.")
 instrument_key = INSTRUMENTS[market_label]
 
 hub = get_market_hub(token)
@@ -99,15 +97,30 @@ def market_panel():
         return
 
     analysis = bars.copy()
-    analysis["EMA 20"] = analysis["close"].ewm(span=20, adjust=False, min_periods=20).mean()
-    analysis["EMA 50"] = analysis["close"].ewm(span=50, adjust=False, min_periods=50).mean()
 
-    volume_total = float(analysis["volume"].fillna(0).sum())
-    if volume_total > 0:
-        typical = (analysis["high"] + analysis["low"] + analysis["close"]) / 3.0
-        analysis["VWAP"] = (typical * analysis["volume"].fillna(0)).cumsum() / analysis["volume"].fillna(0).cumsum()
-    else:
-        analysis["VWAP"] = pd.NA
+    def _wma(series, period):
+        period = max(1, int(period))
+        weights = pd.Series(range(1, period + 1), dtype=float)
+        return series.rolling(period, min_periods=period).apply(
+            lambda values: float((values * weights.to_numpy()).sum() / weights.sum()),
+            raw=True,
+        )
+
+    half = max(1, int(hma_period) // 2)
+    root = max(1, int(round(hma_period ** 0.5)))
+    wma_half = _wma(analysis["close"], half)
+    wma_full = _wma(analysis["close"], int(hma_period))
+    analysis["HMA"] = _wma((2.0 * wma_half) - wma_full, root)
+
+    # Historical OHLCV does not contain exchange-level aggressor buy/sell volume.
+    # This is an explicitly labelled candle-derived order-flow pressure proxy.
+    candle_range = (analysis["high"] - analysis["low"]).replace(0, pd.NA)
+    close_location = ((2.0 * analysis["close"]) - analysis["high"] - analysis["low"]) / candle_range
+    close_location = close_location.clip(-1.0, 1.0).fillna(0.0)
+    analysis["Buy volume proxy"] = analysis["volume"].fillna(0.0) * ((close_location + 1.0) / 2.0)
+    analysis["Sell volume proxy"] = analysis["volume"].fillna(0.0) - analysis["Buy volume proxy"]
+    analysis["Order-flow delta"] = analysis["Buy volume proxy"] - analysis["Sell volume proxy"]
+    analysis["Cumulative delta"] = analysis["Order-flow delta"].cumsum()
 
     live_price = float(latest["price"]) if latest else None
     if live_price is not None:
@@ -119,54 +132,33 @@ def market_panel():
     if previous_levels.get("previous_low") is not None:
         hlines["Previous low"] = previous_levels["previous_low"]
 
-    overlays = {
-        "EMA 20": "EMA 20",
-        "EMA 50": "EMA 50",
-    }
-    if analysis["VWAP"].notna().any():
-        overlays["VWAP"] = "VWAP"
+    overlays = {"HMA": "HMA"}
     if live_price is not None:
         overlays["Live price"] = "Live price"
 
-    # Research signal model: EMA crossover + RSI confirmation.
-    crossed_up = (analysis["EMA 20"] > analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) <= analysis["EMA 50"].shift(1))
-    crossed_down = (analysis["EMA 20"] < analysis["EMA 50"]) & (analysis["EMA 20"].shift(1) >= analysis["EMA 50"].shift(1))
+    hma_rising = analysis["HMA"] > analysis["HMA"].shift(1)
+    hma_falling = analysis["HMA"] < analysis["HMA"].shift(1)
+    flow_positive = analysis["Order-flow delta"] > 0
+    flow_negative = analysis["Order-flow delta"] < 0
+    buy_condition = (analysis["close"] > analysis["HMA"]) & hma_rising & flow_positive
+    sell_condition = (analysis["close"] < analysis["HMA"]) & hma_falling & flow_negative
+    buy_signal = buy_condition & ~buy_condition.shift(1).fillna(False)
+    sell_signal = sell_condition & ~sell_condition.shift(1).fillna(False)
 
-    delta = analysis["close"].diff()
-    gain = delta.clip(lower=0).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
-    loss = (-delta.clip(upper=0)).ewm(alpha=1 / rsi_period, adjust=False, min_periods=rsi_period).mean()
-    rs = gain / loss.replace(0, float("nan"))
-    analysis["RSI"] = (100 - (100 / (1 + rs))).astype(float)
-
-    buy_signal = crossed_up & (analysis["RSI"] >= 50)
-    sell_signal = crossed_down & (analysis["RSI"] <= 50)
     signal_rows = []
     for ts, row in analysis.loc[buy_signal].iterrows():
-        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "BUY", "shape": "triangle-up", "reason": "EMA20 crossed above EMA50 with RSI ≥ 50"})
+        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "BUY", "shape": "triangle-up",
+                            "reason": "Price above rising HMA with positive order-flow delta"})
     for ts, row in analysis.loc[sell_signal].iterrows():
-        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "SELL", "shape": "triangle-down", "reason": "EMA20 crossed below EMA50 with RSI ≤ 50"})
+        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "SELL", "shape": "triangle-down",
+                            "reason": "Price below falling HMA with negative order-flow delta"})
     signals = pd.DataFrame(signal_rows)
 
     risk_lines = {}
     if live_price is not None:
         latest_signal = signals.iloc[-1]["kind"] if not signals.empty else None
         if latest_signal == "BUY":
-            risk_lines = {
-                "Long stop": live_price * (1 - stop_pct / 100),
-                "Long target": live_price * (1 + target_pct / 100),
-            }
-        elif latest_signal == "SELL":
-            risk_lines = {
-                "Short stop": live_price * (1 + stop_pct / 100),
-                "Short target": live_price * (1 - target_pct / 100),
-            }
-        else:
-            risk_lines = {
-                "Reference stop": live_price * (1 - stop_pct / 100),
-                "Reference target": live_price * (1 + target_pct / 100),
-            }
-
-    ui.show_chart(
+            risk_lines =    ui.show_chart(
         charts.candlestick(
             analysis,
             height=600,
@@ -180,17 +172,16 @@ def market_panel():
         )
     )
 
-    rsi_chart = charts.rsi_chart(analysis["close"], period=rsi_period, height=180)
-    if rsi_chart is not None:
-        st.markdown("#### RSI")
-        ui.show_chart(rsi_chart)
+    st.markdown("#### Order Flow")
+    st.caption("OHLCV-derived order-flow pressure proxy · positive delta = stronger buying pressure, negative = stronger selling pressure.")
+    ui.show_chart(charts.order_flow_chart(analysis, height=190))
 
     session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
     signal_text = "signals enabled" if signal_mode else "signals hidden"
     st.caption(
         f"Session: {session_date} · Official Upstox V3 OHLCV candles · live LTP shown separately · {timeframe}-minute candles · {signal_text}. "
-        "EMA 20/50, VWAP, previous-session levels and live price are overlays. "
-        "Signals are research rules, not predictions; risk lines are reference levels."
+        "HMA and live price are the only chart overlays; previous-session levels remain reference levels. "
+        "Order-flow is an OHLCV-derived pressure proxy, not exchange-level aggressor-side data. Signals are research rules, not predictions."
     )
     with st.expander("Latest OHLCV data", expanded=False):
         table = bars.tail(20).reset_index()
@@ -206,12 +197,12 @@ def market_panel():
     with m1:
         st.metric("Last", f"₹{live_price:,.2f}" if live_price is not None else "—")
     with m2:
-        st.metric("EMA 20", f"₹{analysis['EMA 20'].iloc[-1]:,.2f}" if analysis["EMA 20"].notna().any() else "—")
+        hma_last = analysis["HMA"].dropna().iloc[-1] if analysis["HMA"].notna().any() else None
+        st.metric("HMA", f"₹{hma_last:,.2f}" if hma_last is not None else "—")
     with m3:
-        st.metric("EMA 50", f"₹{analysis['EMA 50'].iloc[-1]:,.2f}" if analysis["EMA 50"].notna().any() else "—")
+        st.metric("Flow delta", f"{float(analysis['Order-flow delta'].iloc[-1]):+,.0f}")
     with m4:
-        latest_rsi = analysis["RSI"].dropna().iloc[-1] if analysis["RSI"].notna().any() else None
-        st.metric("RSI", f"{latest_rsi:.1f}" if latest_rsi is not None else "—")
+        st.metric("Cumulative delta", f"{float(analysis['Cumulative delta'].iloc[-1]):+,.0f}")
 
 market_panel()
 
