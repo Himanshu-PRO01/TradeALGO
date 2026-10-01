@@ -168,6 +168,36 @@ def candlestick(df: pd.DataFrame, trades: Optional[pd.DataFrame] = None, hlines:
     return _style(combo.interactive())
 
 
+def order_flow_chart(df: pd.DataFrame, height: int = 190):
+    """Render candle-derived order-flow delta and cumulative delta."""
+    if df is None or len(df) == 0 or "Order-flow delta" not in df.columns:
+        return None
+    d = df[["Order-flow delta", "Cumulative delta"]].copy().tail(500).reset_index()
+    d = d.rename(columns={d.columns[0]: "datetime"})
+    d["direction"] = np.where(d["Order-flow delta"] >= 0, "buying", "selling")
+
+    bars = alt.Chart(d).mark_bar(opacity=0.85).encode(
+        x=alt.X("datetime:T", axis=alt.Axis(format="%d %b %H:%M", labelAngle=-35, labelOverlap=True, title=None)),
+        y=alt.Y("Order-flow delta:Q", title="delta"),
+        color=alt.Color("direction:N", scale=alt.Scale(domain=["buying", "selling"], range=[UP, DOWN]), legend=None),
+        tooltip=[
+            alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"),
+            alt.Tooltip("Order-flow delta:Q", title="Delta", format=",.0f"),
+            alt.Tooltip("Cumulative delta:Q", title="Cumulative delta", format=",.0f"),
+        ],
+    )
+    cumulative = alt.Chart(d).mark_line(color=BLUE, strokeWidth=1.5).encode(
+        x="datetime:T",
+        y=alt.Y("Cumulative delta:Q", title="cumulative"),
+        tooltip=[
+            alt.Tooltip("datetime:T", title="Date/time", format="%d %b %Y %H:%M"),
+            alt.Tooltip("Cumulative delta:Q", title="Cumulative delta", format=",.0f"),
+        ],
+    )
+    zero = alt.Chart(pd.DataFrame({"y": [0.0]})).mark_rule(color=MUTED, strokeDash=[4, 4]).encode(y="y:Q")
+    return _style(alt.layer(bars, zero, cumulative).properties(height=height, width="container").interactive())
+
+
 def rsi_chart(series: pd.Series, period: int = 14, height: int = 170):
     """Render RSI with 30/70 reference levels."""
     if series is None or len(series) < max(period + 2, 16):
