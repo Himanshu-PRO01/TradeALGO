@@ -61,9 +61,8 @@ def password_gate(max_attempts: int = 5) -> None:
     with st.container(key="auth_card"):
         left, right = st.columns([1.05, .95], gap="small", vertical_alignment="center")
         with left:
-            st.markdown("""
-            <div class="ta-auth-brand">
-              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo"><img src="data:image/png;base64,${logo_base64}" alt="TradeALGO Trading Desk logo"></div>
+            st.markdown(f"""\n            <div class="ta-auth-brand">
+              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo"><img src="data:image/png;base64,{logo_base64}" alt="TradeALGO Trading Desk logo"></div>
               <div class="ta-auth-kicker">Systematic trading research</div>
               <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
               <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
