@@ -55,6 +55,12 @@ def password_gate(max_attempts: int = 5) -> None:
         import base64
         with open(logo_path, "rb") as logo_file:
             logo_base64 = base64.b64encode(logo_file.read()).decode("ascii")
+    loading_logo_path = os.path.join(os.path.dirname(__file__), "assets", "TradeALGO Market Desk Logo.png")
+    loading_logo_base64 = ""
+    if os.path.exists(loading_logo_path):
+        import base64
+        with open(loading_logo_path, "rb") as logo_file:
+            loading_logo_base64 = base64.b64encode(logo_file.read()).decode("ascii")
     if not secret or st.session_state.get("_ab_authed"):
         return
 
@@ -62,7 +68,7 @@ def password_gate(max_attempts: int = 5) -> None:
         left, right = st.columns([1.05, .95], gap="small", vertical_alignment="center")
         with left:
             st.markdown(f"""\n            <div class="ta-auth-brand">
-              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo"><img src="data:image/png;base64,{logo_base64}" alt="TradeALGO Trading Desk logo"></div>
+              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo"><img src="data:image/png;base64,{loading_logo_base64}" alt="TradeALGO Trading Desk logo"></div>
               <div class="ta-auth-kicker">Systematic trading research</div>
               <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
               <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
