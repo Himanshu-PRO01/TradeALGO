@@ -127,42 +127,130 @@ header[data-testid="stHeader"] {
 h1, h2, h3 { letter-spacing: -0.01em; }
 [data-testid="stSidebar"] { background: #121923; border-right: 1px solid #1F2A37; }
 [data-testid="stSidebarNav"] { display:none; }
-.ab-menu-head { padding:4px 6px 12px; border-bottom:1px solid #1F2A37; margin-bottom:10px; }
-.ab-menu-brand { font-weight:900; letter-spacing:.12em; font-size:1rem; }
+.ab-menu-head {
+    padding: 10px 8px 16px;
+    margin: 0 2px 12px;
+    border-bottom: 1px solid #263242;
+}
+.ab-menu-brand {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-weight:900;
+    letter-spacing:.08em;
+    font-size:1.08rem;
+    color:#F4F7FB;
+}
+.ab-menu-brand::before {
+    content:"";
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#16C784;
+    box-shadow:0 0 0 4px rgba(22,199,132,.10), 0 0 14px rgba(22,199,132,.28);
+}
 .ab-menu-brand span { color:#16C784; }
-.ab-menu-status { color:#8B98A9; font-size:.72rem; margin-top:4px; }
-.ab-menu-section { color:#8B98A9; font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:14px 6px 5px; }
+.ab-menu-status {
+    margin-top:7px;
+    padding-left:15px;
+    color:#7F8DA0;
+    font-size:.68rem;
+    font-weight:600;
+    letter-spacing:.05em;
+}
+.ab-menu-section {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#718096;
+    font-size:.62rem;
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin:18px 8px 6px;
+}
+.ab-menu-section::after {
+    content:"";
+    height:1px;
+    flex:1;
+    background:#202B39;
+}
 
-/* lightweight sidebar navigation -- flat surfaces only, no blur/shadow stacking,
-   so the menu stays smooth to scroll and repaint on low-end and mobile devices */
+/* Premium sidebar navigation */
 [data-testid="stSidebar"] [data-testid="stPageLink"] {
-    margin: 3px 0;
+    margin:2px 0;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a {
-    min-height: 44px;
-    padding: 9px 12px !important;
-    border: 1px solid transparent;
-    border-left: 2px solid transparent;
-    border-radius: 8px;
-    background: transparent;
-    font-size: .93rem;
-    font-weight: 600;
-    letter-spacing: .01em;
-    transition: background-color .12s ease, border-color .12s ease;
+    position:relative;
+    display:flex;
+    align-items:center;
+    min-height:42px;
+    padding:9px 12px !important;
+    border:1px solid transparent;
+    border-radius:10px;
+    background:transparent;
+    color:#AAB6C5 !important;
+    font-size:.88rem;
+    font-weight:600;
+    letter-spacing:0;
+    transition:background .16s ease, color .16s ease, border-color .16s ease, transform .16s ease;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
-    background: rgba(255,255,255,.055);
+    background:rgba(255,255,255,.045);
+    border-color:#273444;
+    color:#F4F7FB !important;
+    transform:translateX(2px);
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
-    background: rgba(59,130,246,.12);
-    border-left: 2px solid #3B82F6;
+    background:linear-gradient(90deg,rgba(59,130,246,.14),rgba(59,130,246,.045));
+    border-color:rgba(59,130,246,.20);
+    color:#F4F7FB !important;
+    box-shadow:inset 3px 0 0 #3B82F6;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"]::after {
+    content:"";
+    width:5px;
+    height:5px;
+    margin-left:auto;
+    border-radius:50%;
+    background:#3B82F6;
+    box-shadow:0 0 9px rgba(59,130,246,.65);
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a p {
-    font-size: .93rem;
-    font-weight: 600;
+    margin:0 !important;
+    color:inherit !important;
+    font-size:.88rem;
+    font-weight:600;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a span {
-    font-size: 1.05rem;
+    width:24px;
+    margin-right:3px;
+    font-size:1rem;
+    text-align:center;
+    opacity:.9;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] span {
+    opacity:1;
+}
+
+/* Sidebar footer/status */
+[data-testid="stSidebar"] .stCaption {
+    margin:16px 4px 4px;
+    padding:11px 12px;
+    border:1px solid #202B39;
+    border-radius:10px;
+    background:rgba(255,255,255,.025);
+    color:#7F8DA0 !important;
+    font-size:.68rem;
+    line-height:1.45;
+}
+
+/* Mobile menu */
+@media (max-width:768px) {
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+        min-height:46px;
+        border-radius:11px;
+    }
 }
 
 
