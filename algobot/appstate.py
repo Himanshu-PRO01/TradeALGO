@@ -49,7 +49,7 @@ def configured_password():
 def password_gate(max_attempts: int = 5) -> None:
     """Render the branded TradeALGO login when a hosted secret is configured."""
     secret = configured_password()
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "tradealgo-desk-logo.png")
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "Neon TA TradeAlgo Desk Logo (1).png")
     logo_base64 = ""
     if os.path.exists(logo_path):
         import base64
