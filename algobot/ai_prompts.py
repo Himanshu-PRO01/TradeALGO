@@ -25,6 +25,15 @@ REALITY = make("Explain the supplied Reality Check. It is authoritative; never r
 FORWARD = make("Analyze the supplied virtual-capital paper record. Do not judge live readiness.",
 '{"summary":"","consistency":[],"differences_from_backtest":[],"concerns":[],"cited_metrics":{}}')
 
+CHART_SUGGEST = make(
+    "Look at the supplied real-chart facts (recent candle directions, a simple trend reading, recent swing "
+    "high/low) and suggest ONE specific, measurable entry condition and ONE exit condition the trader could type "
+    "into Strategy Builder's text fields. Phrase them as precise, testable rules (referencing RSI, the recent "
+    "swing high/low, candle direction, or price vs. its moving average), never vague discretionary language like "
+    "'looks strong' or 'wait for confirmation'. Never invent a candle, price or indicator value not supplied.",
+    '{"chart_read":"","suggested_entry":"","suggested_exit":"","caveats":[],"cited_metrics":{}}'
+)
+
 LIVE_MARKET = make(
     "Analyze the supplied live market snapshot. Never invent a price, trend, signal or forecast. "
     "Treat the deterministic strategy state as authoritative for paper-trading state. "

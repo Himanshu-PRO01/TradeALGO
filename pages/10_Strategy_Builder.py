@@ -5,7 +5,12 @@ import json
 import streamlit as st
 
 from algobot import ui
+from algobot.ai_strategy_agent import StrategyAgent
 from algobot.appstate import strategies_scope
+from algobot.charts import candlestick
+from algobot.chart_facts import chart_facts, describe_chart_facts
+from algobot.data import DataError, generate_sample_data
+from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
 
 ui.setup("Strategy Builder", "🧠")
 ui.header(
@@ -36,25 +41,68 @@ with st.expander("📘 How to Build a Strategy", expanded=False):
     st.caption("Idea → Strategy Builder → AI Strategy Agent (optional) → Backtest → Reality Check → Practice/Paper Trading → Sandbox Rehearsal.")
     ui.page_link("pages/19_How_to_Build_a_Strategy.py", label="📖 Open the full strategy-building guide", icon="📘")
 
-with st.expander("📘 How to Build a Strategy", expanded=False):
-    st.markdown("**A strategy is a rule precise enough that TradeALGO can evaluate it bar by bar.** If you cannot describe the rule precisely, it is not ready to backtest yet.")
-    st.markdown("#### 7-point checklist")
-    checklist = [
-        ("1. Instrument & timeframe", "What exactly are you trading and on what candle size?"),
-        ("2. Entry rule", "Define the exact condition that opens a position. Avoid phrases like “looks bullish.”"),
-        ("3. Exit rule", "Define the measurable condition that closes the position apart from stop-loss/target."),
-        ("4. Stop-loss & target", "Use a precise percentage, points, R multiple, or another measurable rule."),
-        ("5. Position size", "Specify the fixed quantity/lot size you want to test."),
-        ("6. Risk limits", "Define daily loss, trade-count, position-value and trading-session limits."),
-        ("7. Costs", "Account for brokerage, STT, exchange fees, GST and slippage when evaluating results."),
-    ]
-    for title, detail in checklist:
-        st.markdown(f"**{title}** — {detail}")
-    st.markdown("#### Make conditions measurable")
-    st.caption("Use explicit price fields, indicators, previous-bar values, numbers, arithmetic, comparisons, and logical operators. Avoid discretionary wording such as “I decide as it happens.”")
-    st.markdown("#### Recommended workflow")
-    st.caption("Idea → Strategy Builder → AI Strategy Agent (optional) → Backtest → Reality Check → Practice/Paper Trading → Sandbox Rehearsal.")
-    ui.page_link("pages/19_How_to_Build_a_Strategy.py", label="📖 Open the full strategy-building guide", icon="📘")
+st.markdown("### 📈 Look at a real chart before writing a rule")
+st.caption(
+    "Writing an entry rule without seeing real candles means guessing. Load a chart below to check things like "
+    "whether the previous candle was up or down, or where RSI sits right now, before you describe a condition."
+)
+c1, c2, c3 = st.columns(3)
+sb_market = c1.selectbox("Market", list(MARKETS), key="sb_chart_market")
+sb_interval = c2.selectbox("Candle size", list(INTERVALS), index=2, key="sb_chart_interval")
+sb_load = c3.button("Load chart", key="sb_chart_load", width="stretch")
+
+if sb_load:
+    try:
+        ticker = MARKETS[sb_market]
+        yf_interval, yf_period = INTERVALS[sb_interval]
+        st.session_state["sb_chart_df"] = fetch_ohlc(ticker, yf_interval, yf_period)
+        st.session_state["sb_chart_label"] = f"{sb_market} · {sb_interval}"
+        st.session_state["sb_chart_ai"] = None
+    except LiveDataError as exc:
+        st.error(f"Couldn't load real data: {exc}. Showing practice data instead so you can still see the page work.")
+        st.session_state["sb_chart_df"] = generate_sample_data(days=10, seed=1)
+        st.session_state["sb_chart_label"] = f"{sb_market} · {sb_interval} (practice data, real data failed)"
+        st.session_state["sb_chart_ai"] = None
+
+chart_df = st.session_state.get("sb_chart_df")
+if chart_df is not None:
+    st.caption(st.session_state.get("sb_chart_label", ""))
+    ui.show_chart(candlestick(chart_df, height=320, max_bars=150))
+    facts = chart_facts(chart_df)
+    lines = describe_chart_facts(facts)
+    if lines:
+        st.markdown("\n".join(f"- {line}" for line in lines))
+
+    agent = StrategyAgent()
+    if not agent.available:
+        st.caption("Add an AI provider key to also get a suggested rule phrased from this chart. "
+                   "The facts above are computed directly either way, no AI needed for those.")
+    elif st.button("🤖 Suggest a rule from this chart", key="sb_chart_ai_btn"):
+        result = agent.suggest_from_chart(facts)
+        if result.ok:
+            st.session_state["sb_chart_ai"] = result.data
+        else:
+            st.warning(result.message)
+
+    ai = st.session_state.get("sb_chart_ai")
+    if ai:
+        st.info(ai["chart_read"])
+        ac1, ac2 = st.columns(2)
+        with ac1:
+            st.markdown(f"**Suggested entry:** {ai['suggested_entry']}")
+            if st.button("Use as entry level rule", key="sb_use_entry"):
+                st.session_state["sb_level"] = ai["suggested_entry"]
+                st.rerun()
+        with ac2:
+            st.markdown(f"**Suggested exit:** {ai['suggested_exit']}")
+            if st.button("Use as confirmation rule", key="sb_use_confirmation"):
+                st.session_state["sb_confirmation"] = ai["suggested_exit"]
+                st.rerun()
+        for caveat in ai.get("caveats", []):
+            st.caption(f"⚠️ {caveat}")
+        st.caption("An AI suggestion, not a backtested result — check it on the Backtest page before trusting it.")
+
+st.divider()
 
 with strategies_scope() as library:
     saved = library.list()
@@ -103,11 +151,13 @@ with st.form("strategy_builder"):
         "Entry level rule",
         placeholder="Example: price touches previous week's high or low.",
         height=90,
+        key="sb_level",
     )
     confirmation = st.text_area(
         "Confirmation rule",
         placeholder="Example: 15-minute candle closes back inside the level AND volume is above its 20-bar average.",
         height=100,
+        key="sb_confirmation",
     )
     stop = st.text_input("Stop-loss rule", placeholder="Example: 30 Nifty points beyond the level.")
     target = st.text_input(
