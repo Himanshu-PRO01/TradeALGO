@@ -123,6 +123,7 @@ header[data-testid="stHeader"] {
 .ta-auth-form .ta-auth-sub,.ta-auth-form-head .ta-auth-sub{color:var(--ta-muted);margin-bottom:24px;font-size:.9rem;line-height:1.5}.ta-auth-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--ta-raised);color:var(--ta-muted);font-size:.78rem;line-height:1.5}
 .ta-auth-footer{margin-top:24px;text-align:center;color:#6b7280;font-size:.72rem}
 @media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
+}
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
 [data-testid="stSidebar"] {
@@ -400,7 +401,6 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         gap: .65rem !important;
     }
 }
-}
 @media (max-width: 430px) {
     .block-container {
         padding-left: .6rem;
@@ -572,8 +572,10 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 /* Floating back-to-top control */
 .ta-back-to-top {
     position:fixed;
-    right:22px;
+    left:50%;
+    right:auto;
     bottom:22px;
+    transform:translateX(-50%);
     z-index:99999;
     display:inline-flex;
     align-items:center;
@@ -593,7 +595,7 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease;
 }
 .ta-back-to-top:hover {
-    transform:translateY(-2px);
+    transform:translateX(-50%) translateY(-2px);
     background:#172231;
     border-color:#3B82F6;
     box-shadow:0 12px 34px rgba(0,0,0,.38),0 0 0 3px rgba(59,130,246,.08);
@@ -929,7 +931,7 @@ html::-webkit-scrollbar-thumb:hover {
     color: #172033 !important;
 }
 @media (max-width:768px) {
-    .ta-back-to-top { right:14px; bottom:14px; min-height:42px; padding:0 12px; }
+    .ta-back-to-top { left:50%; right:auto; bottom:14px; min-height:42px; padding:0 12px; }
 }
 
 /* Sidebar appearance control */
