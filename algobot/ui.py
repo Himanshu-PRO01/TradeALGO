@@ -238,6 +238,34 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     filter:drop-shadow(0 5px 12px rgba(37,99,235,.14));
 }
 
+.st-key-sidebar_toggle_floating {
+    position: fixed !important;
+    top: 74px !important;
+    right: 18px !important;
+    z-index: 999999 !important;
+    width: auto !important;
+}
+.st-key-sidebar_toggle_floating button {
+    min-width: 46px !important;
+    width: 46px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 11px !important;
+    background: #121923 !important;
+    color: #F4F7FB !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28) !important;
+    font-size: 1.15rem !important;
+}
+.st-key-sidebar_toggle_floating button:hover {
+    border-color: #3B82F6 !important;
+    background: #172235 !important;
+    color: #20D9A0 !important;
+}
+@media (max-width: 760px) {
+    .st-key-sidebar_toggle_floating { top: 66px !important; right: 12px !important; }
+}
+
 /* Premium TradeALGO utility-bar logo */
 .st-key-utility_bar .ta-utility-brand {
     display:flex;
@@ -1341,6 +1369,14 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
 def pill(text: str, tone: str = "green") -> str:
     return f'<span class="ab-pill {escape(tone)}">{escape(text)}</span>'
 
+
+    with st.container(key="sidebar_toggle_floating"):
+        st.button(
+            "☰",
+            key="sidebar_toggle_floating_btn",
+            help="Open or close the TradeALGO side menu",
+            on_click=_toggle_sidebar,
+        )
 
 def _top_menu_links() -> list[tuple[str, str, str]]:
     return [
