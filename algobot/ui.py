@@ -293,6 +293,7 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         gap: .65rem !important;
     }
 }
+}
 @media (max-width: 430px) {
     .block-container {
         padding-left: .6rem;
