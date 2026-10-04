@@ -31,6 +31,15 @@ def is_dark_mode() -> bool:
     return st.session_state.get("tradealgo_theme", "light") == "dark"
 
 
+def _market_logo_base64() -> str:
+    """Return the exact Market Desk logo asset as a data URI payload."""
+    logo_path = pathlib.Path(__file__).resolve().parent / "assets" / "TradeALGO Market Desk Logo.png"
+    if not logo_path.exists():
+        return ""
+    import base64
+    return base64.b64encode(logo_path.read_bytes()).decode("ascii")
+
+
 
 def _swipe_menu_component():
     """Install a tiny mobile edge-swipe listener without changing trading logic."""
@@ -215,6 +224,17 @@ header[data-testid="stHeader"] {
 }
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* Exact TradeALGO Market Desk logo asset */
+.st-key-utility_bar .ta-market-logo-image {
+    width:148px;
+    height:auto;
+    max-height:46px;
+    object-fit:contain;
+    object-position:left center;
+    display:block;
+    filter:drop-shadow(0 5px 12px rgba(37,99,235,.14));
+}
 
 /* Premium TradeALGO utility-bar logo */
 .st-key-utility_bar .ta-utility-brand {
@@ -1291,6 +1311,8 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         pills.insert(0, pill(mode.split(":", 1)[-1].upper(), tone))
     pills.append(pill("HOSTED" if is_hosted() else "LOCAL", "blue"))
 
+    market_logo_base64 = _market_logo_base64()
+
     # One consistent horizontal action bar. Nothing is fixed over the page,
     # so it never creates a large empty area or overlaps Streamlit's toolbar.
     # Profile/Feedback are routed through the page_link() wrapper (not raw
@@ -1308,27 +1330,7 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
     ):
         st.markdown(
             '''<div class="ta-utility-brand" aria-label="TradeALGO">
-                <svg class="ta-logo-svg" viewBox="0 0 120 120" role="img" aria-label="TradeALGO logo">
-                    <defs>
-                        <linearGradient id="taBlueGreen" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stop-color="#1677FF"/>
-                            <stop offset="52%" stop-color="#16C7FF"/>
-                            <stop offset="100%" stop-color="#20E39B"/>
-                        </linearGradient>
-                    </defs>
-                    <!-- Clear T -->
-                    <path d="M8 14H66V30H46V98H28V30H8Z" fill="url(#taBlueGreen)"/>
-                    <!-- Clear A -->
-                    <path d="M65 98L91 14H108L118 98H99L97 79H79L76 98Z" fill="url(#taBlueGreen)"/>
-                    <path d="M83 64H95L90 37Z" fill="#071018"/>
-                    <!-- Trading bars inside the A -->
-                    <path d="M80 88V70M88 88V61M96 88V51" stroke="#D9FFF1" stroke-width="3.5" stroke-linecap="round"/>
-                    <path d="M76 88H101" stroke="#20E39B" stroke-width="3" stroke-linecap="round"/>
-                </svg>
-                <span class="ta-utility-wordmark">
-                    <span class="ta-utility-name">TRADE<span>ALGO</span></span>
-                    <span class="ta-utility-tag">TRADING DESK</span>
-                </span>
+                <img class="ta-market-logo-image" src="data:image/png;base64,{market_logo_base64}" alt="TradeALGO Trading Desk logo">
             </div>''',
             unsafe_allow_html=True,
         )
