@@ -126,6 +126,49 @@ header[data-testid="stHeader"] {
 }
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* Premium TradeALGO utility-bar brand */
+.st-key-utility_bar .ta-utility-brand {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-width:126px;
+    margin-right:auto;
+    color:#F4F7FB;
+    font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:.88rem;
+    font-weight:850;
+    letter-spacing:.045em;
+    line-height:1;
+}
+.st-key-utility_bar .ta-utility-mark {
+    width:28px;
+    height:28px;
+    display:grid;
+    place-items:center;
+    flex:0 0 28px;
+    border:1px solid rgba(59,130,246,.42);
+    border-radius:9px;
+    background:linear-gradient(145deg,#1d4ed8,#2563eb 58%,#16C784);
+    color:#fff;
+    font-size:.68rem;
+    font-weight:950;
+    letter-spacing:-.04em;
+    box-shadow:0 5px 16px rgba(37,99,235,.20), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.st-key-utility_bar .ta-utility-name {
+    color:#F4F7FB;
+}
+.st-key-utility_bar .ta-utility-name span {
+    color:#3B82F6;
+}
+.st-key-utility_bar .ta-utility-tag {
+    margin-left:2px;
+    color:#7F8DA0;
+    font-size:.56rem;
+    font-weight:700;
+    letter-spacing:.12em;
+}
 [data-testid="stSidebar"] {
     background: #121923;
     border-right: 1px solid #1F2A37;
@@ -1171,7 +1214,11 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         gap="small",
         border=True,
     ):
-        st.caption("TRADEALGO")
+        st.markdown(
+            '<div class="ta-utility-brand" aria-label="TradeALGO"><span class="ta-utility-mark">TA</span>'
+            '<span class="ta-utility-name">TRADE<span>ALGO</span></span><span class="ta-utility-tag">DESK</span></div>',
+            unsafe_allow_html=True,
+        )
         page_link("dashboard.py", label="⌂ Home", use_container_width=False)
         page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
         page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
