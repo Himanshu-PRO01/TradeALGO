@@ -122,6 +122,95 @@ header[data-testid="stHeader"] {
 .ta-auth-form{padding:54px}.st-key-ab_login{padding:0 54px 54px;max-width:470px;margin:0 auto}.st-key-ab_login_btn button{background:#318616!important;color:#fff!important;border-color:#318616!important;font-weight:800!important;border-radius:12px!important;min-height:48px!important}.st-key-ab_login_btn button:hover{background:#24630f!important;border-color:#24630f!important}.st-key-ab_pw input{border-radius:12px!important;min-height:48px!important}.ta-auth-form h2,.ta-auth-form-head h2{margin:0 0 7px;color:var(--ta-ink);font-size:1.65rem;letter-spacing:-.035em}
 .ta-auth-form .ta-auth-sub,.ta-auth-form-head .ta-auth-sub{color:var(--ta-muted);margin-bottom:24px;font-size:.9rem;line-height:1.5}.ta-auth-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--ta-raised);color:var(--ta-muted);font-size:.78rem;line-height:1.5}
 .ta-auth-footer{margin-top:24px;text-align:center;color:#6b7280;font-size:.72rem}
+.ta-auth-loading{
+    position:fixed;
+    inset:0;
+    z-index:999999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(250,252,255,.98);
+    backdrop-filter:blur(12px);
+    animation:taLoadingFadeIn .22s ease both;
+}
+.ta-auth-loading-card{
+    width:min(560px,calc(100vw - 36px));
+    padding:48px 32px 38px;
+    text-align:center;
+    border:1px solid #E6EBF2;
+    border-radius:28px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 24px 70px rgba(20,45,80,.12);
+}
+.ta-loading-logo{
+    width:104px;
+    height:104px;
+    margin:0 auto 18px;
+    display:block;
+    filter:drop-shadow(0 12px 22px rgba(37,99,235,.16));
+    animation:taLogoPulse 1.8s ease-in-out infinite;
+}
+.ta-loading-title{
+    margin:0;
+    color:#172033;
+    font-size:1.45rem;
+    font-weight:850;
+    letter-spacing:-.035em;
+}
+.ta-loading-sub{
+    margin:8px 0 25px;
+    color:#718096;
+    font-size:.86rem;
+}
+.ta-loading-bar{
+    width:min(380px,100%);
+    height:7px;
+    margin:0 auto 13px;
+    overflow:hidden;
+    border-radius:999px;
+    background:#E9EEF5;
+}
+.ta-loading-bar::before{
+    content:"";
+    display:block;
+    width:42%;
+    height:100%;
+    border-radius:inherit;
+    background:linear-gradient(90deg,#2563EB,#16C7FF,#20D9A0);
+    box-shadow:0 0 16px rgba(32,217,160,.34);
+    animation:taLoadingSweep 1.25s ease-in-out infinite;
+}
+.ta-loading-status{
+    color:#607087;
+    font-size:.74rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.ta-loading-dots{
+    margin-top:18px;
+    display:flex;
+    justify-content:center;
+    gap:7px;
+}
+.ta-loading-dots span{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#20D9A0;
+    animation:taDotPulse 1.1s ease-in-out infinite;
+}
+.ta-loading-dots span:nth-child(2){animation-delay:.14s;background:#16C7FF}
+.ta-loading-dots span:nth-child(3){animation-delay:.28s;background:#2563EB}
+@keyframes taLoadingFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes taLogoPulse{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.035);opacity:1}}
+@keyframes taLoadingSweep{0%{transform:translateX(-120%)}100%{transform:translateX(330%)}}
+@keyframes taDotPulse{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-4px);opacity:1}}
+@media(max-width:760px){
+    .ta-auth-loading-card{padding:38px 22px 30px;border-radius:22px}
+    .ta-loading-logo{width:88px;height:88px}
+    .ta-loading-title{font-size:1.25rem}
+}
 @media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-logo-image{width:min(100%,430px);margin:-2px 0 8px}.ta-auth-logo-image img{max-height:130px}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
 }
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
