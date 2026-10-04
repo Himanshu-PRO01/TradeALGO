@@ -584,6 +584,73 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     }
 }
 
+/* ---------- Market ticker / quote strip ---------- */
+.ab-strip {
+    display:flex !important;
+    align-items:stretch !important;
+    gap:0 !important;
+    width:100% !important;
+    margin:14px 0 18px !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    border:1px solid #1F2A37 !important;
+    border-radius:14px !important;
+    background:linear-gradient(180deg,#121923 0%,#0F151D 100%) !important;
+    box-shadow:0 10px 28px rgba(0,0,0,.16) !important;
+}
+.ab-strip > div {
+    flex:1 1 0 !important;
+    min-width:0 !important;
+    padding:15px 18px !important;
+    border-right:1px solid #1F2A37 !important;
+}
+.ab-strip > div:last-child { border-right:0 !important; }
+.ab-strip .lab {
+    margin-bottom:6px !important;
+    color:#7F8DA0 !important;
+    font-size:.68rem !important;
+    font-weight:700 !important;
+    line-height:1.2 !important;
+    letter-spacing:.08em !important;
+    text-transform:uppercase !important;
+}
+.ab-strip .val {
+    color:#F4F7FB !important;
+    font-size:1rem !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    font-variant-numeric:tabular-nums !important;
+}
+.ab-strip .val.up { color:#20D9A0 !important; }
+.ab-strip .val.down { color:#FF5C70 !important; }
+.ab-strip .val.warn { color:#F5B942 !important; }
+
+@media (max-width:900px) {
+    .ab-strip {
+        overflow-x:auto !important;
+        scrollbar-width:none !important;
+    }
+    .ab-strip::-webkit-scrollbar { display:none !important; }
+    .ab-strip > div {
+        flex:0 0 150px !important;
+    }
+}
+@media (max-width:600px) {
+    .ab-strip {
+        border-radius:12px !important;
+    }
+    .ab-strip > div {
+        flex-basis:138px !important;
+        padding:13px 14px !important;
+    }
+    .ab-strip .val {
+        font-size:.92rem !important;
+    }
+}
+
 /* metric cards */
 [data-testid="stMetric"] { background: #121923; border: 1px solid #1F2A37; border-radius: 12px; padding: 12px 16px; }
 [data-testid="stMetricLabel"] { color: #8B98A9; text-transform: uppercase; font-size: 0.72rem; letter-spacing: .06em; }
@@ -1332,7 +1399,7 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
     ):
         st.markdown(
             '''<div class="ta-utility-brand" aria-label="TradeALGO">
-                <img class="ta-market-logo-image" src="data:image/png;base64,{market_logo_base64}" alt="TradeALGO Trading Desk logo">
+                <img class="ta-market-logo-image" src="data:image/webp;base64,{market_logo_base64}" alt="TradeALGO Trading Desk logo">
             </div>''',
             unsafe_allow_html=True,
         )
