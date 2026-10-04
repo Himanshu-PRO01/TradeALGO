@@ -1172,6 +1172,7 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         border=True,
     ):
         st.caption("TRADEALGO")
+        page_link("dashboard.py", label="⌂ Home", use_container_width=False)
         page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
         page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
         st.toggle(
