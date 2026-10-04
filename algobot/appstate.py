@@ -55,7 +55,7 @@ def password_gate(max_attempts: int = 5) -> None:
         import base64
         with open(logo_path, "rb") as logo_file:
             logo_base64 = base64.b64encode(logo_file.read()).decode("ascii")
-    loading_logo_path = os.path.join(os.path.dirname(__file__), "assets", "TradeALGO Market Desk Logo.png")
+    loading_logo_path = os.path.join(os.path.dirname(__file__), "assets", "TradeALGO Market Desk Logo.webp")
     loading_logo_base64 = ""
     if os.path.exists(loading_logo_path):
         import base64
