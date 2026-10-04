@@ -24,7 +24,6 @@ from .palette import BG, BLUE, BORDER, DOWN, MUTED, PANEL, TEXT, UP, WARN
 
 
 _SWIPE_MENU_COMPONENT = None
-_BACK_TO_TOP_COMPONENT = None
 
 
 def is_dark_mode() -> bool:
@@ -93,76 +92,23 @@ def _swipe_menu_component():
         )
     return _SWIPE_MENU_COMPONENT
 
-def _back_to_top_component():
-    """Install the back-to-top link's real behavior: hidden near the top of the
-    page, fades in once scrolled down, and smooth-scrolls back to the top on
-    click. A plain `<a href="#algobot-page-top">` alone is unreliable here --
-    whichever element actually scrolls varies by Streamlit layout/version, and a
-    native anchor jump is an instant, jarring cut rather than a smooth scroll --
-    so this tries every plausible scrolling element instead of assuming one."""
-    global _BACK_TO_TOP_COMPONENT
-    if _components_v2 is None:
-        return None
-    if _BACK_TO_TOP_COMPONENT is None:
-        _BACK_TO_TOP_COMPONENT = _components_v2.component(
-            name="algobot_back_to_top",
-            html="",
-            css="",
-            js="""
-            export default function() {
-                const SHOW_AFTER_PX = 400;
-
-                const scrollCandidates = () => [
-                    document.scrollingElement,
-                    document.querySelector('[data-testid="stAppViewContainer"]'),
-                    document.querySelector('[data-testid="stMain"]'),
-                    document.querySelector('.main'),
-                    document.documentElement,
-                ].filter(Boolean);
-
-                const currentScrollTop = () => {
-                    for (const el of scrollCandidates()) {
-                        if (el.scrollTop > 0) return el.scrollTop;
-                    }
-                    return window.scrollY || 0;
-                };
-
-                const link = () => document.querySelector('.ta-back-to-top');
-
-                const onScroll = () => {
-                    const btn = link();
-                    if (btn) btn.classList.toggle('ta-hidden', currentScrollTop() <= SHOW_AFTER_PX);
-                };
-
-                const onClick = (event) => {
-                    const btn = event.target?.closest?.('.ta-back-to-top');
-                    if (!btn) return;
-                    event.preventDefault();
-                    window.scrollTo({top: 0, behavior: 'smooth'});
-                    for (const el of scrollCandidates()) {
-                        el.scrollTo?.({top: 0, behavior: 'smooth'});
-                    }
-                };
-
-                // Scroll events on a specific element (not window) do not bubble,
-                // so this has to listen during the capture phase to catch them.
-                document.addEventListener('scroll', onScroll, {passive: true, capture: true});
-                document.addEventListener('click', onClick, true);
-                onScroll();
-
-                return () => {
-                    document.removeEventListener('scroll', onScroll, true);
-                    document.removeEventListener('click', onClick, true);
-                };
-            }
-            """,
-        )
-    return _BACK_TO_TOP_COMPONENT
 
 CSS = """
 <style>
 :root{--ta-green:#318616;--ta-ink:#171717;--ta-muted:#4d5761;--ta-surface:#fff;--ta-raised:#f7f8f6;--ta-border:#e5e7eb}
 body,.stApp{font-family:Lexend,sans-serif}
+.block-container,
+[data-testid="stMainBlockContainer"],
+.stMainBlockContainer {
+    padding-top: 1rem !important;
+    padding-bottom: 3rem !important;
+}
+[data-testid="stToolbar"] { display:none !important; }
+header[data-testid="stHeader"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+}
 .ta-auth-shell{min-height:0;display:block;padding:18px 16px 28px}
 .st-key-auth_card{width:min(980px,100%);margin:0 auto;background:var(--ta-surface);border:1px solid var(--ta-border);border-radius:24px;overflow:hidden;box-shadow:0 18px 55px rgba(20,30,20,.1);padding:0}
 .st-key-auth_card [data-testid="stHorizontalBlock"]{gap:0!important}
@@ -223,7 +169,7 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 /* mobile-first trading UX */
 @media (max-width: 768px) {
     .block-container {
-        padding: .65rem .75rem 4.5rem;
+        padding: .65rem .75rem 3rem;
         max-width: 100%;
     }
     .ab-top {
@@ -1330,7 +1276,6 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="collapsed")
     st.session_state.setdefault("tradealgo_theme", "light")
-    st.markdown('<div id="algobot-page-top"></div>', unsafe_allow_html=True)
     st.markdown(CSS, unsafe_allow_html=True)
     if not is_dark_mode():
         st.markdown(LIGHT_CSS, unsafe_allow_html=True)
@@ -1373,37 +1318,7 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
             # The gesture is progressive enhancement; page rendering must survive without it.
             pass
 
-    # The back-to-top control is intentionally installed after password_gate().
-    # The login screen should never render a floating page control.
-    
-    # The floating "☰" button that used to live here duplicated the "☰ Menu"
-    # button header() already renders in the utility bar (same top_menu_open
-    # state, same drawer below) -- one menu entry point instead of two. The
-    # drawer itself stays: header()'s button still sets this same state and
-    # reruns, so it renders right here on the next run exactly as before.
-    if st.session_state.get("top_menu_open", False):
-        with st.container(key="mobile_menu_drawer"):
-            st.markdown('<div class="ta-drawer-title">TRADEALGO</div>', unsafe_allow_html=True)
-            st.markdown('<div class="ta-drawer-subtitle">Quick navigation</div>', unsafe_allow_html=True)
-            if st.button("✕  Close", key="mobile_menu_close", width="stretch"):
-                st.session_state["top_menu_open"] = False
-                st.rerun()
-            st.divider()
-            for icon_, label, path in _top_menu_links():
-                page_link(path, label=f"{icon_}  {label}", use_container_width=True)
 
-    password_gate()
-
-    st.markdown(
-        '<a class="ta-back-to-top" href="#algobot-page-top" aria-label="Back to top">↑</a>',
-        unsafe_allow_html=True,
-    )
-    back_to_top_component = _back_to_top_component()
-    if back_to_top_component is not None:
-        try:
-            back_to_top_component(key="algobot_back_to_top")
-        except st.errors.StreamlitAPIException:
-            pass
 
 
 def pill(text: str, tone: str = "green") -> str:
