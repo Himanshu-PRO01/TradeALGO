@@ -125,12 +125,34 @@ header[data-testid="stHeader"] {
 @media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
-[data-testid="stSidebar"] { background: #121923; border-right: 1px solid #1F2A37; }
+[data-testid="stSidebar"] {
+    background: #121923;
+    border-right: 1px solid #1F2A37;
+    box-shadow: 10px 0 34px rgba(0,0,0,.12);
+}
+[data-testid="stSidebar"] > div:first-child {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #344255 transparent;
+}
+[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar { width: 5px; }
+[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar-track { background: transparent; }
+[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar-thumb {
+    background: #344255;
+    border-radius: 999px;
+}
 [data-testid="stSidebarNav"] { display:none; }
 .ab-menu-head {
-    padding: 10px 8px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 14px 8px 16px;
     margin: 0 2px 12px;
     border-bottom: 1px solid #263242;
+    background: linear-gradient(180deg,#121923 88%,rgba(18,25,35,.92) 100%);
+    backdrop-filter: blur(10px);
 }
 .ab-menu-brand {
     display:flex;
@@ -231,6 +253,20 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] span {
     opacity:1;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"] {
+    color:#FCA5A5 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"]:hover {
+    background:rgba(239,68,68,.08);
+    border-color:rgba(239,68,68,.18);
+    color:#FECACA !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"][aria-current="page"] {
+    background:linear-gradient(90deg,rgba(239,68,68,.14),rgba(239,68,68,.04));
+    border-color:rgba(239,68,68,.22);
+    box-shadow:inset 3px 0 0 #EF4444;
+    color:#FEE2E2 !important;
 }
 
 /* Sidebar footer/status */
@@ -550,6 +586,38 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     }
 }
 
+/* Floating back-to-top control */
+.ta-back-to-top {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 99999;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 13px;
+    border: 1px solid #2B394A;
+    border-radius: 999px;
+    background: rgba(18,25,35,.94);
+    color: #E7EDF5 !important;
+    text-decoration: none !important;
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    box-shadow: 0 10px 30px rgba(0,0,0,.30);
+    backdrop-filter: blur(12px);
+    transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.ta-back-to-top:hover {
+    transform: translateY(-2px);
+    background: #172231;
+    border-color: #3B82F6;
+    box-shadow: 0 12px 34px rgba(0,0,0,.38), 0 0 0 3px rgba(59,130,246,.08);
+    color: #fff !important;
+}
+.ta-back-to-top span { opacity:.78; }
+
 /* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
     margin-bottom: 4px !important;
@@ -602,6 +670,13 @@ a {
 [data-testid="stSidebar"] > div:first-child {
     background: #ffffff !important;
 }
+[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+.ab-menu-head {
+    background: linear-gradient(180deg,#ffffff 88%,rgba(255,255,255,.94) 100%) !important;
+    backdrop-filter: blur(10px);
+}
 .ab-menu-head {
     border-bottom-color: #e2e8f0 !important;
 }
@@ -625,6 +700,19 @@ a {
     background: #e8f0ff !important;
     border-left-color: #2563eb !important;
     color: #1d4ed8 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"] {
+    color:#B91C1C !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"]:hover {
+    background:#FEF2F2 !important;
+    border-color:#FECACA !important;
+    color:#991B1B !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="11_Live_Trading"][aria-current="page"] {
+    background:#FEF2F2 !important;
+    border-left-color:#DC2626 !important;
+    color:#991B1B !important;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a p {
     color: inherit !important;
@@ -872,6 +960,14 @@ html::-webkit-scrollbar-thumb:hover {
     background: #f1f5f9 !important;
     color: #172033 !important;
 }
+@media (max-width: 768px) {
+    .ta-back-to-top {
+        right: 14px;
+        bottom: 14px;
+        min-height: 42px;
+        padding: 0 12px;
+    }
+}
 
 /* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
@@ -1017,6 +1113,9 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
         st.markdown(LIGHT_CSS, unsafe_allow_html=True)
 
     st.session_state.setdefault("top_menu_open", False)
+
+    # Stable in-page anchor used by the floating Back to top control.
+    st.markdown('<div id="tradealgo-top" aria-hidden="true"></div>', unsafe_allow_html=True)
     _menu()
     password_gate()
     swipe_component = _swipe_menu_component()
@@ -1027,6 +1126,11 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
             # Streamlit AppTest does not mount browser-only v2 components.
             # The gesture is progressive enhancement; page rendering must survive without it.
             pass
+
+    st.markdown(
+        '<a class="ta-back-to-top" href="#tradealgo-top" aria-label="Back to top">↑ <span>Back to top</span></a>',
+        unsafe_allow_html=True,
+    )
 
 
 
@@ -1098,150 +1202,3 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
     # docstring above), which is also what GitHub Actions CI runs.
     with st.container(
         key="utility_bar",
-        horizontal=True,
-        vertical_alignment="center",
-        horizontal_alignment="right",
-        gap="small",
-        border=True,
-    ):
-        st.caption("TRADEALGO")
-        page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
-        page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
-        st.toggle(
-            "🌙",
-            value=is_dark_mode(),
-            key="tradealgo_theme_toggle_top",
-            help="Switch between dark and light mode",
-            label_visibility="collapsed",
-            on_change=_apply_theme_from_toggle,
-            args=("tradealgo_theme_toggle_top",),
-        )
-        if st.button("☰ Menu", key="top_menu", type="secondary"):
-            st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
-            st.rerun()
-
-    with st.container(key="desk_header"):
-        left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
-        with left:
-            st.markdown(
-                '<div class="ab-brand">TRADE<span>ALGO</span> &nbsp;·&nbsp; TRADING RESEARCH</div>',
-                unsafe_allow_html=True,
-            )
-        with middle:
-            st.markdown(
-                f'<div class="ab-pills" style="justify-content:flex-end">{"".join(pills)}</div>',
-                unsafe_allow_html=True,
-            )
-
-        st.markdown(f"## {title}")
-        if subtitle:
-            st.caption(subtitle)
-
-    _top_menu_drawer()
-
-
-
-def ticker(items: Iterable) -> None:
-    """A strip of live-style numbers. Each item is (label, value, tone) with tone 'up', 'down', 'warn' or None."""
-    cells = "".join(
-        f'<div><div class="lab">{escape(str(label))}</div>'
-        f'<div class="val {escape(tone or "")}">{escape(str(value))}</div></div>'
-        for label, value, tone in items)
-    st.markdown(f'<div class="ab-strip">{cells}</div>', unsafe_allow_html=True)
-
-
-def card(title: str, body: str, icon: str = "") -> str:
-    return f'<div class="ab-card"><h4>{escape(icon)} {escape(title)}</h4><p>{escape(body)}</p></div>'
-
-
-def check_row(status: str, title: str, detail: str) -> None:
-    """One audit-style line with a coloured status pill."""
-    tone = {"PASS": "green", "WARN": "amber", "FAIL": "red", "SKIP": "blue"}.get(status, "blue")
-    st.markdown(f'<div class="ab-check">{pill(status, tone)}<div class="txt"><b>{escape(title)}</b>'
-                f'<span>{escape(detail)}</span></div></div>', unsafe_allow_html=True)
-
-
-def tone(value: float) -> str:
-    return "up" if value > 0 else ("down" if value < 0 else "")
-
-
-def inr(value: float, sign: bool = False) -> str:
-    """Rupees with Indian-style thousands? Plain thousands separators keep it simple and unambiguous."""
-    prefix = "+" if sign and value > 0 else ""
-    return f"{prefix}₹{value:,.0f}" if value >= 0 else f"-₹{abs(value):,.0f}"
-
-
-def show_chart(chart) -> None:
-    """Draw an Altair chart full width, on any Streamlit version."""
-    if chart is None:
-        st.caption("Nothing to draw yet.")
-        return
-    try:
-        st.altair_chart(chart, width="stretch")
-    except TypeError:                                   # older Streamlit
-        st.altair_chart(chart, use_container_width=True)
-
-
-def show_table(frame, **kwargs) -> None:
-    try:
-        st.dataframe(frame, width="stretch", **kwargs)
-    except TypeError:
-        st.dataframe(frame, use_container_width=True, **kwargs)
-
-
-
-def workflow_nav(current_key: str, complete: bool = False) -> None:
-    """Render the workflow as large, horizontally scrollable navigation cards."""
-    index = next((i for i, item in enumerate(WORKFLOW_STEPS) if item[0] == current_key), 0)
-    total = len(WORKFLOW_STEPS)
-    # Fixed-width buttons inside a no-wrap horizontal container preserve the
-    # large workflow-card appearance while allowing sideways scrolling.
-    with st.container(
-        horizontal=True,
-        wrap=False,
-        horizontal_alignment="left",
-        gap="small",
-        border=True,
-    ):
-        workflow_icons = ["🗺️", "🧠", "🤖", "📊", "🧪", "🛡️", "📝", "🏦", "🎬", "🚀"]
-        for i, (_, name, path) in enumerate(WORKFLOW_STEPS):
-            label = f"{workflow_icons[i]}\nSTEP {i+1:02d}\n{name}"
-            if st.button(
-                label,
-                key=f"workflow_step_{i}",
-                disabled=(i == index),
-                type="primary" if i == index else "secondary",
-                width=170,
-            ):
-                st.switch_page(path)
-
-    st.caption(
-        f"Step {index+1} of {total} · scroll sideways to see all steps · "
-        "click any step to open its page"
-    )
-
-    prev_step = WORKFLOW_STEPS[index - 1] if index > 0 else None
-    next_step = WORKFLOW_STEPS[index + 1] if index < total - 1 else None
-    left, right = st.columns(2)
-    with left:
-        if prev_step:
-            if st.button(
-                f"⬅️  Previous: {prev_step[1]}",
-                key=f"workflow_prev_{current_key}",
-                width="stretch",
-            ):
-                st.switch_page(prev_step[2])
-    with right:
-        if next_step:
-            if st.button(
-                f"Next: {next_step[1]}  ➡️",
-                key=f"workflow_next_{current_key}",
-                width="stretch",
-            ):
-                st.switch_page(next_step[2])
-        else:
-            st.success("✅ Workflow complete — you have reached Live Trading.")
-
-def footer_note(text: str = "Practice and research tool. Not advice. It never places orders and never asks for broker keys.") -> None:
-    st.markdown(f'<p style="color:#8B98A9;font-size:.8rem;margin-top:2rem">{escape(text)} &nbsp;·&nbsp; algobot v{escape(__version__)}</p>',
-                unsafe_allow_html=True)
