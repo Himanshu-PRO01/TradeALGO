@@ -184,19 +184,20 @@ CSS = """
 <style>
 :root{--ta-green:#318616;--ta-ink:#171717;--ta-muted:#4d5761;--ta-surface:#fff;--ta-raised:#f7f8f6;--ta-border:#e5e7eb}
 body,.stApp{font-family:Lexend,sans-serif}
-.ta-auth-shell{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:28px 16px 56px}
-.ta-auth-grid{width:min(980px,100%);display:grid;grid-template-columns:1.05fr .95fr;background:var(--ta-surface);border:1px solid var(--ta-border);border-radius:24px;overflow:hidden;box-shadow:0 18px 55px rgba(20,30,20,.1)}
-.ta-auth-brand{padding:54px;background:linear-gradient(145deg,#f2f8ed 0%,#fff 72%);border-right:1px solid var(--ta-border)}
+.ta-auth-shell{min-height:0;display:block;padding:18px 16px 28px}
+.st-key-auth_card{width:min(980px,100%);margin:0 auto;background:var(--ta-surface);border:1px solid var(--ta-border);border-radius:24px;overflow:hidden;box-shadow:0 18px 55px rgba(20,30,20,.1);padding:0}
+.st-key-auth_card [data-testid="stHorizontalBlock"]{gap:0!important}
+.ta-auth-brand{height:100%;padding:46px 48px;background:linear-gradient(145deg,#f2f8ed 0%,#fff 72%);border-right:1px solid var(--ta-border)}
 .ta-auth-logo{font-size:1.55rem;font-weight:900;letter-spacing:-.04em;color:var(--ta-ink)}.ta-auth-logo span{color:var(--ta-green)}
 .ta-auth-kicker{margin-top:58px;color:var(--ta-green);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
 .ta-auth-title{margin:12px 0 14px;color:var(--ta-ink);font-size:clamp(2rem,4vw,3.35rem);line-height:1.04;font-weight:850;letter-spacing:-.055em}
 .ta-auth-copy{max-width:470px;color:var(--ta-muted);font-size:1rem;line-height:1.7}.ta-auth-features{margin-top:28px;display:grid;gap:10px}
 .ta-auth-feature{display:flex;gap:10px;align-items:center;color:var(--ta-ink);font-size:.9rem;font-weight:600}
 .ta-auth-check{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:#eaf5e5;color:var(--ta-green);font-weight:900}
-.ta-auth-form{padding:54px}.st-key-ab_login{padding:0 54px 54px;max-width:470px;margin:0 auto}.st-key-ab_login_btn button{background:#318616!important;color:#fff!important;border-color:#318616!important;font-weight:800!important;border-radius:12px!important;min-height:48px!important}.st-key-ab_login_btn button:hover{background:#24630f!important;border-color:#24630f!important}.st-key-ab_pw input{border-radius:12px!important;min-height:48px!important}.ta-auth-form h2{margin:0 0 7px;color:var(--ta-ink);font-size:1.65rem;letter-spacing:-.035em}
-.ta-auth-form .ta-auth-sub{color:var(--ta-muted);margin-bottom:24px;font-size:.9rem;line-height:1.5}.ta-auth-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--ta-raised);color:var(--ta-muted);font-size:.78rem;line-height:1.5}
+.ta-auth-form{padding:54px}.st-key-ab_login{padding:0 54px 54px;max-width:470px;margin:0 auto}.st-key-ab_login_btn button{background:#318616!important;color:#fff!important;border-color:#318616!important;font-weight:800!important;border-radius:12px!important;min-height:48px!important}.st-key-ab_login_btn button:hover{background:#24630f!important;border-color:#24630f!important}.st-key-ab_pw input{border-radius:12px!important;min-height:48px!important}.ta-auth-form h2,.ta-auth-form-head h2{margin:0 0 7px;color:var(--ta-ink);font-size:1.65rem;letter-spacing:-.035em}
+.ta-auth-form .ta-auth-sub,.ta-auth-form-head .ta-auth-sub{color:var(--ta-muted);margin-bottom:24px;font-size:.9rem;line-height:1.5}.ta-auth-note{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--ta-raised);color:var(--ta-muted);font-size:.78rem;line-height:1.5}
 .ta-auth-footer{margin-top:24px;text-align:center;color:#6b7280;font-size:.72rem}
-@media(max-width:760px){.ta-auth-grid{grid-template-columns:1fr}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form{padding:30px 24px 34px}
+@media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
 [data-testid="stSidebar"] { background: #121923; border-right: 1px solid #1F2A37; }
@@ -1399,7 +1400,6 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """, unsafe_allow_html=True)
     st.session_state.setdefault("top_menu_open", False)
     _menu()
-    appearance_controls()
     swipe_component = _swipe_menu_component()
     if swipe_component is not None:
         try:
@@ -1409,18 +1409,9 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
             # The gesture is progressive enhancement; page rendering must survive without it.
             pass
 
-    st.markdown(
-        '<a class="ta-back-to-top" href="#algobot-page-top" aria-label="Back to top">↑</a>',
-        unsafe_allow_html=True,
-    )
-    back_to_top_component = _back_to_top_component()
-    if back_to_top_component is not None:
-        try:
-            back_to_top_component(key="algobot_back_to_top")
-        except st.errors.StreamlitAPIException:
-            # Streamlit AppTest does not mount browser-only v2 components.
-            pass
-
+    # The back-to-top control is intentionally installed after password_gate().
+    # The login screen should never render a floating page control.
+    
     # The floating "☰" button that used to live here duplicated the "☰ Menu"
     # button header() already renders in the utility bar (same top_menu_open
     # state, same drawer below) -- one menu entry point instead of two. The
@@ -1438,6 +1429,17 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
                 page_link(path, label=f"{icon_}  {label}", use_container_width=True)
 
     password_gate()
+
+    st.markdown(
+        '<a class="ta-back-to-top" href="#algobot-page-top" aria-label="Back to top">↑</a>',
+        unsafe_allow_html=True,
+    )
+    back_to_top_component = _back_to_top_component()
+    if back_to_top_component is not None:
+        try:
+            back_to_top_component(key="algobot_back_to_top")
+        except st.errors.StreamlitAPIException:
+            pass
 
 
 def pill(text: str, tone: str = "green") -> str:
