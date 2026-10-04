@@ -170,6 +170,10 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     font-weight:700;
     letter-spacing:.12em;
 }
+.st-key-utility_bar .st-key-utility_actions {
+    margin-left:auto;
+    flex:0 0 auto;
+}
 [data-testid="stSidebar"] {
     background: #121923;
     border-right: 1px solid #1F2A37;
@@ -1220,21 +1224,28 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
             '<span class="ta-utility-name">TRADE<span>ALGO</span></span><span class="ta-utility-tag">DESK</span></div>',
             unsafe_allow_html=True,
         )
-        page_link("dashboard.py", label="⌂ Home", use_container_width=False)
-        page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
-        page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
-        st.toggle(
-            "🌙",
-            value=is_dark_mode(),
-            key="tradealgo_theme_toggle_top",
-            help="Switch between dark and light mode",
-            label_visibility="collapsed",
-            on_change=_apply_theme_from_toggle,
-            args=("tradealgo_theme_toggle_top",),
-        )
-        if st.button("☰ Menu", key="top_menu", type="secondary"):
-            st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
-            st.rerun()
+        with st.container(
+            key="utility_actions",
+            horizontal=True,
+            vertical_alignment="center",
+            horizontal_alignment="right",
+            gap="small",
+        ):
+            page_link("dashboard.py", label="⌂ Home", use_container_width=False)
+            page_link("pages/22_Profile.py", label="👤 Profile", use_container_width=False)
+            page_link("pages/8_Feedback.py", label="💬 Feedback", use_container_width=False)
+            st.toggle(
+                "🌙",
+                value=is_dark_mode(),
+                key="tradealgo_theme_toggle_top",
+                help="Switch between dark and light mode",
+                label_visibility="collapsed",
+                on_change=_apply_theme_from_toggle,
+                args=("tradealgo_theme_toggle_top",),
+            )
+            if st.button("☰ Menu", key="top_menu", type="secondary"):
+                st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
+                st.rerun()
 
     with st.container(key="desk_header"):
         left, middle = st.columns([4.8, 5.2], vertical_alignment="center")
