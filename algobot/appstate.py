@@ -52,47 +52,50 @@ def password_gate(max_attempts: int = 5) -> None:
     if not secret or st.session_state.get("_ab_authed"):
         return
 
-    st.markdown("""
-    <div class="ta-auth-shell"><div class="ta-auth-grid">
-      <section class="ta-auth-brand">
-        <div class="ta-auth-logo">TRADE<span>ALGO</span></div>
-        <div class="ta-auth-kicker">Systematic trading research</div>
-        <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
-        <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
-        <div class="ta-auth-features">
-          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Research before execution</div>
-          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Backtest with transparent assumptions</div>
-          <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Connect execution through OpenAlgo</div>
-        </div>
-      </section>
-      <section class="ta-auth-form">
-        <h2>Welcome back</h2>
-        <div class="ta-auth-sub">Sign in to continue to your TradeALGO workspace.</div>
-      </section>
-    </div></div>
-    """, unsafe_allow_html=True)
+    with st.container(key="auth_card"):
+        left, right = st.columns([1.05, .95], gap="small", vertical_alignment="center")
+        with left:
+            st.markdown("""
+            <div class="ta-auth-brand">
+              <div class="ta-auth-logo">TRADE<span>ALGO</span></div>
+              <div class="ta-auth-kicker">Systematic trading research</div>
+              <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
+              <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
+              <div class="ta-auth-features">
+                <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Research before execution</div>
+                <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Backtest with transparent assumptions</div>
+                <div class="ta-auth-feature"><span class="ta-auth-check">✓</span> Connect execution through OpenAlgo</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with right:
+            st.markdown("""
+            <div class="ta-auth-form-head">
+              <h2>Welcome back</h2>
+              <div class="ta-auth-sub">Sign in to continue to your TradeALGO workspace.</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    attempts = st.session_state.get("_ab_attempts", 0)
-    if attempts >= max_attempts:
-        st.error("Too many incorrect attempts in this session. Close the tab and try again later.")
-        st.stop()
-    with st.form("ab_login"):
-        entered = st.text_input("Workspace access", type="password", key="ab_pw", placeholder="Enter your access key")
-        submitted = st.form_submit_button("Continue to TradeALGO", key="ab_login_btn", use_container_width=True)
-    from .dom_fixups import fix_password_autocomplete
-    fix_password_autocomplete()
-    if submitted:
-        if hmac.compare_digest(entered.encode("utf-8"), str(secret).encode("utf-8")):
-            st.session_state["_ab_authed"] = True
-            st.session_state["_ab_attempts"] = 0
-            st.rerun()
-        st.session_state["_ab_attempts"] = attempts + 1
-        time.sleep(1.0)
-        st.error("That access key is not correct. Please try again.")
-    st.markdown("""
-        <div class="ta-auth-note" style="max-width:470px;margin:16px auto 0;">🔒 Your TradeALGO workspace is protected.</div>
-        <div class="ta-auth-footer">TRADEALGO · Research, validation and paper trading</div>
-    """, unsafe_allow_html=True)
+            attempts = st.session_state.get("_ab_attempts", 0)
+            if attempts >= max_attempts:
+                st.error("Too many incorrect attempts in this session. Close the tab and try again.")
+                st.stop()
+            with st.form("ab_login"):
+                entered = st.text_input("Workspace access", type="password", key="ab_pw", placeholder="Enter your access key")
+                submitted = st.form_submit_button("Continue to TradeALGO", key="ab_login_btn", use_container_width=True)
+
+            from .dom_fixups import fix_password_autocomplete
+            fix_password_autocomplete()
+            if submitted:
+                if hmac.compare_digest(entered.encode("utf-8"), str(secret).encode("utf-8")):
+                    st.session_state["_ab_authed"] = True
+                    st.session_state["_ab_attempts"] = 0
+                    st.rerun()
+                st.session_state["_ab_attempts"] = attempts + 1
+                time.sleep(1.0)
+                st.error("That access key is not correct. Please try again.")
+
+            st.markdown('<div class="ta-auth-note">🔒 Your TradeALGO workspace is protected.</div><div class="ta-auth-footer">TRADEALGO · Research, validation and paper trading</div>', unsafe_allow_html=True)
     st.stop()
 
 
