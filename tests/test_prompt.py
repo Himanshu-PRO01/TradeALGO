@@ -15,7 +15,7 @@ def test_prompt_does_not_list_a_type_the_engine_does_not_support():
     """The reverse mistake would be worse: the AI could invent a plausible-sounding
     condition using a type that then fails validation with a confusing error."""
     claimed = {
-        "sma", "ema", "rsi", "atr", "highest", "lowest", "vwap",
+        "sma", "ema", "wma", "hma", "rsi", "mfi", "atr", "highest", "lowest", "vwap",
         "prev_day_high", "prev_day_low", "prev_day_close",
         "prev_week_high", "prev_week_low", "swing_high", "swing_low",
         "opening_range_high", "opening_range_low",

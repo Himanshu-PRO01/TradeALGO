@@ -95,6 +95,26 @@ def test_sma_demo_mode_runs():
     assert any(m.label == "Trades" for m in at.metric)
 
 
+def test_hma_trend_rule_is_the_default_ready_made_idea_and_runs():
+    """EMA + RSI was removed as a ready-made choice; HMA is now first/default."""
+    at = fresh()
+    kind = at.radio(key="strategy_kind")
+    assert kind.value == "HMA trend rule (ready-made)"
+    assert not any("EMA" in o for o in kind.options), kind.options
+    at.button(key="btn_run").click().run()
+    assert not at.exception
+    assert any(m.label == "Trades" for m in at.metric)
+
+
+def test_order_flow_volume_pressure_rule_runs():
+    at = fresh()
+    at.radio(key="strategy_kind").set_value("Order flow / volume pressure (ready-made)").run()
+    assert not at.exception
+    at.button(key="btn_run").click().run()
+    assert not at.exception
+    assert any(m.label == "Trades" for m in at.metric)
+
+
 def test_new_era_strategy_runs_instead_of_crashing():
     at = fresh()
     at.radio(key="strategy_kind").set_value("New Era Strategy 1.0").run()

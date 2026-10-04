@@ -17,25 +17,40 @@ from algobot.prompt import AI_STRATEGY_PROMPT
 from algobot.report import summary_text
 from algobot.runner import check_strategy, run_from_dict
 
-DEFAULT_RULES = """\
+HMA_RULES = """\
 indicators:
-  - {name: ema_fast, type: ema, period: 9}
-  - {name: ema_slow, type: ema, period: 21}
-  - {name: rsi_14,   type: rsi, period: 14}
-entry_long:  "ema_fast > ema_slow and ema_fast_prev <= ema_slow_prev and rsi_14 > 50"
-exit_long:   "ema_fast < ema_slow"
-entry_short: "ema_fast < ema_slow and ema_fast_prev >= ema_slow_prev and rsi_14 < 50"
-exit_short:  "ema_fast > ema_slow"
+  - {name: hma_20, type: hma, period: 20}
+entry_long:  "close > hma_20 and hma_20 > hma_20_prev"
+exit_long:   "hma_20 < hma_20_prev"
+entry_short: "close < hma_20 and hma_20 < hma_20_prev"
+exit_short:  "hma_20 > hma_20_prev"
 """
 
+FLOW_RULES = """\
+indicators:
+  - {name: flow, type: mfi, period: 14}
+entry_long:  "flow > 55 and flow > flow_prev"
+exit_long:   "flow < 50"
+entry_short: "flow < 45 and flow < flow_prev"
+exit_short:  "flow > 50"
+"""
+
+# Kept as the "Write my own rules" starting template -- not a ready-made choice
+# of its own, just a familiar, simple starting point to edit from.
+DEFAULT_RULES = HMA_RULES
+
 # Strategy choices (label -> one-line plain description)
-K_EMA = "EMA + RSI trend rule (ready-made)"
+K_HMA = "HMA trend rule (ready-made)"
+K_FLOW = "Order flow / volume pressure (ready-made)"
 K_SMA = "Moving-average crossover (ready-made)"
 K_NEW = "New Era Strategy 1.0"
 K_OWN = "Write my own rules (advanced)"
 KIND_HELP = {
-    K_EMA: "Buys when a fast price average crosses above a slower one and momentum (RSI) is above 50. "
-           "Sells when they cross back. A good first choice.",
+    K_HMA: "Buys when price is above a Hull Moving Average (HMA) that is itself still rising. Sells when the HMA "
+           "turns down. The HMA hugs price more closely than a plain moving average, so it reacts sooner.",
+    K_FLOW: "Buys when the Money Flow Index — price combined with volume, as a proxy for buying/selling pressure — "
+            "is above 55 and still rising. Sells when it drops back under 50. Not real tick-by-tick order flow: this "
+            "engine only has candle (OHLCV) data, no bid/ask tape, so it estimates pressure from price and volume.",
     K_SMA: "Buys when the short-term average price crosses above the long-term one, sells when it crosses back. "
            "The simplest classic.",
     K_NEW: "The New Era Strategy 1.0 rules, translated for this backtester.",
@@ -68,7 +83,12 @@ with st.expander("Words explained (tap if any word on this page is unclear)"):
         "- **Slippage**: the small gap between the price you wanted and the price you actually got.\n"
         "- **STT, GST, SEBI fee, stamp duty**: government taxes and fees added to every trade.\n"
         "- **Peek-ahead (look-ahead)**: a rule that accidentally uses future prices makes a test look far better than "
-        "real life. The optional safety check catches this."
+        "real life. The optional safety check catches this.\n"
+        "- **HMA (Hull Moving Average)**: like a regular moving average line, but it hugs the price more closely and "
+        "reacts sooner — at the cost of wobbling more on sharp reversals.\n"
+        "- **Order flow / Money Flow Index**: an estimate of buying vs. selling pressure from price and volume "
+        "together. Not the same as real order flow (which reads actual buy/sell orders tick by tick) — this engine "
+        "only has candle data, so it's the closest proxy available here."
     )
 
 
@@ -122,10 +142,14 @@ elif kind == K_SMA:
                            help="The quick-moving average. Smaller number = reacts faster.")
     slow = c2.number_input("Long average (candles)", min_value=2, value=30, step=1, key="sma_slow",
                            help="The slow-moving average. It must be bigger than the short one.")
+elif kind == K_FLOW:
+    strategy_name = "rules"
+    with st.expander("See the exact rules behind this idea"):
+        st.code(FLOW_RULES, language="yaml")
 else:
     strategy_name = "rules"
     with st.expander("See the exact rules behind this idea"):
-        st.code(DEFAULT_RULES, language="yaml")
+        st.code(HMA_RULES, language="yaml")
 
 # ------------------------------------------------------------ step 2: the prices
 st.markdown("### Step 2 · Pick the prices to test on")
@@ -220,8 +244,10 @@ try:
         params = {"fast": int(fast), "slow": int(slow)}
     elif kind == K_NEW:
         params = {"sl_max_points_percent": float(new_era_sl), "target_ratio": float(new_era_ratio)}
+    elif kind == K_FLOW:
+        params = yaml.safe_load(FLOW_RULES)
     else:
-        params = yaml.safe_load(DEFAULT_RULES)
+        params = yaml.safe_load(HMA_RULES)
     raw = {
         "name": "dashboard_run", "capital": capital,
         "strategy": {"name": strategy_name, "params": params, "quantity": int(quantity), "allow_short": allow_short,

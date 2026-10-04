@@ -4,7 +4,7 @@ import pytest
 
 from algobot.config import ConfigError
 from algobot.data import generate_sample_data
-from algobot.indicators import add_indicators, add_prev_columns, rsi, sma
+from algobot.indicators import add_indicators, add_prev_columns, hma, mfi, rsi, sma, wma
 from algobot.strategy import RuleStrategy, SmaCrossover, build_strategy, evaluate_rule
 from helpers import make_bars, make_cfg
 
@@ -16,6 +16,9 @@ SPECS = [
     {"name": "hi4", "type": "highest", "period": 4},
     {"name": "lo4", "type": "lowest", "period": 4},
     {"name": "vw", "type": "vwap"},
+    {"name": "w5", "type": "wma", "period": 5},
+    {"name": "h9", "type": "hma", "period": 9},
+    {"name": "mf7", "type": "mfi", "period": 7},
 ]
 
 
@@ -30,6 +33,40 @@ def test_rsi_is_100_when_price_only_rises_and_stays_in_range():
     df = generate_sample_data(days=3)
     r = rsi(df["close"], 14).dropna()
     assert ((r >= 0) & (r <= 100)).all()
+
+
+def test_wma_weights_recent_bars_more_than_old_ones():
+    s = pd.Series([1.0, 1.0, 1.0, 1.0, 10.0])   # a spike on the most recent bar
+    plain_average = s.tail(5).mean()
+    weighted = wma(s, 5).iloc[-1]
+    assert weighted > plain_average   # the recent spike should count for more
+
+
+def test_hma_tracks_price_more_closely_than_a_plain_moving_average():
+    """The classic HMA selling point: less lag than an SMA/WMA of the same length.
+    (It can briefly overshoot the new level right after a sharp step -- see hma()'s
+    own docstring -- so this checks how SOON each one gets near the new price,
+    not the error at one arbitrarily chosen bar, which could land inside that
+    overshoot and give a misleading answer.)"""
+    s = pd.Series(np.concatenate([np.full(40, 100.0), np.full(40, 120.0)]))  # one step up
+    h, w = hma(s, 10), wma(s, 10)
+    # Average error over the first 10 bars right after the step: HMA's overshoot
+    # wobble still nets out to catching up faster than a plain WMA does.
+    window = slice(40, 50)
+    assert (120.0 - h[window]).abs().mean() < (120.0 - w[window]).abs().mean()
+
+
+def test_mfi_is_high_when_rising_price_is_backed_by_volume_and_bounded_0_to_100():
+    df = generate_sample_data(days=4, seed=2)
+    f = mfi(df, 14).dropna()
+    assert ((f >= 0) & (f <= 100)).all()
+    # All-rising typical price with steady volume: no selling pressure in the
+    # window at all, so the index should sit at its maximum.
+    up = pd.DataFrame({
+        "open": np.arange(1.0, 30.0), "high": np.arange(1.5, 30.5), "low": np.arange(0.5, 29.5),
+        "close": np.arange(1.0, 30.0), "volume": np.full(29, 1000.0),
+    })
+    assert mfi(up, 14).dropna().eq(100.0).all()
 
 
 def test_indicators_never_look_into_the_future():

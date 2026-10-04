@@ -13,7 +13,7 @@ from .config import ConfigError
 from .levels import LEVEL_TYPES, SWING_TYPES, OPENING_RANGE_TYPES, compute_level
 
 BASE_COLUMNS = ("open", "high", "low", "close", "volume")
-INDICATOR_TYPES = ("sma", "ema", "rsi", "atr", "highest", "lowest", "vwap") + LEVEL_TYPES
+INDICATOR_TYPES = ("sma", "ema", "rsi", "atr", "highest", "lowest", "vwap", "wma", "hma", "mfi") + LEVEL_TYPES
 _NEEDS_PERIOD = SWING_TYPES + OPENING_RANGE_TYPES
 NEEDS_NO_PERIOD = ("vwap",) + tuple(k for k in LEVEL_TYPES if k not in _NEEDS_PERIOD)
 
@@ -39,6 +39,44 @@ def rsi(s: pd.Series, n: int) -> pd.Series:
     out = out.where(~((avg_loss == 0.0) & avg_gain.notna()), 100.0)
     # A perfectly flat price has no direction at all: call it neutral.
     out = out.where(~((avg_loss == 0.0) & (avg_gain == 0.0)), 50.0)
+    return out
+
+
+def wma(s: pd.Series, n: int) -> pd.Series:
+    """Weighted moving average: recent bars count for more than older ones."""
+    weights = np.arange(1, n + 1, dtype=float)
+    return s.rolling(n).apply(lambda x: float(np.dot(x, weights) / weights.sum()), raw=True)
+
+
+def hma(s: pd.Series, n: int) -> pd.Series:
+    """Hull Moving Average: hugs price more closely than an SMA/EMA of the same
+    length, with less of the lag a plain moving average has -- at the cost of
+    overshooting a little on sharp reversals."""
+    half = max(1, n // 2)
+    root = max(1, int(n ** 0.5))
+    return wma(2 * wma(s, half) - wma(s, n), root)
+
+
+def mfi(df: pd.DataFrame, n: int) -> pd.Series:
+    """Money Flow Index: RSI's calculation applied to price * volume instead of
+    price alone, so it reads as buying/selling PRESSURE rather than just
+    direction -- the same move on heavy volume counts for more than on thin
+    volume. This is the closest proxy to order flow this engine can offer from
+    OHLCV candles alone: it has no bid/ask or trade-by-trade data, so it cannot
+    see actual buy vs. sell order volume the way a real order-flow/footprint
+    tool (reading the tape directly) does.
+    """
+    typical = (df["high"] + df["low"] + df["close"]) / 3.0
+    raw_flow = typical * df["volume"]
+    direction = typical.diff()
+    pos_flow = raw_flow.where(direction > 0, 0.0).rolling(n).sum()
+    neg_flow = raw_flow.where(direction < 0, 0.0).rolling(n).sum()
+    ratio = pos_flow / neg_flow.replace(0.0, np.nan)
+    out = 100.0 - 100.0 / (1.0 + ratio)
+    # No selling pressure at all in the window: maximally bullish flow.
+    out = out.where(~((neg_flow == 0.0) & pos_flow.notna()), 100.0)
+    # No flow either way (e.g. zero volume): neutral, not a false signal.
+    out = out.where(~((neg_flow == 0.0) & (pos_flow == 0.0)), 50.0)
     return out
 
 
@@ -120,6 +158,12 @@ def add_indicators(df: pd.DataFrame, specs: list) -> pd.DataFrame:
             df[name] = rsi(df[source], period)
         elif kind == "atr":
             df[name] = atr(df, period)
+        elif kind == "wma":
+            df[name] = wma(df[source], period)
+        elif kind == "hma":
+            df[name] = hma(df[source], period)
+        elif kind == "mfi":
+            df[name] = mfi(df, period)
         elif kind == "highest":
             df[name] = highest(df, period)
         elif kind == "lowest":

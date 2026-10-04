@@ -25,6 +25,8 @@ import pandas as pd
 
 from .config import ConfigError
 from .indicators import add_indicators, add_prev_columns, ema, rsi, sma
+from .indicators import hma as _hma
+from .indicators import wma
 
 BUY, SELL, EXIT = "BUY", "SELL", "EXIT"
 
@@ -293,17 +295,6 @@ def _cci(close: pd.Series, n: int) -> pd.Series:
     mean = typical.rolling(n).mean()
     mean_dev = typical.rolling(n).apply(lambda x: float(np.mean(np.abs(x - np.mean(x)))), raw=True)
     return (typical - mean) / (0.015 * mean_dev.replace(0.0, np.nan))
-
-
-def _hma(s: pd.Series, n: int) -> pd.Series:
-    half = max(1, n // 2)
-    root = max(1, int(n ** 0.5))
-    return wma(2 * wma(s, half) - wma(s, n), root)
-
-
-def wma(s: pd.Series, n: int) -> pd.Series:
-    weights = np.arange(1, n + 1, dtype=float)
-    return s.rolling(n).apply(lambda x: float(np.dot(x, weights) / weights.sum()), raw=True)
 
 
 _ALLOWED_CHARS = re.compile(r"^[A-Za-z0-9_\s\.\+\-\*/%<>=!&|()~]*$")

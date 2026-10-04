@@ -20,7 +20,7 @@ exit_long: "<condition>"
 entry_short: "<condition>"
 exit_short: "<condition>"
 
-ALLOWED indicator types: sma, ema, rsi, atr, highest, lowest, vwap,
+ALLOWED indicator types: sma, ema, wma, hma, rsi, mfi, atr, highest, lowest, vwap,
   prev_day_high, prev_day_low, prev_day_close, prev_week_high, prev_week_low,
   swing_high, swing_low, opening_range_high, opening_range_low,
   pivot, pivot_r1, pivot_r2, pivot_r3, pivot_s1, pivot_s2, pivot_s3.
@@ -30,8 +30,16 @@ ALLOWED indicator types: sma, ema, rsi, atr, highest, lowest, vwap,
   - opening_range_high / opening_range_low: period = minutes in the opening window
     (e.g. 15 for the first 15 minutes of the day).
   - Optional key "source": open, high, low, close or volume (default close) for
-    sma, ema and rsi.
+    sma, ema, wma and rsi. hma uses close only (no "source"). mfi always uses
+    high, low, close and volume together (no "source").
   - highest / lowest = the highest high / lowest low of the PREVIOUS n bars.
+  - hma (Hull Moving Average): tracks price more closely than sma/ema/wma, with
+    less lag, at the cost of overshooting a little right after a sharp move.
+  - mfi (Money Flow Index, 0-100): like rsi but weighted by volume, so it reads
+    as buying/selling PRESSURE rather than just direction. The closest proxy to
+    order flow this engine can offer from candle (OHLCV) data -- it has no
+    bid/ask or trade-by-trade tape, so it cannot see real buy vs. sell order
+    volume the way a genuine order-flow/footprint tool does.
 
 A condition is a true/false statement using ONLY:
   - open, high, low, close, volume
