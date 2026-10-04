@@ -131,16 +131,19 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 .st-key-utility_bar .ta-utility-brand {
     display:flex;
     align-items:center;
-    gap:10px;
-    min-width:220px;
+    gap:12px;
+    min-width:240px;
+    height:46px;
     margin-right:auto !important;
     margin-left:0 !important;
     color:#F4F7FB;
 }
 .st-key-utility_bar .ta-logo-svg {
-    width:38px;
-    height:38px;
-    flex:0 0 38px;
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
+    display:block;
+    overflow:visible;
     filter:drop-shadow(0 5px 12px rgba(37,99,235,.22));
 }
 .st-key-utility_bar .ta-utility-wordmark {
@@ -1216,18 +1219,22 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
     ):
         st.markdown(
             '''<div class="ta-utility-brand" aria-label="TradeALGO">
-                <svg class="ta-logo-svg" viewBox="0 0 100 100" role="img" aria-label="TradeALGO logo">
+                <svg class="ta-logo-svg" viewBox="0 0 120 120" role="img" aria-label="TradeALGO logo">
                     <defs>
                         <linearGradient id="taBlueGreen" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stop-color="#2563EB"/>
-                            <stop offset="52%" stop-color="#12B8FF"/>
+                            <stop offset="0%" stop-color="#1677FF"/>
+                            <stop offset="52%" stop-color="#16C7FF"/>
                             <stop offset="100%" stop-color="#20E39B"/>
                         </linearGradient>
                     </defs>
-                    <path d="M10 18h52L48 36H28v48H10z" fill="url(#taBlueGreen)"/>
-                    <path d="M51 18l39 64H70L59 63 47 82H29z" fill="url(#taBlueGreen)"/>
-                    <path d="M41 62l8-12 8 12-8 13z" fill="#20E39B"/>
-                    <path d="M47 72v-9M55 72V55M63 72V46" stroke="#D9FFF1" stroke-width="3" stroke-linecap="round"/>
+                    <!-- Clear T -->
+                    <path d="M8 14H66V30H46V98H28V30H8Z" fill="url(#taBlueGreen)"/>
+                    <!-- Clear A -->
+                    <path d="M65 98L91 14H108L118 98H99L97 79H79L76 98Z" fill="url(#taBlueGreen)"/>
+                    <path d="M83 64H95L90 37Z" fill="#071018"/>
+                    <!-- Trading bars inside the A -->
+                    <path d="M80 88V70M88 88V61M96 88V51" stroke="#D9FFF1" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M76 88H101" stroke="#20E39B" stroke-width="3" stroke-linecap="round"/>
                 </svg>
                 <span class="ta-utility-wordmark">
                     <span class="ta-utility-name">TRADE<span>ALGO</span></span>
