@@ -32,27 +32,6 @@ def is_dark_mode() -> bool:
     return st.session_state.get("tradealgo_theme", "light") == "dark"
 
 
-def theme_toggle() -> None:
-    """Compact global dark/light mode toggle shared by every page."""
-    current_dark = is_dark_mode()
-    col1, col2, col3 = st.columns([1, 1.2, 8])
-    with col1:
-        st.caption("🌙" if current_dark else "☀️")
-    with col2:
-        dark = st.toggle(
-            "Dark mode",
-            value=current_dark,
-            key="tradealgo_theme_toggle",
-            label_visibility="collapsed",
-        )
-    new_mode = "dark" if dark else "light"
-    if st.session_state.get("tradealgo_theme") != new_mode:
-        st.session_state["tradealgo_theme"] = new_mode
-        st.rerun()
-    with col3:
-        st.caption("Dark mode" if dark else "Light mode")
-
-
 
 def _swipe_menu_component():
     """Install a tiny mobile edge-swipe listener without changing trading logic."""
@@ -1344,21 +1323,6 @@ def theme_toggle() -> None:
         on_change=_apply_theme_from_toggle,
         args=("tradealgo_theme_toggle",),
     )
-
-
-def appearance_controls() -> None:
-    """Compact appearance controls in the sidebar; never consumes page space."""
-    with st.sidebar:
-        st.markdown("**Appearance**")
-        current_dark = is_dark_mode()
-        st.toggle(
-            "Dark mode",
-            value=current_dark,
-            key="tradealgo_theme_toggle",
-            help="Switch between dark and light mode",
-            on_change=_apply_theme_from_toggle,
-            args=("tradealgo_theme_toggle",),
-        )
 
 
 
