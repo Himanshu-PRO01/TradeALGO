@@ -127,48 +127,43 @@ header[data-testid="stHeader"] {
 .block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
 h1, h2, h3 { letter-spacing: -0.01em; }
 
-/* Premium TradeALGO utility-bar brand */
+/* Premium TradeALGO utility-bar logo */
 .st-key-utility_bar .ta-utility-brand {
     display:flex;
     align-items:center;
-    gap:9px;
-    min-width:126px;
+    gap:10px;
+    min-width:220px;
     margin-right:auto !important;
     margin-left:0 !important;
     color:#F4F7FB;
-    font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    font-size:.88rem;
-    font-weight:850;
-    letter-spacing:.045em;
-    line-height:1;
 }
-.st-key-utility_bar .ta-utility-mark {
-    width:28px;
-    height:28px;
-    display:grid;
-    place-items:center;
-    flex:0 0 28px;
-    border:1px solid rgba(59,130,246,.42);
-    border-radius:9px;
-    background:linear-gradient(145deg,#1d4ed8,#2563eb 58%,#16C784);
-    color:#fff;
-    font-size:.68rem;
-    font-weight:950;
-    letter-spacing:-.04em;
-    box-shadow:0 5px 16px rgba(37,99,235,.20), inset 0 1px 0 rgba(255,255,255,.22);
+.st-key-utility_bar .ta-logo-svg {
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    filter:drop-shadow(0 5px 12px rgba(37,99,235,.22));
+}
+.st-key-utility_bar .ta-utility-wordmark {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    line-height:1;
 }
 .st-key-utility_bar .ta-utility-name {
     color:#F4F7FB;
+    font-size:1rem;
+    font-weight:900;
+    letter-spacing:.025em;
 }
 .st-key-utility_bar .ta-utility-name span {
-    color:#3B82F6;
+    color:#20D9A0;
 }
 .st-key-utility_bar .ta-utility-tag {
-    margin-left:2px;
+    margin-top:4px;
     color:#7F8DA0;
-    font-size:.56rem;
-    font-weight:700;
-    letter-spacing:.12em;
+    font-size:.5rem;
+    font-weight:800;
+    letter-spacing:.22em;
 }
 .st-key-utility_bar .st-key-utility_actions {
     margin-left:auto;
@@ -1220,8 +1215,25 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         border=True,
     ):
         st.markdown(
-            '<div class="ta-utility-brand" aria-label="TradeALGO"><span class="ta-utility-mark">TA</span>'
-            '<span class="ta-utility-name">TRADE<span>ALGO</span></span><span class="ta-utility-tag">DESK</span></div>',
+            '''<div class="ta-utility-brand" aria-label="TradeALGO">
+                <svg class="ta-logo-svg" viewBox="0 0 100 100" role="img" aria-label="TradeALGO logo">
+                    <defs>
+                        <linearGradient id="taBlueGreen" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#2563EB"/>
+                            <stop offset="52%" stop-color="#12B8FF"/>
+                            <stop offset="100%" stop-color="#20E39B"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M10 18h52L48 36H28v48H10z" fill="url(#taBlueGreen)"/>
+                    <path d="M51 18l39 64H70L59 63 47 82H29z" fill="url(#taBlueGreen)"/>
+                    <path d="M41 62l8-12 8 12-8 13z" fill="#20E39B"/>
+                    <path d="M47 72v-9M55 72V55M63 72V46" stroke="#D9FFF1" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+                <span class="ta-utility-wordmark">
+                    <span class="ta-utility-name">TRADE<span>ALGO</span></span>
+                    <span class="ta-utility-tag">TRADING DESK</span>
+                </span>
+            </div>''',
             unsafe_allow_html=True,
         )
         with st.container(
