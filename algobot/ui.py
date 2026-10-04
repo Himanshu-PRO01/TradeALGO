@@ -1272,6 +1272,13 @@ def language_toggle() -> None:
         st.rerun()
 
 
+def _toggle_sidebar() -> None:
+    """Toggle the custom TradeALGO sidebar visibility."""
+    st.session_state["tradealgo_sidebar_open"] = not st.session_state.get(
+        "tradealgo_sidebar_open", True
+    )
+
+
 def _apply_theme_from_toggle(key: str) -> None:
     """Apply a theme toggle before Streamlit reruns the app."""
     st.session_state["tradealgo_theme"] = (
@@ -1297,7 +1304,16 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
     st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="expanded")
     st.session_state.setdefault("tradealgo_theme", "light")
+    st.session_state.setdefault("tradealgo_sidebar_open", True)
     st.markdown(CSS, unsafe_allow_html=True)
+    if not st.session_state["tradealgo_sidebar_open"]:
+        st.markdown(
+            """<style>
+            [data-testid="stSidebar"] { display:none !important; }
+            [data-testid="stMainBlockContainer"] { max-width:1500px !important; }
+            </style>""",
+            unsafe_allow_html=True,
+        )
     if not is_dark_mode():
         st.markdown(LIGHT_CSS, unsafe_allow_html=True)
 
@@ -1421,6 +1437,14 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
                 label_visibility="collapsed",
                 on_change=_apply_theme_from_toggle,
                 args=("tradealgo_theme_toggle_top",),
+            )
+            sidebar_label = "✕ Sidebar" if st.session_state.get("tradealgo_sidebar_open", True) else "☰ Sidebar"
+            st.button(
+                sidebar_label,
+                key="sidebar_toggle",
+                type="secondary",
+                help="Show or hide the TradeALGO side menu",
+                on_click=_toggle_sidebar,
             )
             if st.button("☰ Menu", key="top_menu", type="secondary"):
                 st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
