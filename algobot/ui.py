@@ -133,7 +133,8 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     align-items:center;
     gap:9px;
     min-width:126px;
-    margin-right:auto;
+    margin-right:auto !important;
+    margin-left:0 !important;
     color:#F4F7FB;
     font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     font-size:.88rem;
@@ -1210,7 +1211,7 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
         key="utility_bar",
         horizontal=True,
         vertical_alignment="center",
-        horizontal_alignment="right",
+        horizontal_alignment="left",
         gap="small",
         border=True,
     ):
