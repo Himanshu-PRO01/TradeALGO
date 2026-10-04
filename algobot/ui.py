@@ -152,8 +152,10 @@ header[data-testid="stHeader"] {
     box-shadow:0 24px 70px rgba(20,45,80,.12);
 }
 .ta-loading-logo{
-    width:104px;
-    height:104px;
+    width:min(270px,72vw);
+    height:auto;
+    max-height:92px;
+    object-fit:contain;
     margin:0 auto 18px;
     display:block;
     filter:drop-shadow(0 12px 22px rgba(37,99,235,.16));
@@ -217,7 +219,7 @@ header[data-testid="stHeader"] {
 @keyframes taDotPulse{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-4px);opacity:1}}
 @media(max-width:760px){
     .ta-auth-loading-card{padding:38px 22px 30px;border-radius:22px}
-    .ta-loading-logo{width:88px;height:88px}
+    .ta-loading-logo{width:min(230px,76vw);height:auto;max-height:76px}
     .ta-loading-title{font-size:1.25rem}
 }
 @media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-logo-image{width:min(100%,430px);margin:-2px 0 8px}.ta-auth-logo-image img{max-height:130px}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
