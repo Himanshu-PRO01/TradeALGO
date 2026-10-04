@@ -95,6 +95,32 @@ def password_gate(max_attempts: int = 5) -> None:
                 if hmac.compare_digest(entered.encode("utf-8"), str(secret).encode("utf-8")):
                     st.session_state["_ab_authed"] = True
                     st.session_state["_ab_attempts"] = 0
+                    st.markdown("""
+                    <div class="ta-auth-loading" role="status" aria-live="polite">
+                      <div class="ta-auth-loading-card">
+                        <svg class="ta-loading-logo" viewBox="0 0 120 120" role="img" aria-label="TradeALGO TA logo">
+                          <defs>
+                            <linearGradient id="taLoadingBlueGreen" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stop-color="#1677FF"/>
+                              <stop offset="52%" stop-color="#16C7FF"/>
+                              <stop offset="100%" stop-color="#20E39B"/>
+                            </linearGradient>
+                          </defs>
+                          <path d="M8 14H66V30H46V98H28V30H8Z" fill="url(#taLoadingBlueGreen)"/>
+                          <path d="M65 98L91 14H108L118 98H99L97 79H79L76 98Z" fill="url(#taLoadingBlueGreen)"/>
+                          <path d="M83 64H95L90 37Z" fill="#FFFFFF"/>
+                          <path d="M80 88V70M88 88V61M96 88V51" stroke="#D9FFF1" stroke-width="3.5" stroke-linecap="round"/>
+                          <path d="M76 88H101" stroke="#20E39B" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                        <h2 class="ta-loading-title">Welcome to TradeALGO</h2>
+                        <div class="ta-loading-sub">Preparing your trading desk...</div>
+                        <div class="ta-loading-bar"></div>
+                        <div class="ta-loading-status">Authenticating · Loading Workspace</div>
+                        <div class="ta-loading-dots"><span></span><span></span><span></span></div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    time.sleep(2.5)
                     st.rerun()
                 st.session_state["_ab_attempts"] = attempts + 1
                 time.sleep(1.0)
