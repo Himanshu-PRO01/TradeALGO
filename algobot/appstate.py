@@ -49,6 +49,12 @@ def configured_password():
 def password_gate(max_attempts: int = 5) -> None:
     """Render the branded TradeALGO login when a hosted secret is configured."""
     secret = configured_password()
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "tradealgo-desk-logo.png")
+    logo_base64 = ""
+    if os.path.exists(logo_path):
+        import base64
+        with open(logo_path, "rb") as logo_file:
+            logo_base64 = base64.b64encode(logo_file.read()).decode("ascii")
     if not secret or st.session_state.get("_ab_authed"):
         return
 
@@ -57,28 +63,7 @@ def password_gate(max_attempts: int = 5) -> None:
         with left:
             st.markdown("""
             <div class="ta-auth-brand">
-              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo">
-                <svg viewBox="0 0 1200 400" role="img" aria-label="TradeALGO Trading Desk">
-                  <defs>
-                    <linearGradient id="authBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1677ff"/><stop offset=".5" stop-color="#18cfff"/><stop offset="1" stop-color="#20e39b"/></linearGradient>
-                    <linearGradient id="authGreen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7cff3a"/><stop offset=".45" stop-color="#16e65d"/><stop offset="1" stop-color="#20e39b"/></linearGradient>
-                    <linearGradient id="authSilver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset=".5" stop-color="#dbe5ef"/><stop offset="1" stop-color="#8e9baa"/></linearGradient>
-                  </defs>
-                  <g transform="translate(20 35)">
-                    <path d="M0 0h300v55H190v230h-80V55H0z" fill="url(#authBlue)" stroke="#0b6dff" stroke-width="5"/>
-                    <path d="M280 285 380 0h75l35 285h-70l-8-62H350l-18 62z" fill="url(#authGreen)" stroke="#18f36c" stroke-width="5"/>
-                    <path d="M362 178h53l-25-110z" fill="#06131a"/>
-                    <path d="M348 260v-66M375 260v-88M402 260v-112" stroke="#dffff0" stroke-width="10" stroke-linecap="round"/>
-                    <path d="M20 265C120 230 210 105 360 10" fill="none" stroke="url(#authBlue)" stroke-width="20" stroke-linecap="round"/>
-                  </g>
-                  <text x="500" y="210" font-family="Arial,Helvetica,sans-serif" font-size="128" font-weight="900" letter-spacing="-5" fill="url(#authSilver)" stroke="#223346" stroke-width="4" paint-order="stroke">TRADE</text>
-                  <text x="875" y="210" font-family="Arial,Helvetica,sans-serif" font-size="128" font-weight="900" letter-spacing="-5" fill="url(#authBlue)" stroke="#0d6fff" stroke-width="3" paint-order="stroke">AL</text>
-                  <text x="1070" y="210" font-family="Arial,Helvetica,sans-serif" font-size="128" font-weight="900" letter-spacing="-5" fill="url(#authGreen)" stroke="#19df69" stroke-width="3" paint-order="stroke">GO</text>
-                  <line x1="500" y1="270" x2="770" y2="270" stroke="#16cfff" stroke-width="7"/>
-                  <text x="795" y="292" font-family="Arial,Helvetica,sans-serif" font-size="70" font-weight="700" letter-spacing="28" fill="#dbe5ef">DESK</text>
-                  <line x1="1035" y1="270" x2="1180" y2="270" stroke="#20e39b" stroke-width="7"/>
-                </svg>
-              </div>
+              <div class="ta-auth-logo-image" aria-label="TradeALGO Trading Desk logo"><img src="data:image/png;base64,${logo_base64}" alt="TradeALGO Trading Desk logo"></div>
               <div class="ta-auth-kicker">Systematic trading research</div>
               <div class="ta-auth-title">Build ideas.<br>Test them.<br>Trust the evidence.</div>
               <div class="ta-auth-copy">A focused workspace for strategy research, backtesting, robustness checks and paper-to-sandbox rehearsal.</div>
