@@ -461,18 +461,6 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     }
 }
 
-/* reading progress bar */
-.ta-back-to-top {
-    background: #ffffff !important;
-    color: #172033 !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 8px 24px rgba(15,23,42,.12) !important;
-}
-.ta-back-to-top:hover {
-    background: #f1f5f9 !important;
-    color: #172033 !important;
-}
-
 /* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
     margin-bottom: 4px !important;
