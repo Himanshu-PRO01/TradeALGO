@@ -33,7 +33,7 @@ def is_dark_mode() -> bool:
 
 def _market_logo_base64() -> str:
     """Return the exact Market Desk logo asset as a data URI payload."""
-    logo_path = pathlib.Path(__file__).resolve().parent / "assets" / "TradeALGO Market Desk Logo.png"
+    logo_path = pathlib.Path(__file__).resolve().parent / "assets" / "TradeALGO Market Desk Logo.webp"
     if not logo_path.exists():
         return ""
     import base64
