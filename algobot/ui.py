@@ -115,7 +115,12 @@ def _swipe_menu_component():
     return _SWIPE_MENU_COMPONENT
 
 def _back_to_top_component():
-    """Install a tiny global back-to-top click handler."""
+    """Install the back-to-top link's real behavior: hidden near the top of the
+    page, fades in once scrolled down, and smooth-scrolls back to the top on
+    click. A plain `<a href="#algobot-page-top">` alone is unreliable here --
+    whichever element actually scrolls varies by Streamlit layout/version, and a
+    native anchor jump is an instant, jarring cut rather than a smooth scroll --
+    so this tries every plausible scrolling element instead of assuming one."""
     global _BACK_TO_TOP_COMPONENT
     if _components_v2 is None:
         return None
@@ -126,15 +131,50 @@ def _back_to_top_component():
             css="",
             js="""
             export default function() {
-                const onClick = (event) => {
-                    const button = event.target?.closest?.('[data-testid="stButton"] button');
-                    if (!button) return;
-                    const wrapper = button.closest('[class*="st-key-back_to_top"]');
-                    if (!wrapper) return;
-                    window.scrollTo({top: 0, behavior: 'smooth'});
+                const SHOW_AFTER_PX = 400;
+
+                const scrollCandidates = () => [
+                    document.scrollingElement,
+                    document.querySelector('[data-testid="stAppViewContainer"]'),
+                    document.querySelector('[data-testid="stMain"]'),
+                    document.querySelector('.main'),
+                    document.documentElement,
+                ].filter(Boolean);
+
+                const currentScrollTop = () => {
+                    for (const el of scrollCandidates()) {
+                        if (el.scrollTop > 0) return el.scrollTop;
+                    }
+                    return window.scrollY || 0;
                 };
+
+                const link = () => document.querySelector('.ta-back-to-top');
+
+                const onScroll = () => {
+                    const btn = link();
+                    if (btn) btn.classList.toggle('ta-hidden', currentScrollTop() <= SHOW_AFTER_PX);
+                };
+
+                const onClick = (event) => {
+                    const btn = event.target?.closest?.('.ta-back-to-top');
+                    if (!btn) return;
+                    event.preventDefault();
+                    window.scrollTo({top: 0, behavior: 'smooth'});
+                    for (const el of scrollCandidates()) {
+                        el.scrollTo?.({top: 0, behavior: 'smooth'});
+                    }
+                };
+
+                // Scroll events on a specific element (not window) do not bubble,
+                // so this has to listen during the capture phase to catch them.
+                document.addEventListener('scroll', onScroll, {passive: true, capture: true});
                 document.addEventListener('click', onClick, true);
-                return () => document.removeEventListener('click', onClick, true);
+                onScroll();
+
+                return () => {
+                    document.removeEventListener('scroll', onScroll, true);
+                    document.removeEventListener('click', onClick, true);
+                };
             }
             """,
         )
@@ -466,34 +506,9 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 [data-testid="stExpander"] { border: 1px solid #1F2A37; border-radius: 12px; background: #121923; }
 [data-testid="stDataFrame"] { border: 1px solid #1F2A37; border-radius: 10px; }
 
-/* mobile menu trigger and drawer */
-.st-key-mobile_menu {
-    display: none !important;
-}
+/* mobile menu drawer -- opened from header()'s "☰ Menu" button in the utility
+   bar now (one menu entry point, not a separate floating one here too). */
 @media (max-width:768px) {
-    .st-key-mobile_menu {
-        display: block !important;
-        position: fixed !important;
-        top: 8px !important;
-        left: 10px !important;
-        z-index: 100001 !important;
-        width: auto !important;
-    }
-    .st-key-mobile_menu button {
-        width: 44px !important;
-        height: 44px !important;
-        min-height: 44px !important;
-        padding: 0 !important;
-        border-radius: 12px !important;
-        background: #111923 !important;
-        border: 1px solid #263242 !important;
-        font-size: 1.25rem !important;
-        box-shadow: 0 8px 24px rgba(0,0,0,.28) !important;
-    }
-    .st-key-mobile_menu button:hover {
-        border-color: #3B82F6 !important;
-        background: #172231 !important;
-    }
     .st-key-mobile_menu_drawer {
         position: fixed !important;
         top: 60px !important;
@@ -623,12 +638,12 @@ html::-webkit-scrollbar-corner {
     border-color: #3B82F655 !important;
     box-shadow: 0 7px 20px rgba(0,0,0,.16) !important;
 }
-.st-key-mobile_menu button:hover {
-    transform: translateY(-2px) rotate(-2deg) !important;
-    box-shadow: 0 10px 26px rgba(0,0,0,.38) !important;
-}
 
-/* floating back-to-top control */
+/* floating back-to-top control. Visible by default so the link always works
+   even if the v2 component below can't mount (AppTest, JS disabled, older
+   Streamlit) -- _back_to_top_component's scroll listener then progressively
+   enhances this by hiding it near the top of the page (.ta-hidden) and
+   revealing it again once scrolled down. */
 .ta-back-to-top {
     position: fixed !important;
     right: 24px !important;
@@ -648,7 +663,12 @@ html::-webkit-scrollbar-corner {
     font-weight: 900 !important;
     text-decoration: none !important;
     box-shadow: 0 8px 24px rgba(0,0,0,.32) !important;
-    transition: transform .16s ease, border-color .16s ease, background .16s ease !important;
+    opacity: 1 !important;
+    transition: opacity .18s ease, transform .16s ease, border-color .16s ease, background .16s ease !important;
+}
+.ta-back-to-top.ta-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 .ta-back-to-top:hover {
     border-color: #3B82F6 !important;
@@ -685,7 +705,17 @@ html::-webkit-scrollbar-corner {
 
 /* polished dashboard surfaces */
 [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 85% 0%, #16243a 0%, #0B0F14 34%); }
-[data-testid="stHeader"] { background: transparent; }
+/* Streamlit's own header bar is just the sidebar-reopen control here -- the
+   branded utility bar below is the real navigation -- so this is shrunk to that
+   control's size instead of its default height, which otherwise leaves a mostly
+   empty strip stacked above the utility bar on every single page. Kept visible
+   (not display:none) so the sidebar can still be reopened without it. */
+[data-testid="stHeader"] {
+    background: transparent;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+}
+[data-testid="stHeader"] > * { min-height: 0 !important; }
 [data-testid="stSidebar"] > div:first-child { padding-top: 1.2rem; }
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] { color: #8B98A9; }
 [data-testid="stCaptionContainer"] { color: #8B98A9; }
@@ -1134,17 +1164,7 @@ code, pre {
     border-color: #93c5fd !important;
 }
 
-/* ---------- Mobile menu ---------- */
-.st-key-mobile_menu button {
-    background: #ffffff !important;
-    color: #172033 !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 8px 24px rgba(15,23,42,.12) !important;
-}
-.st-key-mobile_menu button:hover {
-    background: #f1f5f9 !important;
-    border-color: #2563eb !important;
-}
+/* ---------- Mobile menu drawer ---------- */
 .st-key-mobile_menu_drawer {
     background: linear-gradient(180deg,#ffffff 0%,#f6f8fb 100%) !important;
     border-color: #dbe3ee !important;
@@ -1393,10 +1413,19 @@ def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
         '<a class="ta-back-to-top" href="#algobot-page-top" aria-label="Back to top">↑</a>',
         unsafe_allow_html=True,
     )
+    back_to_top_component = _back_to_top_component()
+    if back_to_top_component is not None:
+        try:
+            back_to_top_component(key="algobot_back_to_top")
+        except st.errors.StreamlitAPIException:
+            # Streamlit AppTest does not mount browser-only v2 components.
+            pass
 
-    if st.button("☰", key="mobile_menu", help="Open navigation menu", type="secondary"):
-        st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
-        st.rerun()
+    # The floating "☰" button that used to live here duplicated the "☰ Menu"
+    # button header() already renders in the utility bar (same top_menu_open
+    # state, same drawer below) -- one menu entry point instead of two. The
+    # drawer itself stays: header()'s button still sets this same state and
+    # reruns, so it renders right here on the next run exactly as before.
     if st.session_state.get("top_menu_open", False):
         with st.container(key="mobile_menu_drawer"):
             st.markdown('<div class="ta-drawer-title">TRADEALGO</div>', unsafe_allow_html=True)
