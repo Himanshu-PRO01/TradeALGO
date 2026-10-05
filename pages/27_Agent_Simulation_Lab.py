@@ -50,8 +50,8 @@ st.dataframe(
         {
             "profile": p.name.replace("_", " ").title(),
             "risk tolerance": p.risk_tolerance,
-            "entry delay (bars)": p.entry_delay_bars,
-            "exit urgency": p.exit_urgency,
+            "quantity multiplier": p.quantity_multiplier,
+            "target multiplier": p.target_multiplier,
         }
         for p in PROFILES
     ],
