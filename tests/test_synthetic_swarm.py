@@ -1,3 +1,5 @@
+import math
+
 from algobot.config import validate_config
 from algobot.synthetic_swarm import PERSONAS, JourneyResult, plan_journey, run_swarm, summarize_website_journeys
 
@@ -35,5 +37,5 @@ def test_website_report_surfaces_repeated_failures():
         JourneyResult("b","5_Backtest.py",False,"boom",1,1,()),
         JourneyResult("c","6_Reality_check.py",True,None,2,0,()),
     ])
-    assert report.pass_rate == 100/3
+    assert math.isclose(report.pass_rate, 100/3, rel_tol=0, abs_tol=1e-12)
     assert report.repeated_failures
