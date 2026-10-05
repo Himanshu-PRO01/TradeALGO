@@ -1,10 +1,9 @@
-"""Market Research Agent v2: bounded parameter search and walk-forward validation."""
+"""Market Research Agent v2: bounded parameter search, official-source adapters and walk-forward validation."""
 from __future__ import annotations
-import datetime as dt, itertools
+import datetime as dt, itertools, os
 from dataclasses import dataclass
-import numpy as np
-import pandas as pd
-from .market_agent import _base_config
+import numpy as np, pandas as pd, requests
+from .market_agent import _base_config, SourceResult
 from .audit import run_audit
 from .engine import run_backtest
 from .strategy import build_strategy
@@ -17,6 +16,43 @@ class WFWindow:
 @dataclass
 class ResearchV2:
     candidates:list; selected:object|None; windows:list[WFWindow]; source_validation:dict; created_at:str
+
+def _ohlcv(rows):
+    x=pd.DataFrame(rows)
+    x.columns=["datetime","open","high","low","close","volume"][:len(x.columns)]
+    x["datetime"]=pd.to_datetime(x["datetime"],errors="coerce"); x=x.set_index("datetime")
+    for c in ("open","high","low","close","volume"): x[c]=pd.to_numeric(x[c],errors="coerce")
+    return x.dropna(subset=["open","high","low","close"]).sort_index()
+
+def fetch_upstox(symbol,start,end,interval="1day"):
+    token=os.getenv("UPSTOX_ACCESS_TOKEN","").strip()
+    if not token:return SourceResult("Upstox","price",False,detail="UPSTOX_ACCESS_TOKEN is not configured.")
+    s=symbol.upper().replace(".NS",""); key=os.getenv(f"UPSTOX_INSTRUMENT_{s}","").strip()
+    if not key:return SourceResult("Upstox","price",False,detail=f"Set UPSTOX_INSTRUMENT_{s} to the Upstox instrument key.")
+    try:
+        u=f"https://api.upstox.com/v3/historical-candle/{key}/{interval}/{end}/{start}"
+        r=requests.get(u,headers={"Authorization":f"Bearer {token}","Accept":"application/json"},timeout=15); r.raise_for_status()
+        candles=(r.json().get("data") or {}).get("candles") or []
+        if not candles:return SourceResult("Upstox","price",False,detail="No historical candles returned.")
+        d=_ohlcv([c[:6] for c in candles]); return SourceResult("Upstox","price",True,len(d),f"{key}, {interval}",d)
+    except Exception as e:return SourceResult("Upstox","price",False,detail=str(e))
+
+def fetch_nse_history(symbol,start,end):
+    s=symbol.upper().replace(".NS","")
+    if s in {"NIFTY","NIFTY50"}:return SourceResult("NSE","price",False,detail="NSE index history requires its index endpoint.")
+    try:
+        h={"User-Agent":"Mozilla/5.0 TradeALGO Research","Accept":"application/json","Referer":"https://www.nseindia.com/"}
+        q={"symbol":s,"series":'["EQ"]',"from":start,"to":end}; ss=requests.Session()
+        ss.get("https://www.nseindia.com/",headers=h,timeout=10)
+        r=ss.get("https://www.nseindia.com/api/historical/cm/equity",params=q,headers=h,timeout=15); r.raise_for_status()
+        rows=[]
+        for z in r.json().get("data") or []:
+            rows.append([z.get("mTIMESTAMP") or z.get("CH_TIMESTAMP"),z.get("CH_OPENING_PRICE") or z.get("CH_OPEN"),
+                         z.get("CH_TRADE_HIGH_PRICE") or z.get("CH_HIGH"),z.get("CH_TRADE_LOW_PRICE") or z.get("CH_LOW"),
+                         z.get("CH_CLOSING_PRICE") or z.get("CH_CLOSE"),z.get("CH_TOT_TRADED_QTY") or 0])
+        if not rows:return SourceResult("NSE","price",False,detail="NSE returned no historical rows.")
+        d=_ohlcv(rows); return SourceResult("NSE","price",True,len(d),f"{s}, daily",d)
+    except Exception as e:return SourceResult("NSE","price",False,detail=f"NSE public endpoint unavailable: {e}")
 
 def variants():
     out=[]
@@ -74,14 +110,11 @@ def run_v2(df,symbol,period="custom",audit=True):
     for c in cs:
         try:
             m=run_backtest(df,c,build_strategy(c)).metrics; o=by.get(c["name"]); om=None
-            if o: om={"return_pct":float(np.mean([x.get("return_pct",0) for x in o])),
-                      "net_pnl":float(sum(x.get("net_pnl",0) for x in o)),
-                      "trades":int(sum(x.get("trades",0) for x in o)),
-                      "max_drawdown_pct":float(min(x.get("max_drawdown_pct",0) for x in o))}
+            if o: om={"return_pct":float(np.mean([x.get("return_pct",0) for x in o])),"net_pnl":float(sum(x.get("net_pnl",0) for x in o)),
+                      "trades":int(sum(x.get("trades",0) for x in o)),"max_drawdown_pct":float(min(x.get("max_drawdown_pct",0) for x in o))}
             s=score(m)+(1.5*om["return_pct"]-.4*abs(om["max_drawdown_pct"]) if om else -10)
             rows.append({"name":c["name"],"config":c,"metrics":m,"oos":om,"audit":None,"score":s})
-        except Exception as e:
-            rows.append({"name":c["name"],"config":c,"metrics":{"trades":0,"return_pct":0},"oos":None,"audit":None,"score":-9999,"error":str(e)})
+        except Exception as e: rows.append({"name":c["name"],"config":c,"metrics":{"trades":0,"return_pct":0},"oos":None,"audit":None,"score":-9999,"error":str(e)})
     rows.sort(key=lambda x:x["score"],reverse=True)
     if audit:
         for row in rows[:5]:
