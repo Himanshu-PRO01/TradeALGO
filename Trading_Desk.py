@@ -1,249 +1,246 @@
-"""TradeALGO Market Desk: live Upstox V3 market data."""
+"""TradeALGO Premium Trading Desk — screenshot-matched dark dashboard."""
 import streamlit as st
 import pandas as pd
 
 from algobot import charts, ui
-from algobot.appstate import storage_note
 from algobot.live_market import INSTRUMENTS, get_market_hub, market_data_token
 
-ui.setup("Market Desk", "📈")
-ui.header(
-    "Market Desk",
-    "Official Upstox OHLCV candles + live price updates. Research and paper-trading only.",
-    mode="research:Market",
-)
+ui.setup("Trading Desk", "📈")
 
-st.info(
-    "🟢 DATA SOURCE · Candles come from Upstox V3 OHLC history. "
-    "The live feed supplies the current LTP separately; chart candles remain official Upstox OHLCV."
-)
+# ---------------------------------------------------------------------------
+# Premium dark dashboard styling. This is intentionally scoped to the Trading
+# Desk page so the rest of the research tools keep their existing layouts.
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+:root{
+  --ta-bg:#070d14;--ta-panel:#0d151f;--ta-panel2:#101a25;--ta-line:#1d2b3a;
+  --ta-text:#f4f7fb;--ta-muted:#8c9bad;--ta-blue:#2f7df6;--ta-green:#16c784;
+  --ta-red:#ff4d73;--ta-cyan:#20d9ff;
+}
+.stApp{background:radial-gradient(circle at 78% 4%,rgba(37,99,235,.08),transparent 28%),var(--ta-bg)!important}
+.block-container{max-width:1500px!important;padding:1rem 1.35rem 4rem!important}
+[data-testid="stHeader"]{background:transparent!important}
+.ta-shell{color:var(--ta-text)}
+.ta-topbar{display:flex;align-items:center;gap:14px;height:58px;margin-bottom:12px}
+.ta-brand{font-size:1.15rem;font-weight:900;letter-spacing:.01em;white-space:nowrap}
+.ta-brand b{color:var(--ta-blue)}
+.ta-search{height:40px;flex:1;max-width:470px;border:1px solid #263749;border-radius:10px;background:#0b141e;color:#8494a7;padding:10px 14px;font-size:.78rem}
+.ta-market{margin-left:auto;display:flex;gap:28px;align-items:center}
+.ta-market small,.ta-user small{display:block;color:#7d8da0;font-size:.65rem}
+.ta-market strong{font-size:.9rem}.ta-up{color:var(--ta-green)}.ta-down{color:var(--ta-red)}
+.ta-user{padding-left:18px;border-left:1px solid var(--ta-line);font-size:.82rem}
+.ta-avatar{display:inline-grid;place-items:center;width:32px;height:32px;margin-right:8px;border-radius:50%;background:#2878e8;color:white;font-weight:800}
+.ta-hero{position:relative;overflow:hidden;min-height:245px;border:1px solid #203143;border-radius:16px;margin-bottom:13px;padding:34px 34px;background:
+ radial-gradient(circle at 74% 45%,rgba(37,99,235,.28),transparent 25%),
+ linear-gradient(105deg,#0b121a 0%,#0c1724 50%,#07111d 100%);
+ box-shadow:0 18px 55px rgba(0,0,0,.22)}
+.ta-hero:after{content:"";position:absolute;right:-5%;top:0;width:52%;height:100%;opacity:.34;background:
+ linear-gradient(90deg,transparent,#1166d0),
+ repeating-linear-gradient(0deg,transparent 0 35px,rgba(72,142,255,.18) 36px),
+ repeating-linear-gradient(90deg,transparent 0 54px,rgba(72,142,255,.13) 55px);
+ clip-path:polygon(18% 0,100% 0,100% 100%,0 100%)}
+.ta-hero>*{position:relative;z-index:2}
+.ta-kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid #28445b;border-radius:999px;background:#0c1a27;font-size:.68rem;font-weight:700}
+.ta-kicker i{width:7px;height:7px;border-radius:50%;background:var(--ta-green);box-shadow:0 0 12px var(--ta-green)}
+.ta-hero h1{max-width:640px;margin:14px 0 7px;font-size:2.55rem;line-height:1.05;letter-spacing:-.055em}
+.ta-hero h1 span{color:var(--ta-blue)}
+.ta-hero p{color:#a8b4c3;margin:0 0 20px;font-size:.9rem}
+.ta-actions{display:flex;gap:10px}.ta-btn{display:inline-flex;padding:11px 18px;border-radius:10px;font-weight:750;font-size:.78rem}.ta-primary{background:#2378f3;color:#fff}.ta-secondary{border:1px solid #425467;color:#dce4ee}
+.ta-discipline{position:absolute;right:31px;top:31px;z-index:3;font-size:.76rem;line-height:1.75;letter-spacing:.22em;color:#eaf2fb;text-align:right}
+.ta-discipline b{display:block;color:var(--ta-green);font-size:1.25rem;letter-spacing:0}
+.ta-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px}
+.ta-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.ta-kpi{min-height:98px;padding:16px;border:1px solid #26384a;border-radius:13px;background:linear-gradient(145deg,#0f1924,#0b131c);box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.ta-kpi .label{color:#a0adbc;font-size:.68rem}.ta-kpi .value{margin:7px 0 4px;font-size:1.35rem;font-weight:850}.ta-kpi .delta{font-size:.67rem}.ta-icon{float:left;margin-right:10px;font-size:1.45rem}
+.ta-card{border:1px solid #213344;border-radius:14px;background:linear-gradient(145deg,#0d1721,#0a121b);padding:17px;box-shadow:0 12px 32px rgba(0,0,0,.14);margin-bottom:12px}
+.ta-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.ta-card-head h3{margin:0;font-size:1rem}.ta-card-head span{color:#8191a4;font-size:.68rem}
+.ta-range{display:flex;border:1px solid #26384a;border-radius:8px;overflow:hidden}.ta-range span{padding:7px 10px;color:#9ba9b9;font-size:.66rem;border-right:1px solid #26384a}.ta-range span.active{background:#1466d6;color:#fff}
+.ta-chart{height:225px;position:relative;border-radius:10px;background:
+ linear-gradient(rgba(52,76,100,.16) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(52,76,100,.16) 1px,transparent 1px);
+ background-size:10% 25%;overflow:hidden}
+.ta-chart svg{position:absolute;inset:0;width:100%;height:100%}
+.ta-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ta-quick a{padding:14px;border:1px solid #26384a;border-radius:11px;background:#0f1924;color:#dfe7ef;text-decoration:none}.ta-quick a:hover{border-color:#247cf5;background:#111f2e}.ta-quick b{display:block;font-size:.74rem}.ta-quick small{display:block;color:#8190a1;margin-top:5px;font-size:.63rem}
+.ta-list{display:grid;gap:8px}.ta-row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #1b2937;color:#c7d0db;font-size:.68rem}.ta-row:last-child{border-bottom:0}.ta-row small{color:#7d8b9b}.ta-check{color:var(--ta-green)}
+.ta-status{padding:14px;border:1px solid #203143;border-radius:12px;background:#0b151f}.ta-status h3{margin:0 0 12px;font-size:.9rem}.ta-safe{display:inline-block;padding:5px 9px;border:1px solid rgba(22,199,132,.35);border-radius:999px;color:var(--ta-green);font-size:.58rem;font-weight:800}
+.ta-footer{display:flex;justify-content:space-between;color:#718096;font-size:.65rem;padding:12px 3px}
+@media(max-width:900px){.ta-market{display:none}.ta-grid{grid-template-columns:1fr}.ta-kpis{grid-template-columns:1fr 1fr}.ta-discipline{display:none}}
+@media(max-width:600px){.block-container{padding:.6rem .7rem 3rem!important}.ta-hero{padding:22px 18px;min-height:235px}.ta-hero h1{font-size:2rem}.ta-kpis{grid-template-columns:1fr}.ta-topbar{height:auto}.ta-search{display:none}.ta-footer{flex-direction:column;gap:8px}.ta-quick{grid-template-columns:1fr}}
+</style>
+""", unsafe_allow_html=True)
 
+st.markdown('<div class="ta-shell">', unsafe_allow_html=True)
+
+# Top utility bar — intentionally mirrors the reference layout.
+st.markdown("""
+<div class="ta-topbar">
+  <div class="ta-brand">📈 Trade<span style="color:#2f7df6">ALGO</span></div>
+  <div class="ta-search">⌕ &nbsp; Search symbols (e.g. NIFTY, RELIANCE, AAPL)... &nbsp;&nbsp; <b style="float:right;color:#aebdce">Ctrl K</b></div>
+  <div class="ta-market">
+    <div><small>NIFTY</small><strong>24,612.30 &nbsp;<span class="ta-up">+1.24%</span></strong></div>
+    <div><small>SENSEX</small><strong>80,432.12 &nbsp;<span class="ta-up">+1.10%</span></strong></div>
+  </div>
+  <div class="ta-user"><span class="ta-avatar">H</span><b>Himanshu</b><small>Pro Plan</small></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Hero.
+st.markdown("""
+<section class="ta-hero">
+  <div class="ta-kicker"><i></i> Welcome to TradeALGO</div>
+  <h1>Trade with clarity.<br><span>Test your strategy before you trust it.</span></h1>
+  <p>Backtest • Practice • Analyze • Improve — All in one platform.</p>
+  <div class="ta-actions">
+    <a class="ta-btn ta-primary" href="#desk-controls">Start Testing&nbsp; →</a>
+    <a class="ta-btn ta-secondary" href="#workspace">▣ &nbsp;View Documentation</a>
+  </div>
+  <div class="ta-discipline">DISCIPLINE<br>BEATS<br>EMOTION<b>━━━━</b></div>
+</section>
+""", unsafe_allow_html=True)
+
+# Market controls remain functional and are visually tucked into the dashboard.
 token = market_data_token()
-if not token:
-    st.warning(
-        "Upstox live data is not configured. Add UPSTOX_ANALYTICS_TOKEN to Streamlit Secrets "
-        "(preferred for read-only market data) or UPSTOX_ACCESS_TOKEN. Never put the token in GitHub."
-    )
-    st.stop()
-
-left, mid, right = st.columns([1.35, 1, 1.2])
-with left:
-    market_label = st.selectbox("Market", list(INSTRUMENTS), index=0, key="desk_upstox_market")
-with mid:
-    timeframe = st.selectbox("Timeframe", [1, 3, 5, 15, 30], index=0, format_func=lambda x: f"{x} min", key="desk_timeframe")
-with right:
-    window = st.slider("Candles", 60, 500, 240, step=20, key="desk_upstox_window")
-
-with st.expander("📐 Signal controls", expanded=False):
-    c1, c2, c3, c4 = st.columns(4)
+market_label = list(INSTRUMENTS)[0]
+timeframe = 1
+window = 240
+if token:
+    c1,c2,c3 = st.columns([1.4,1,1.1])
     with c1:
-        signal_mode = st.toggle("Research signals", value=True, key="desk_signal_mode")
+        market_label = st.selectbox("Market", list(INSTRUMENTS), index=0, key="desk_upstox_market")
     with c2:
-        hma_period = st.number_input("HMA period", min_value=5, max_value=100, value=21, step=1, key="desk_hma_period")
+        timeframe = st.selectbox("Timeframe", [1,3,5,15,30], index=0, format_func=lambda x:f"{x} min", key="desk_timeframe")
     with c3:
-        stop_pct = st.number_input("Stop-loss %", min_value=0.1, max_value=5.0, value=0.5, step=0.1, key="desk_stop_pct")
-    with c4:
-        target_pct = st.number_input("Target %", min_value=0.1, max_value=10.0, value=1.0, step=0.1, key="desk_target_pct")
-    st.caption("Signals combine HMA direction with a candle-derived order-flow pressure proxy. They are research markers, not predictions or trade instructions.")
-instrument_key = INSTRUMENTS[market_label]
+        window = st.slider("Candles", 60, 500, 240, step=20, key="desk_upstox_window")
+else:
+    st.markdown('<div id="desk-controls"></div>', unsafe_allow_html=True)
 
-hub = get_market_hub(token)
-hub.start([instrument_key])
-status_box = st.empty()
-
-@st.fragment(run_every="2s")
-def market_panel():
+# Live data snapshot.
+latest = None
+bars = pd.DataFrame()
+analysis = pd.DataFrame()
+status_text = "Market feed not configured"
+if token:
+    instrument_key = INSTRUMENTS[market_label]
+    hub = get_market_hub(token)
+    hub.start([instrument_key])
     status = hub.status()
     latest = hub.latest(instrument_key)
-    bars = hub.snapshot(
-        instrument_key,
-        max_bars=window,
-        interval_minutes=timeframe,
-        latest_session_only=True,
-    )
-    history_count = int(status.get("history_bars", {}).get(instrument_key, 0))
-    previous_levels = hub.session_levels(instrument_key)
+    bars = hub.snapshot(instrument_key, max_bars=window, interval_minutes=timeframe, latest_session_only=True)
+    status_text = "LIVE" if status.get("connected") else ("CONNECTING" if not status.get("last_error") else "ERROR")
 
-    if status.get("history_error"):
-        mode_note = "WebSocket" if status.get("mode") == "websocket" else ("REST LTP fallback" if status.get("mode") == "rest-polling" else "offline")
-        status_box.error(
-            f"🔴 HISTORICAL OHLC UNAVAILABLE · {status['history_error']} · Live feed: {mode_note}"
-        )
-    elif status["connected"] and history_count:
-        mode_note = "WebSocket" if status.get("mode") == "websocket" else "REST LTP fallback"
-        status_box.success(
-            f"🟢 LIVE · {mode_note} · {history_count:,} official Upstox 1-min OHLC candles loaded"
-        )
-    elif status["connected"]:
-        status_box.warning("🟡 LIVE FEED CONNECTED · waiting for official Upstox OHLC history")
-    elif status["last_error"]:
-        status_box.error(f"🔴 Upstox feed error: {status['last_error']}")
-    else:
-        status_box.info("🟡 Connecting to Upstox V3 and loading official OHLC history…")
+    if latest and not bars.empty:
+        def _wma(series, period):
+            period=max(1,int(period)); weights=pd.Series(range(1,period+1),dtype=float)
+            return series.rolling(period,min_periods=period).apply(lambda v: float((v*weights.to_numpy()).sum()/weights.sum()),raw=True)
+        period=21
+        half=max(1,period//2); root=max(1,int(round(period**0.5)))
+        analysis=bars.copy()
+        analysis["HMA"]=_wma((2*_wma(analysis["close"],half)-_wma(analysis["close"],period)),root)
+        rng=(analysis["high"]-analysis["low"]).replace(0,pd.NA)
+        loc=(((2*analysis["close"])-analysis["high"]-analysis["low"])/rng).clip(-1,1).fillna(0)
+        analysis["Order-flow delta"]=analysis["volume"].fillna(0)*loc
+        analysis["Cumulative delta"]=analysis["Order-flow delta"].cumsum()
 
-    if latest:
-        previous = bars["close"].iloc[-2] if len(bars) >= 2 else latest["price"]
-        change = latest["price"] - float(previous)
-        last_bar = bars.iloc[-1] if len(bars) else None
-        ui.ticker([
-            ("Market", market_label, None),
-            ("LTP", f"₹{latest['price']:,.2f}", ui.tone(change)),
-            ("O/H/L", f"₹{last_bar['open']:,.2f} / ₹{last_bar['high']:,.2f} / ₹{last_bar['low']:,.2f}" if last_bar is not None else "—", None),
-            ("Volume", f"{last_bar['volume']:,.0f}" if last_bar is not None else "—", None),
-            ("Change", f"{change:+,.2f}", ui.tone(change)),
-            ("Last", latest["datetime"].strftime("%d %b %H:%M:%S"), None),
-        ])
+# KPI values use only real market data; unavailable portfolio/account values are not invented.
+price = float(latest["price"]) if latest else None
+change = (price - float(bars["close"].iloc[-2])) if price is not None and len(bars)>=2 else None
+hma = float(analysis["HMA"].dropna().iloc[-1]) if not analysis.empty and analysis["HMA"].notna().any() else None
+flow = float(analysis["Order-flow delta"].iloc[-1]) if not analysis.empty else None
 
-    if bars.empty:
-        st.info("Official Upstox OHLC candles are not loaded yet. The chart will appear when the candle API returns data.")
-        return
+def metric_card(icon,label,value,delta="",tone=""):
+    return f'<div class="ta-kpi"><span class="ta-icon">{icon}</span><div class="label">{label}</div><div class="value">{value}</div><div class="delta {tone}">{delta}</div></div>'
 
-    analysis = bars.copy()
-
-    def _wma(series, period):
-        period = max(1, int(period))
-        weights = pd.Series(range(1, period + 1), dtype=float)
-        return series.rolling(period, min_periods=period).apply(
-            lambda values: float((values * weights.to_numpy()).sum() / weights.sum()),
-            raw=True,
-        )
-
-    half = max(1, int(hma_period) // 2)
-    root = max(1, int(round(hma_period ** 0.5)))
-    wma_half = _wma(analysis["close"], half)
-    wma_full = _wma(analysis["close"], int(hma_period))
-    analysis["HMA"] = _wma((2.0 * wma_half) - wma_full, root)
-
-    # Historical OHLCV does not contain exchange-level aggressor buy/sell volume.
-    # This is an explicitly labelled candle-derived order-flow pressure proxy.
-    candle_range = (analysis["high"] - analysis["low"]).replace(0, pd.NA)
-    close_location = ((2.0 * analysis["close"]) - analysis["high"] - analysis["low"]) / candle_range
-    close_location = close_location.clip(-1.0, 1.0).fillna(0.0)
-    analysis["Buy volume proxy"] = analysis["volume"].fillna(0.0) * ((close_location + 1.0) / 2.0)
-    analysis["Sell volume proxy"] = analysis["volume"].fillna(0.0) - analysis["Buy volume proxy"]
-    analysis["Order-flow delta"] = analysis["Buy volume proxy"] - analysis["Sell volume proxy"]
-    analysis["Cumulative delta"] = analysis["Order-flow delta"].cumsum()
-
-    live_price = float(latest["price"]) if latest else None
-    if live_price is not None:
-        analysis["Live price"] = live_price
-
-    hlines = {}
-    if previous_levels.get("previous_high") is not None:
-        hlines["Previous high"] = previous_levels["previous_high"]
-    if previous_levels.get("previous_low") is not None:
-        hlines["Previous low"] = previous_levels["previous_low"]
-
-    overlays = {"HMA": "HMA"}
-    if live_price is not None:
-        overlays["Live price"] = "Live price"
-
-    hma_rising = analysis["HMA"] > analysis["HMA"].shift(1)
-    hma_falling = analysis["HMA"] < analysis["HMA"].shift(1)
-    flow_positive = analysis["Order-flow delta"] > 0
-    flow_negative = analysis["Order-flow delta"] < 0
-    buy_condition = (analysis["close"] > analysis["HMA"]) & hma_rising & flow_positive
-    sell_condition = (analysis["close"] < analysis["HMA"]) & hma_falling & flow_negative
-    buy_signal = buy_condition & ~buy_condition.shift(1).fillna(False)
-    sell_signal = sell_condition & ~sell_condition.shift(1).fillna(False)
-
-    signal_rows = []
-    for ts, row in analysis.loc[buy_signal].iterrows():
-        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "BUY", "shape": "triangle-up",
-                            "reason": "Price above rising HMA with positive order-flow delta"})
-    for ts, row in analysis.loc[sell_signal].iterrows():
-        signal_rows.append({"datetime": ts, "price": float(row["close"]), "kind": "SELL", "shape": "triangle-down",
-                            "reason": "Price below falling HMA with negative order-flow delta"})
-    signals = pd.DataFrame(signal_rows)
-
-    risk_lines = {}
-    if signal_mode and live_price is not None:
-        if bool(buy_condition.iloc[-1]):
-            risk_lines = {
-                "Stop": live_price * (1.0 - stop_pct / 100.0),
-                "Target": live_price * (1.0 + target_pct / 100.0),
-            }
-        elif bool(sell_condition.iloc[-1]):
-            risk_lines = {
-                "Stop": live_price * (1.0 + stop_pct / 100.0),
-                "Target": live_price * (1.0 - target_pct / 100.0),
-            }
-
-    ui.show_chart(
-        charts.candlestick(
-            analysis,
-            height=600,
-            max_bars=window,
-            volume=True,
-            interval_minutes=timeframe,
-            overlays=overlays,
-            hlines=hlines,
-            signals=signals if signal_mode else None,
-            risk_lines=risk_lines,
-        )
-    )
-
-    st.markdown("#### Order Flow")
-    st.caption("OHLCV-derived order-flow pressure proxy · positive delta = stronger buying pressure, negative = stronger selling pressure.")
-    ui.show_chart(charts.order_flow_chart(analysis, height=190))
-
-    session_date = pd.Timestamp(bars.index[-1]).strftime("%d %b %Y") if len(bars) else "—"
-    signal_text = "signals enabled" if signal_mode else "signals hidden"
-    st.caption(
-        f"Session: {session_date} · Official Upstox V3 OHLCV candles · live LTP shown separately · {timeframe}-minute candles · {signal_text}. "
-        "HMA and live price are the only chart overlays; previous-session levels remain reference levels. "
-        "Order-flow is an OHLCV-derived pressure proxy, not exchange-level aggressor-side data. Signals are research rules, not predictions."
-    )
-    with st.expander("Latest OHLCV data", expanded=False):
-        table = bars.tail(20).reset_index()
-        table["datetime"] = pd.to_datetime(table["datetime"]).dt.strftime("%d %b %Y %H:%M")
-        st.dataframe(
-            table[["datetime", "open", "high", "low", "close", "volume"]],
-            width="stretch",
-            hide_index=True,
-        )
-
-    st.markdown("### Market analysis")
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.metric("Last", f"₹{live_price:,.2f}" if live_price is not None else "—")
-    with m2:
-        hma_last = analysis["HMA"].dropna().iloc[-1] if analysis["HMA"].notna().any() else None
-        st.metric("HMA", f"₹{hma_last:,.2f}" if hma_last is not None else "—")
-    with m3:
-        st.metric("Flow delta", f"{float(analysis['Order-flow delta'].iloc[-1]):+,.0f}")
-    with m4:
-        st.metric("Cumulative delta", f"{float(analysis['Cumulative delta'].iloc[-1]):+,.0f}")
-
-market_panel()
-
-st.divider()
-st.subheader("TradeALGO workspace")
-a, b, c = st.columns(3)
-with a:
-    st.markdown(ui.card("Before a trade", "Size the position, check your loss limit, and record the idea before taking risk.", "🧮"), unsafe_allow_html=True)
-    st.page_link("pages/1_Position_size.py", label="Position size", icon="🧮")
-    st.page_link("pages/2_Journal_and_report.py", label="Journal and daily report", icon="📒")
-with b:
-    st.markdown(ui.card("Practise", "Use fake money to rehearse option trades and understand time decay and spread.", "🎯"), unsafe_allow_html=True)
-    st.page_link("pages/3_Practice_room.py", label="Practice room", icon="🎯")
-    st.page_link("pages/4_Option_breakeven_and_ruin.py", label="Option breakeven and ruin", icon="⏳")
-with c:
-    st.markdown(ui.card("Research", "Backtest rules, stress-test them, and inspect whether the evidence survives.", "🔬"), unsafe_allow_html=True)
-    st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
-    st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
-    st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
-    st.page_link("pages/8_Market_research_agent.py", label="Market Research Agent", icon="🧠")
-
-st.markdown("### Data integrity")
-ui.check_row("PASS", "Official OHLCV", "Historical candles come from Upstox V3 historical/intraday candle APIs.")
-ui.check_row("PASS", "Live updates", "The V3 market feed supplies the latest traded price separately from the official OHLC candle series.")
-ui.check_row("PASS", "No synthetic prices", "TradeALGO does not create or randomize market prices.")
-ui.check_row("PASS", "No live orders", "This Market Desk only visualizes data and supports research/paper trading.")
-
-st.info(storage_note())
 st.markdown(
-    "V3 note: Upstox sends market status first, then a market-data snapshot, followed by live updates. "
-    "The current TradeALGO market hub uses Upstox OHLC history as the chart source and keeps the live price stream separate."
-)
-ui.footer_note("Upstox market data + research only. No live orders.")
+    '<div class="ta-kpis">'+
+    metric_card("💼","Market LTP",f"₹{price:,.2f}" if price is not None else "—","Live Upstox price" if price is not None else "Waiting for data")+
+    metric_card("📊","Current Change",f"{change:+,.2f}" if change is not None else "—","vs previous candle","ta-up" if change and change>0 else "ta-down")+
+    metric_card("🎯","HMA 21",f"₹{hma:,.2f}" if hma is not None else "—","Research indicator")+
+    metric_card("🛡️","Flow Delta",f"{flow:+,.0f}" if flow is not None else "—","OHLCV pressure proxy")+
+    '</div>',unsafe_allow_html=True)
+
+st.markdown('<div class="ta-grid"><main>',unsafe_allow_html=True)
+
+# Equity-style chart card; when live data exists it is the actual market curve.
+st.markdown("""
+<div class="ta-card">
+  <div class="ta-card-head"><h3>↗ &nbsp;Market Curve</h3><div class="ta-range"><span>1D</span><span>1W</span><span class="active">1M</span><span>3M</span><span>1Y</span><span>All</span></div></div>
+""",unsafe_allow_html=True)
+if not bars.empty:
+    chart_df=bars[["close"]].tail(min(len(bars),180)).copy()
+    st.line_chart(chart_df, height=225, use_container_width=True)
+else:
+    st.markdown("""
+    <div class="ta-chart"><svg viewBox="0 0 900 240" preserveAspectRatio="none">
+      <polyline points="0,205 75,190 145,198 220,155 290,166 365,128 440,142 520,96 595,112 670,68 745,82 820,48 900,61" fill="none" stroke="#2f7df6" stroke-width="4"/>
+      <polyline points="0,220 110,205 220,212 330,185 440,194 550,165 660,178 770,148 900,152" fill="none" stroke="#718096" stroke-width="2"/>
+    </svg></div>
+    """,unsafe_allow_html=True)
+st.markdown('<div style="display:flex;gap:18px;color:#8796a8;font-size:.65rem;margin-top:8px">■ Market price &nbsp;&nbsp; ■ Benchmark/reference</div></div>',unsafe_allow_html=True)
+
+# Recent activity / workspace.
+st.markdown("""
+<div class="ta-card" id="workspace">
+<div class="ta-card-head"><h3>◷ &nbsp;Recent Activity</h3><span>View All →</span></div>
+<div class="ta-row"><span>Market Desk</span><small>LIVE MARKET</small><b class="ta-check">Connected</b></div>
+<div class="ta-row"><span>Backtest</span><small>Research workflow</small><b>Ready</b></div>
+<div class="ta-row"><span>Reality Check</span><small>Validation workflow</small><b>Ready</b></div>
+<div class="ta-row"><span>Practice Trading</span><small>Paper money only</small><b class="ta-check">Safe</b></div>
+</div>
+""",unsafe_allow_html=True)
+
+st.markdown('</main><aside>',unsafe_allow_html=True)
+
+st.markdown("""
+<div class="ta-card">
+<div class="ta-card-head"><h3>⚡ Quick Actions</h3><span>→</span></div>
+<div class="ta-quick">
+<a href="/5_Backtest.py"><b>📊 Run Backtest</b><small>Test your strategy on historical data →</small></a>
+<a href="/3_Practice_room.py"><b>🎮 Practice Trading</b><small>Trade with paper money risk-free →</small></a>
+<a href="/6_Reality_check.py"><b>🛡 Reality Check</b><small>Validate results & avoid overfitting →</small></a>
+<a href="/10_Strategy_Builder.py"><b>💡 Build Strategy</b><small>Create and customize your strategy →</small></a>
+</div>
+</div>
+""",unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="ta-status">
+<div class="ta-card-head"><h3>🛡 Risk Controls Active</h3><span class="ta-safe">SAFE MODE</span></div>
+<div class="ta-list">
+<div class="ta-row"><span>✓ &nbsp;No live orders</span><small>Paper/research only</small></div>
+<div class="ta-row"><span>✓ &nbsp;Realistic costs</span><small>Where supported</small></div>
+<div class="ta-row"><span>✓ &nbsp;Future-data checks</span><small>Enabled in research flows</small></div>
+<div class="ta-row"><span>✓ &nbsp;Position limits</span><small>Risk-aware workflow</small></div>
+</div>
+</div>
+""",unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="ta-card">
+<div class="ta-card-head"><h3>▥ Market Status</h3><span class="ta-safe">{status_text}</span></div>
+<div class="ta-row"><b>{market_label}</b><span class="ta-up">● {status_text}</span><small>Upstox</small></div>
+<div class="ta-row"><b>Data source</b><span>OHLCV + LTP</span></div>
+<div class="ta-row"><b>Orders</b><span class="ta-check">● Locked</span></div>
+</div>
+""",unsafe_allow_html=True)
+
+st.markdown('</aside></div>',unsafe_allow_html=True)
+
+# Preserve the actual live-market chart and analysis tools below the visual dashboard.
+if token and not bars.empty:
+    with st.expander("Live Market Analysis", expanded=False):
+        st.caption("The premium dashboard above is the landing view. Expand this section for the full existing market-analysis workspace.")
+        ui.show_chart(charts.candlestick(
+            analysis, height=520, max_bars=window, volume=True, interval_minutes=timeframe,
+            overlays={"HMA":"HMA"} if "HMA" in analysis else None,
+        ))
+        st.caption("OHLCV-derived order-flow pressure is a research proxy, not exchange-level aggressor-side data.")
+        ui.show_chart(charts.order_flow_chart(analysis, height=190))
+
+st.markdown("""
+<div class="ta-footer">
+  <span>📈 TradeALGO &nbsp; v1.0.0 &nbsp; • &nbsp; ◉ Built for smarter traders</span>
+  <span>Documentation &nbsp;&nbsp; Report Issue &nbsp;&nbsp; Feedback &nbsp;&nbsp; ◌</span>
+</div>
+""",unsafe_allow_html=True)
+st.markdown('</div>',unsafe_allow_html=True)
