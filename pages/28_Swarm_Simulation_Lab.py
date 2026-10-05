@@ -6,6 +6,7 @@ from algobot import ui
 from algobot.config import ConfigError, load_config, validate_config
 from algobot.synthetic_swarm import PERSONAS, SAFE_WEB_PAGES, run_swarm, plan_journey
 from algobot.mirofish_sim import agent_chat, run_mirofish
+from algobot.agent_research import run_agent_research
 
 ui.setup("Swarm Simulation Lab", "🧬")
 ui.header(
@@ -166,6 +167,61 @@ if mf:
     st.markdown("### Research report")
     for finding in social_report.key_findings:
         st.write("• " + finding)
+
+st.markdown("## 3. Autonomous research agents")
+st.caption(
+    "These agents do the actual research work: generate bounded strategy mutations, "
+    "run them across synthetic Indian-market regimes, critique failures, keep survivors, "
+    "and validate the finalists on an untouched holdout world. No live orders."
+)
+g1, g2, g3 = st.columns(3)
+research_generations = g1.slider("Research generations", 1, 8, 4, key="research_generations")
+research_per_agent = g2.slider("Candidates per agent", 1, 4, 2, key="research_per_agent")
+research_days = g3.slider("Synthetic days / world", 2, 15, 8, key="research_days")
+
+if st.button("🤖 Let agents do the research", type="primary", width="stretch"):
+    with st.spinner("Agents are generating, testing, rejecting and mutating strategies…"):
+        st.session_state["agent_research"] = run_agent_research(
+            cfg,
+            generations=research_generations,
+            candidates_per_agent=research_per_agent,
+            days=research_days,
+            seed=1701,
+        )
+
+ar = st.session_state.get("agent_research")
+if ar:
+    a1, a2, a3, a4 = st.columns(4)
+    a1.metric("Candidates tested", ar.candidates_tested)
+    a2.metric("Generations", ar.generations)
+    a3.metric("Winner", ar.winner_id or "None")
+    a4.metric("Verdict", ar.verdict)
+    st.dataframe(
+        [
+            {
+                "candidate": s.candidate_id,
+                "gen": s.generation,
+                "train P&L": round(s.train_pnl, 2),
+                "holdout P&L": round(s.holdout_pnl, 2),
+                "train PF": round(s.train_pf, 2),
+                "holdout PF": round(s.holdout_pf, 2),
+                "holdout DD": round(s.holdout_dd, 2),
+                "robustness": round(s.robustness, 3),
+                "accepted": s.accepted,
+                "reasons": "; ".join(s.reasons),
+            }
+            for s in sorted(ar.scores, key=lambda x: x.robustness, reverse=True)[:30]
+        ],
+        width="stretch",
+        hide_index=True,
+    )
+    for finding in ar.findings:
+        st.write("• " + finding)
+    if ar.winner_cfg:
+        st.success(
+            "Agents produced a research candidate, but it is NOT cleared for live trading. "
+            "Run it on real out-of-sample Indian data and the Reality Check before considering paper trading."
+        )
 
 st.markdown("## 3. Synthetic website journeys")
 st.caption(
