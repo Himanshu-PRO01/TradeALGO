@@ -101,6 +101,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Explicit safety strip: this dashboard is research/paper-only and never places live orders.
+st.markdown(
+    '<div class="ta-safety-strip"><span>●</span><b>LIVE ORDERS: OFF</b><em>NO LIVE ORDERS</em><small>Research &amp; paper trading only</small></div>',
+    unsafe_allow_html=True,
+)
+
 # Hero.
 st.markdown("""
 <section class="ta-hero">
