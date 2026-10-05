@@ -354,6 +354,46 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     background:#202B39;
 }
 
+/* Desktop sidebar — keep the reference layout in landscape and make the menu visible. */
+@media (min-width:769px) {
+    [data-testid="stSidebar"] {
+        display:block !important;
+        visibility:visible !important;
+        width:236px !important;
+        min-width:236px !important;
+        max-width:236px !important;
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        width:236px !important;
+    }
+}
+.ta-sidebar-brand{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    color:#F4F7FB;
+    font-size:1.28rem;
+    font-weight:900;
+    letter-spacing:-.035em;
+}
+.ta-sidebar-mark{
+    display:grid;
+    place-items:center;
+    width:31px;
+    height:31px;
+    color:#20D9A0;
+    font-size:1.55rem;
+    font-weight:900;
+    line-height:1;
+}
+.ta-sidebar-word span{color:#2F7DF6}
+.ta-sidebar-tag{
+    margin:4px 0 0 40px;
+    color:#78889B;
+    font-size:.48rem;
+    font-weight:800;
+    letter-spacing:.16em;
+}
 /* Premium sidebar navigation */
 [data-testid="stSidebar"] [data-testid="stPageLink"] {
     margin:2px 0;
@@ -1203,8 +1243,13 @@ def _menu() -> None:
     home_page = "dashboard.py"
     with st.sidebar:
         st.markdown(
-            f'<div class="ab-menu-head"><div class="ab-menu-brand">ALGO<span>BOT</span></div>'
-            f'<div class="ab-menu-status">TRADING DESK · {"HOSTED" if is_hosted() else "LOCAL"} · LIVE OFF</div></div>',
+            f'''<div class="ab-menu-head">
+                <div class="ta-sidebar-brand">
+                    <span class="ta-sidebar-mark">↗</span>
+                    <span class="ta-sidebar-word">Trade<span>ALGO</span></span>
+                </div>
+                <div class="ta-sidebar-tag">TEST · ANALYZE · IMPROVE</div>
+            </div>''',
             unsafe_allow_html=True,
         )
         sections = [
