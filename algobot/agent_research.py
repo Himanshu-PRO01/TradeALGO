@@ -245,3 +245,93 @@ def run_agent_research(
         cohort, generations, len(all_scores), tuple(all_scores), winner_id,
         winner_cfg, verdict, tuple(findings)
     )
+
+
+def run_real_data_research(
+    base_cfg: dict,
+    prices,
+    *,
+    generations: int = 3,
+    candidates_per_agent: int = 2,
+    train_fraction: float = 0.70,
+    agents: Iterable[ResearchAgent] = AGENTS,
+) -> ResearchRun:
+    """Autonomous research on supplied Indian-market historical OHLCV.
+
+    The agents mutate only bounded stop/target parameters. Each candidate is tested
+    on an earlier training segment and a later untouched holdout segment. No synthetic
+    prices are used in this path.
+    """
+    if prices is None or len(prices) < 120:
+        raise ValueError("At least 120 historical bars are required for real-data research")
+    if not 0.55 <= train_fraction <= 0.85:
+        raise ValueError("train_fraction must be between 0.55 and 0.85")
+    cohort = tuple(agents)
+    rng = random.Random(2407)
+    population = [copy.deepcopy(base_cfg)]
+    scores: list[CandidateScore] = []
+    cfg_by_id: dict[str, dict] = {}
+    counter = 0
+    split = max(60, min(len(prices) - 30, int(len(prices) * train_fraction)))
+    train_df = prices.iloc[:split].copy()
+    holdout_df = prices.iloc[split:].copy()
+
+    def eval_df(cfg, frame):
+        result = run_backtest(frame, cfg, build_strategy(cfg))
+        m = result.metrics
+        return (
+            float(m.get("net_pnl", 0.0)),
+            int(m.get("trades", 0)),
+            float(m.get("profit_factor") or 0.0),
+            float(m.get("max_drawdown", 0.0)),
+        )
+
+    for generation in range(1, generations + 1):
+        ranked = []
+        for agent in cohort:
+            for _ in range(candidates_per_agent):
+                counter += 1
+                cfg = _mutate(population[(counter - 1) % len(population)], agent, rng, generation)
+                cid = f"real-candidate-{counter:04d}"
+                cfg_by_id[cid] = cfg
+                train = eval_df(cfg, train_df)
+                holdout = eval_df(cfg, holdout_df)
+                robustness, reasons = _score(train, holdout, agent)
+                accepted = (
+                    train[0] > 0 and holdout[0] > 0 and
+                    holdout[2] >= 1.0 and holdout[1] >= 10
+                )
+                scores.append(CandidateScore(
+                    cid, generation, train[0], holdout[0], train[1], holdout[1],
+                    train[2], holdout[2], train[3], holdout[3],
+                    float(robustness), accepted, reasons
+                ))
+                ranked.append((robustness, cid, cfg, accepted))
+        ranked.sort(reverse=True, key=lambda x: x[0])
+        accepted = [x for x in ranked if x[3]]
+        selected = accepted[:max(2, len(cohort)//2)] or ranked[:max(2, len(cohort)//2)]
+        population = [x[2] for x in selected[:max(2, len(cohort))]]
+
+    final = sorted(scores, key=lambda s: (s.accepted, s.robustness, s.holdout_pnl, s.holdout_pf), reverse=True)
+    winner = next((s for s in final if s.accepted), None)
+    if winner is None:
+        return ResearchRun(
+            cohort, generations, len(scores), tuple(scores), None, None,
+            "FAILED — NO REAL OOS EDGE FOUND",
+            (
+                f"Tested {len(scores)} real-data candidates.",
+                "No candidate produced positive training and untouched holdout P&L with holdout profit factor >= 1.",
+                "Do not move this strategy to paper/live execution from this run."
+            ),
+        )
+    return ResearchRun(
+        cohort, generations, len(scores), tuple(scores), winner.candidate_id,
+        cfg_by_id[winner.candidate_id],
+        "REAL OOS RESEARCH CANDIDATE — REQUIRES ROBUSTNESS CHECK",
+        (
+            f"Tested {len(scores)} candidates on real historical OHLCV.",
+            f"{winner.candidate_id} passed the positive-P&L holdout gate.",
+            f"Holdout P&L: ₹{winner.holdout_pnl:,.2f}; holdout PF: {winner.holdout_pf:.2f}.",
+            "This is not a profitability guarantee; run the full Reality Check and robustness suite next.",
+        ),
+    )
