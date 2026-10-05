@@ -36,6 +36,7 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewContainer"]>
 [data-testid="stToolbar"]{background:#05090e!important}
 
 .ta-shell{color:var(--ta-text)}
+.ta-safety-strip{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 13px;border:1px solid #274033;border-radius:9px;background:linear-gradient(90deg,#09130f,#0a1110);color:#dce8e1;font-size:.68rem}.ta-safety-strip>span{color:var(--ta-green);font-size:.9rem}.ta-safety-strip b{font-size:.67rem;letter-spacing:.08em}.ta-safety-strip em{padding:4px 7px;border:1px solid rgba(22,199,132,.28);border-radius:999px;color:var(--ta-green);font-style:normal;font-weight:800;font-size:.56rem}.ta-safety-strip small{margin-left:auto;color:#7f8d9d}@media(max-width:600px){.ta-safety-strip{flex-wrap:wrap}.ta-safety-strip small{width:100%;margin-left:0}}
 .ta-topbar{display:flex;align-items:center;gap:14px;height:58px;margin-bottom:12px}
 .ta-brand{font-size:1.15rem;font-weight:900;letter-spacing:.01em;white-space:nowrap}
 .ta-brand b{color:var(--ta-blue)}
