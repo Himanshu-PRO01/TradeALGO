@@ -65,7 +65,9 @@ st.markdown("""
 .ta-list{display:grid;gap:8px}.ta-row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #1b2937;color:#c7d0db;font-size:.68rem}.ta-row:last-child{border-bottom:0}.ta-row small{color:#7d8b9b}.ta-check{color:var(--ta-green)}
 .ta-status{padding:14px;border:1px solid #203143;border-radius:12px;background:#0b151f}.ta-status h3{margin:0 0 12px;font-size:.9rem}.ta-safe{display:inline-block;padding:5px 9px;border:1px solid rgba(22,199,132,.35);border-radius:999px;color:var(--ta-green);font-size:.58rem;font-weight:800}
 .ta-footer{display:flex;justify-content:space-between;color:#718096;font-size:.65rem;padding:12px 3px}
-@media(max-width:900px){.ta-market{display:none}.ta-grid{grid-template-columns:1fr}.ta-kpis{grid-template-columns:1fr 1fr}.ta-discipline{display:none}}
+@media(max-width:900px){.ta-market{display:none}.ta-discipline{display:none}}
+@media(max-width:760px){.ta-grid{grid-template-columns:1fr}.ta-kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ta-kpis{grid-template-columns:1fr}.ta-quick{grid-template-columns:1fr}}
 @media(max-width:600px){.block-container{padding:.6rem .7rem 3rem!important}.ta-hero{padding:22px 18px;min-height:235px}.ta-hero h1{font-size:2rem}.ta-kpis{grid-template-columns:1fr}.ta-topbar{height:auto}.ta-search{display:none}.ta-footer{flex-direction:column;gap:8px}.ta-quick{grid-template-columns:1fr}}
 </style>
 """, unsafe_allow_html=True)
@@ -74,7 +76,7 @@ st.markdown('<div class="ta-shell">', unsafe_allow_html=True)
 
 # Top utility bar — intentionally mirrors the reference layout.
 st.markdown("""
-<div class="ta-topbar">
+<div id="tradealgo-top" class="ta-topbar">
   <div class="ta-brand">📈 Trade<span style="color:#2f7df6">ALGO</span></div>
   <div class="ta-search">⌕ &nbsp; Search symbols (e.g. NIFTY, RELIANCE, AAPL)... &nbsp;&nbsp; <b style="float:right;color:#aebdce">Ctrl K</b></div>
   <div class="ta-market">
