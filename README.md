@@ -14,7 +14,7 @@ tested before the brother's answers arrive. The two strategies included are
 
 ## Quick start
 
-You need Python 3.9 or newer.
+You need Python 3.10 or newer.
 
 ```bash
 # 1. (recommended) make a private environment
