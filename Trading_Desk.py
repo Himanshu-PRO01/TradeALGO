@@ -233,6 +233,7 @@ with c:
     st.page_link("pages/5_Backtest.py", label="Backtest", icon="📊")
     st.page_link("pages/6_Reality_check.py", label="Reality check", icon="🛡️")
     st.page_link("pages/7_Test_lab.py", label="Test lab", icon="🧪")
+    st.page_link("pages/8_Market_research_agent.py", label="Market Research Agent", icon="🧠")
 
 st.markdown("### Data integrity")
 ui.check_row("PASS", "Official OHLCV", "Historical candles come from Upstox V3 historical/intraday candle APIs.")
