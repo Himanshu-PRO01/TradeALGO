@@ -7,6 +7,7 @@ from algobot.config import ConfigError, load_config, validate_config
 from algobot.synthetic_swarm import PERSONAS, SAFE_WEB_PAGES, run_swarm, plan_journey
 from algobot.mirofish_sim import agent_chat, run_mirofish
 from algobot.agent_research import run_agent_research, run_real_data_research
+from algobot.mirofish_qa import build_strategy_evidence, run_website_swarm
 from algobot.live_data import INTERVALS, MARKETS, fetch_ohlc, LiveDataError
 
 ui.setup("Swarm Simulation Lab", "🧬")
@@ -277,6 +278,87 @@ if rar:
         width="stretch", hide_index=True,
     )
     for finding in rar.findings:
+        st.write("• " + finding)
+
+st.markdown("## 4. Full MiroFish adversarial run")
+st.caption(
+    "This combines independent regime evidence with synthetic personas, memory/graph-style "
+    "aggregation and an adversarial verdict. It is deliberately hostile to the strategy: "
+    "a positive result is a research signal, not a profit guarantee."
+)
+mf_rounds = st.slider("Adversarial evidence rounds", 6, 36, 12, key="mf_full_rounds")
+mf_days = st.slider("Days per synthetic regime", 2, 15, 8, key="mf_full_days")
+if st.button("🧠 Run full MiroFish strategy attack", type="primary", width="stretch"):
+    with st.spinner("Agents are challenging the strategy across independent regimes…"):
+        st.session_state["full_mirofish_strategy"] = build_strategy_evidence(
+            cfg, rounds=mf_rounds, days=mf_days, seed=9001
+        )
+
+full_mf = st.session_state.get("full_mirofish_strategy")
+if full_mf:
+    x, y, z, w = st.columns(4)
+    x.metric("Regime evidence", len(full_mf.evidence))
+    y.metric("Profitable regimes", f"{full_mf.profitable_rate:.0f}%")
+    z.metric("Mean PF", f"{full_mf.mean_profit_factor:.2f}")
+    w.metric("Verdict", full_mf.verdict)
+    st.dataframe(
+        [{
+            "regime": e.regime,
+            "P&L": round(e.pnl, 2),
+            "trades": e.trades,
+            "PF": round(e.profit_factor, 2),
+            "DD": round(e.drawdown, 2),
+            "passed": e.passed,
+        } for e in full_mf.evidence],
+        width="stretch", hide_index=True,
+    )
+    st.caption(
+        f"Consensus {full_mf.consensus:+.2f} · strength {full_mf.consensus_strength:.2f} · "
+        f"evidence graph {full_mf.graph_nodes} nodes / {full_mf.graph_edges} edges"
+    )
+    if full_mf.failure_modes:
+        st.error("Adversarial findings: " + " · ".join(full_mf.failure_modes))
+
+st.markdown("## 5. Executable synthetic website swarm")
+st.caption(
+    "Unlike the planner above, this runs Streamlit AppTest with multiple synthetic personas. "
+    "Only allow-listed research pages/actions are exercised; live trading, brokers and OpenAlgo are never clicked."
+)
+wa, wb, wc = st.columns(3)
+web_agents = wa.slider("Website agents", 2, 8, 4, key="web_swarm_agents")
+web_pages = wb.slider("Pages per agent", 2, 6, 4, key="web_swarm_pages")
+web_rounds = wc.slider("Safe action rounds", 1, 3, 1, key="web_swarm_rounds")
+if st.button("🕸️ Run synthetic website swarm", type="primary", width="stretch"):
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with st.spinner("Synthetic users are navigating and stress-testing research pages…"):
+        st.session_state["website_swarm"] = run_website_swarm(
+            root, agents=web_agents, max_pages=web_pages, action_rounds=web_rounds, timeout=20
+        )
+
+web_report = st.session_state.get("website_swarm")
+if web_report:
+    x, y, z, w = st.columns(4)
+    x.metric("Journeys", web_report.journeys_tested)
+    y.metric("Page pass rate", f"{web_report.pass_rate:.1f}%")
+    z.metric("Action success", f"{web_report.action_success_rate:.1f}%")
+    w.metric("Safety violations", len(web_report.safety_violations))
+    st.dataframe(
+        [{
+            "agent": j.agent_id,
+            "persona": j.persona,
+            "page": j.page,
+            "loaded": j.loaded,
+            "errors": "; ".join(j.visible_errors)[:180],
+            "actions": f"{j.actions_completed}/{j.actions_attempted}",
+            "time ms": round(j.duration_ms),
+        } for j in web_report.journeys],
+        width="stretch", hide_index=True,
+    )
+    if web_report.repeated_failures:
+        st.error("Repeated website failures: " + " · ".join(web_report.repeated_failures))
+    else:
+        st.success("No repeated website failure pattern was found in this swarm run.")
+    for finding in web_report.findings:
         st.write("• " + finding)
 
 st.markdown("## 3. Synthetic website journeys")
