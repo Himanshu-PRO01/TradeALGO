@@ -214,17 +214,19 @@ st.markdown("""
 
 st.markdown('</main><aside>',unsafe_allow_html=True)
 
-st.markdown("""
-<div class="ta-card">
-<div class="ta-card-head"><h3>⚡ Quick Actions</h3><span>→</span></div>
-<div class="ta-quick">
-<a href="/5_Backtest.py"><b>📊 Run Backtest</b><small>Test your strategy on historical data →</small></a>
-<a href="/3_Practice_room.py"><b>🎮 Practice Trading</b><small>Trade with paper money risk-free →</small></a>
-<a href="/6_Reality_check.py"><b>🛡 Reality Check</b><small>Validate results & avoid overfitting →</small></a>
-<a href="/10_Strategy_Builder.py"><b>💡 Build Strategy</b><small>Create and customize your strategy →</small></a>
-</div>
-</div>
-""",unsafe_allow_html=True)
+st.markdown('<div class="ta-card"><div class="ta-card-head"><h3>⚡ Quick Actions</h3><span>→</span></div><div class="ta-quick">',unsafe_allow_html=True)
+qa=st.columns(2)
+quick_actions=[
+    ("pages/5_Backtest.py","📊 Run Backtest","Test your strategy on historical data →"),
+    ("pages/3_Practice_room.py","🎮 Practice Trading","Trade with paper money risk-free →"),
+    ("pages/6_Reality_check.py","🛡 Reality Check","Validate results & avoid overfitting →"),
+    ("pages/10_Strategy_Builder.py","💡 Build Strategy","Create and customize your strategy →"),
+]
+for idx,(path,label,desc) in enumerate(quick_actions):
+    with qa[idx % 2]:
+        st.page_link(path,label=label,use_container_width=True)
+        st.caption(desc)
+st.markdown('</div>',unsafe_allow_html=True)
 
 st.markdown(f"""
 <div class="ta-status">
