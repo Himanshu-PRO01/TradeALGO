@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import Callable
 
 from .config import validate_config
-from .engine import run_backtest
 from .lab import run_lab
 from .strategy import build_strategy
 
@@ -20,17 +19,17 @@ from .strategy import build_strategy
 class AgentProfile:
     name: str
     risk_tolerance: float
-    entry_delay_bars: int
-    exit_urgency: float
+    quantity_multiplier: float
+    target_multiplier: float
 
 
 PROFILES = (
-    AgentProfile("momentum", 0.8, 0, 0.25),
-    AgentProfile("risk_averse", 0.25, 1, 0.9),
-    AgentProfile("fomo", 1.0, 2, 0.45),
-    AgentProfile("contrarian", 0.6, 1, 0.65),
-    AgentProfile("beginner", 0.5, 3, 0.7),
-    AgentProfile("overtrader", 0.95, 0, 0.2),
+    AgentProfile("momentum", 0.8, 1.0, 1.0),
+    AgentProfile("risk_averse", 0.25, 0.5, 0.7),
+    AgentProfile("fomo", 1.0, 1.5, 1.3),
+    AgentProfile("contrarian", 0.6, 0.75, 0.9),
+    AgentProfile("beginner", 0.5, 0.5, 0.8),
+    AgentProfile("overtrader", 0.95, 1.25, 1.1),
 )
 
 
@@ -58,9 +57,11 @@ def _agent_config(base_cfg: dict, profile: AgentProfile) -> dict:
     cfg["risk"] = dict(base_cfg["risk"])
     cfg["name"] = f"{base_cfg['name']}_{profile.name}"
     cfg["strategy"]["params"] = dict(base_cfg["strategy"].get("params", {}))
-    cfg["strategy"]["params"]["agent_entry_delay_bars"] = profile.entry_delay_bars
-    cfg["strategy"]["params"]["agent_risk_tolerance"] = profile.risk_tolerance
-    cfg["strategy"]["params"]["agent_exit_urgency"] = profile.exit_urgency
+    base_qty = int(base_cfg["strategy"]["quantity"])
+    cfg["strategy"]["quantity"] = max(1, int(round(base_qty * profile.quantity_multiplier)))
+    base_target = base_cfg["strategy"].get("target_pct")
+    if base_target is not None:
+        cfg["strategy"]["target_pct"] = max(0.01, float(base_target) * profile.target_multiplier)
     return validate_config(cfg)
 
 
