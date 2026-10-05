@@ -25,7 +25,7 @@ def cfg():
 
 
 def test_agent_simulation_is_bounded_and_reproducible():
-    profiles = (AgentProfile("test", .5, 1, .5),)
+    profiles = (AgentProfile("test", .5, 1.0, 1.0),)
     a = simulate_agents(cfg(), worlds=1, days=2, profiles=profiles)
     b = simulate_agents(cfg(), worlds=1, days=2, profiles=profiles)
     assert a == b
