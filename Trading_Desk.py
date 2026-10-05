@@ -14,13 +14,27 @@ ui.setup("Trading Desk", "📈")
 st.markdown("""
 <style>
 :root{
-  --ta-bg:#070d14;--ta-panel:#0d151f;--ta-panel2:#101a25;--ta-line:#1d2b3a;
-  --ta-text:#f4f7fb;--ta-muted:#8c9bad;--ta-blue:#2f7df6;--ta-green:#16c784;
+  --ta-bg:#05090e;--ta-panel:#090f16;--ta-panel2:#0c141d;--ta-line:#182532;
+  --ta-text:#f4f7fb;--ta-muted:#7f8d9d;--ta-blue:#2f7df6;--ta-green:#16c784;
   --ta-red:#ff4d73;--ta-cyan:#20d9ff;
 }
-.stApp{background:radial-gradient(circle at 78% 4%,rgba(37,99,235,.08),transparent 28%),var(--ta-bg)!important}
-.block-container{max-width:1500px!important;padding:1rem 1.35rem 4rem!important}
-[data-testid="stHeader"]{background:transparent!important}
+html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewContainer"]>section,
+[data-testid="stApp"],.stApp{
+  background:#05090e!important;
+  color:var(--ta-text)!important;
+}
+[data-testid="stAppViewContainer"]{
+  background:
+    radial-gradient(circle at 78% 0%,rgba(25,86,160,.09),transparent 25%),
+    linear-gradient(180deg,#05090e 0%,#070d14 55%,#05090e 100%)!important;
+}
+[data-testid="stMain"],[data-testid="stMainBlockContainer"]{
+  background:transparent!important;
+}
+.block-container{max-width:1500px!important;padding:1rem 1.35rem 4rem!important;background:transparent!important}
+[data-testid="stHeader"]{background:#05090e!important}
+[data-testid="stToolbar"]{background:#05090e!important}
+
 .ta-shell{color:var(--ta-text)}
 .ta-topbar{display:flex;align-items:center;gap:14px;height:58px;margin-bottom:12px}
 .ta-brand{font-size:1.15rem;font-weight:900;letter-spacing:.01em;white-space:nowrap}
