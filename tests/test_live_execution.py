@@ -45,6 +45,11 @@ def request(**overrides):
     return ExecutionRequest(**data)
 
 
+def enable_test_execution_policy(monkeypatch):
+    """Enable only the module-local gate for unit-testing downstream guards."""
+    monkeypatch.setattr("algobot.execution_policy.LIVE_TRADING_ENABLED", True)
+
+
 def test_live_policy_remains_disabled_by_default():
     assert LIVE_TRADING_ENABLED is False
 
@@ -58,6 +63,7 @@ def test_confirmation_is_required(monkeypatch):
 
 
 def test_kill_switch_blocks_order(monkeypatch):
+    enable_test_execution_policy(monkeypatch)
     monkeypatch.setenv("TRADEALGO_LIVE_CONFIRM", "I_UNDERSTAND_LIVE_TRADING")
     client = FakeClient()
     switch = KillSwitch()
@@ -69,6 +75,7 @@ def test_kill_switch_blocks_order(monkeypatch):
 
 
 def test_risk_manager_blocks_new_buy(monkeypatch):
+    enable_test_execution_policy(monkeypatch)
     monkeypatch.setenv("TRADEALGO_LIVE_CONFIRM", "I_UNDERSTAND_LIVE_TRADING")
     client = FakeClient()
     cfg = risk()
@@ -80,6 +87,7 @@ def test_risk_manager_blocks_new_buy(monkeypatch):
 
 
 def test_risk_rejects_buy_outside_entry_window(monkeypatch):
+    enable_test_execution_policy(monkeypatch)
     monkeypatch.setenv("TRADEALGO_LIVE_CONFIRM", "I_UNDERSTAND_LIVE_TRADING")
     client = FakeClient()
     service = LiveExecutionService(client, KillSwitch(), risk(), confirm_live=True)
@@ -89,6 +97,7 @@ def test_risk_rejects_buy_outside_entry_window(monkeypatch):
 
 
 def test_sell_exit_is_allowed_after_new_entries_close(monkeypatch):
+    enable_test_execution_policy(monkeypatch)
     monkeypatch.setenv("TRADEALGO_LIVE_CONFIRM", "I_UNDERSTAND_LIVE_TRADING")
     client = FakeClient()
     service = LiveExecutionService(client, KillSwitch(), risk(), confirm_live=True)
@@ -101,6 +110,7 @@ def test_sell_exit_is_allowed_after_new_entries_close(monkeypatch):
 
 
 def test_successful_buy_registers_one_entry(monkeypatch):
+    enable_test_execution_policy(monkeypatch)
     monkeypatch.setenv("TRADEALGO_LIVE_CONFIRM", "I_UNDERSTAND_LIVE_TRADING")
     client = FakeClient()
     cfg = risk()
