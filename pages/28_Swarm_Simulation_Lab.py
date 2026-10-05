@@ -6,7 +6,8 @@ from algobot import ui
 from algobot.config import ConfigError, load_config, validate_config
 from algobot.synthetic_swarm import PERSONAS, SAFE_WEB_PAGES, run_swarm, plan_journey
 from algobot.mirofish_sim import agent_chat, run_mirofish
-from algobot.agent_research import run_agent_research
+from algobot.agent_research import run_agent_research, run_real_data_research
+from algobot.live_data import INTERVALS, MARKETS, fetch_ohlc, LiveDataError
 
 ui.setup("Swarm Simulation Lab", "🧬")
 ui.header(
@@ -222,6 +223,61 @@ if ar:
             "Agents produced a research candidate, but it is NOT cleared for live trading. "
             "Run it on real out-of-sample Indian data and the Reality Check before considering paper trading."
         )
+
+st.markdown("## 3b. Real Indian-market agent research")
+st.caption(
+    "This is the serious lane: agents work on downloaded historical OHLCV, split it into "
+    "earlier training data and a later untouched holdout, and compete to find an edge. "
+    "Data is research-only; no orders or broker execution are reachable."
+)
+rc1, rc2, rc3 = st.columns(3)
+real_market = rc1.selectbox("Indian market", ["Nifty 50", "Bank Nifty", "Nifty IT"], key="real_agent_market")
+real_interval = rc2.selectbox(
+    "Historical timeframe", ["15 minutes", "1 hour", "1 day"], index=0, key="real_agent_interval"
+)
+real_generations = rc3.slider("Real-data generations", 1, 6, 3, key="real_agent_generations")
+if st.button("🧪 Let agents attack real Indian history", type="primary", width="stretch"):
+    try:
+        with st.spinner("Downloading historical OHLCV and letting the agents research it…"):
+            ticker = MARKETS[real_market]
+            interval, period = INTERVALS[real_interval]
+            real_prices = fetch_ohlc(ticker, interval, period)
+            st.session_state["real_agent_research"] = run_real_data_research(
+                cfg, real_prices, generations=real_generations, candidates_per_agent=2
+            )
+            st.session_state["real_agent_bars"] = len(real_prices)
+            st.session_state["real_agent_range"] = (
+                str(real_prices.index.min()), str(real_prices.index.max())
+            )
+    except (LiveDataError, ValueError, KeyError) as exc:
+        st.error(f"Real-data agent research could not run: {exc}")
+
+rar = st.session_state.get("real_agent_research")
+if rar:
+    rr1, rr2, rr3, rr4 = st.columns(4)
+    rr1.metric("Real candidates", rar.candidates_tested)
+    rr2.metric("Bars tested", st.session_state.get("real_agent_bars", "—"))
+    rr3.metric("Winner", rar.winner_id or "None")
+    rr4.metric("Verdict", rar.verdict)
+    date_range = st.session_state.get("real_agent_range")
+    if date_range:
+        st.caption(f"Historical window: {date_range[0]} → {date_range[1]}")
+    st.dataframe(
+        [{
+            "candidate": s.candidate_id,
+            "gen": s.generation,
+            "train P&L": round(s.train_pnl, 2),
+            "OOS P&L": round(s.holdout_pnl, 2),
+            "train PF": round(s.train_pf, 2),
+            "OOS PF": round(s.holdout_pf, 2),
+            "OOS DD": round(s.holdout_dd, 2),
+            "accepted": s.accepted,
+            "why rejected": "; ".join(s.reasons),
+        } for s in sorted(rar.scores, key=lambda x: x.robustness, reverse=True)[:30]],
+        width="stretch", hide_index=True,
+    )
+    for finding in rar.findings:
+        st.write("• " + finding)
 
 st.markdown("## 3. Synthetic website journeys")
 st.caption(
