@@ -1226,6 +1226,7 @@ def _menu() -> None:
                 ("⚡", "Tick Engine", "pages/26_Tick_Engine.py"),
                 ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
                 ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+                ("🧬", "Agent Simulation Lab", "pages/27_Agent_Simulation_Lab.py"),
             ]),
             ("Automation", [
                 ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
@@ -1355,6 +1356,7 @@ def _top_menu_links() -> list[tuple[str, str, str]]:
         ("⚡", "Tick Engine", "pages/26_Tick_Engine.py"),
         ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
         ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+        ("🧬", "Agent Simulation Lab", "pages/27_Agent_Simulation_Lab.py"),
         ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
         ("🤖", "AI Strategy Agent", "pages/21_AI_Strategy_Agent.py"),
         ("🧪", "Auto Tester", "pages/13_Auto_Tester.py"),
