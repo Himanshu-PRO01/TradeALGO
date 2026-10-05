@@ -121,7 +121,7 @@ def run_swarm(cfg: dict, *, agents:int=8, rounds:int=4, days_per_round:int=8, se
                        float(np.mean(np.array(pnls)>0)*100) if pnls else 0.0,
                        sum(not e.risk_ok for e in all_episodes),consensus,tuple(failures))
 
-SAFE_WEB_PAGES=("5_Backtest.py","6_Reality_check.py","7_Test_lab.py","15_Strategy_Scanner.py","16_Paper_Trading.py","17_Sandbox_Rehearsal.py","23_Live_Markets.py")
+SAFE_WEB_PAGES=("5_Backtest.py","6_Reality_check.py","7_Test_lab.py","15_Strategy_Scanner.py")
 
 @dataclass(frozen=True)
 class JourneyResult:
