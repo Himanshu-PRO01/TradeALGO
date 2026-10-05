@@ -303,7 +303,7 @@ much of the loss is trading costs. That is exactly why costs are in the model.
 | `algobot/options.py` | Black-Scholes model and the option breakeven analysis |
 | `algobot/ruin.py` | Risk-of-ruin simulator |
 | `algobot/dataquality.py` | Data quality checks |
-| `algobot/openalgo_bridge.py` | OpenAlgo adapter: history, quotes, account state and explicitly gated order routing |
+| `algobot/openalgo_bridge.py` | OpenAlgo adapter: history, quotes, account state and explicitly gated order routing |\n| `algobot/live_execution.py` | Single guarded live-order boundary: explicit confirmation, kill switch and risk checks before OpenAlgo |
 | `algobot/gate.py` | Pre-trade gate and the sized alert message |
 | `.env.example`, `.gitignore` | Where the private key goes (never committed) |
 | `algobot/worlds.py` | Fake market personalities and a market that changes character |
