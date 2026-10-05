@@ -1253,20 +1253,43 @@ def _menu() -> None:
             unsafe_allow_html=True,
         )
         sections = [
-            ("", [
-                ("🏠", "Trading Desk", home_page),
-                ("📊", "Backtest", "pages/5_Backtest.py"),
-                ("🎮", "Practice Trading", "pages/3_Practice_room.py"),
-                ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
-                ("💡", "Strategy Builder", "pages/10_Strategy_Builder.py"),
-                ("📒", "Journal", "pages/2_Journal_and_report.py"),
-                ("◔", "Analytics", "pages/15_Strategy_Scanner.py"),
-                ("☆", "Watchlist", "pages/23_Live_Markets.py"),
-                ("⚙️", "Settings", "pages/22_Profile.py"),
+            ("Start Here", [
+                ("🗺️", "How TradeALGO Works", "pages/18_How_TradeALGO_Works.py"),
             ]),
-            ("Account", [
-                ("👤", "Profile", "pages/22_Profile.py"),
-                ("↪", "Logout", "pages/22_Profile.py"),
+            ("Trade Desk", [
+                ("🏠", "Trading Desk", home_page),
+                ("🧮", "Position Size", "pages/1_Position_size.py"),
+                ("📒", "Journal & Report", "pages/2_Journal_and_report.py"),
+            ]),
+            ("Practice", [
+                ("🎯", "Practice Room", "pages/3_Practice_room.py"),
+                ("⏳", "Option Breakeven & Ruin", "pages/4_Option_breakeven_and_ruin.py"),
+            ]),
+            ("Research", [
+                ("📊", "Backtest", "pages/5_Backtest.py"),
+                ("🎯", "Dynamic Options", "pages/25_Dynamic_Options.py"),
+                ("⚡", "Tick Engine", "pages/26_Tick_Engine.py"),
+                ("🛡️", "Reality Check", "pages/6_Reality_check.py"),
+                ("🧪", "Test Lab", "pages/7_Test_lab.py"),
+            ]),
+            ("Automation", [
+                ("🧠", "Strategy Builder", "pages/10_Strategy_Builder.py"),
+                ("🤖", "AI Strategy Agent", "pages/21_AI_Strategy_Agent.py"),
+                ("🧪", "Auto Tester", "pages/13_Auto_Tester.py"),
+                ("🔬", "Strategy Scanner", "pages/15_Strategy_Scanner.py"),
+                ("📝", "Paper Trading", "pages/16_Paper_Trading.py"),
+                ("🎬", "Sandbox Rehearsal", "pages/17_Sandbox_Rehearsal.py"),
+                ("🧪", "Upstox Sandbox", "pages/14_Upstox_Sandbox.py"),
+                ("📲", "Signal Alerts", "pages/20_Signal_Alerts.py"),
+                ("📈", "Live Markets", "pages/23_Live_Markets.py"),
+                ("🔌", "OpenAlgo Execution", "pages/24_OpenAlgo_Execution.py"),
+            ]),
+            ("More", [
+                ("👤", "My Profile", "pages/22_Profile.py"),
+                ("💬", "Feedback", "pages/8_Feedback.py"),
+            ]),
+            ("Execution", [
+                ("🔴", "Live Trading", "pages/11_Live_Trading.py"),
             ]),
         ]
         for section, links in sections:
