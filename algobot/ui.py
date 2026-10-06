@@ -1436,7 +1436,7 @@ def theme_toggle() -> None:
 
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
-    st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="expanded")
+    st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="locked")
     st.session_state.setdefault("tradealgo_theme", "light")
     st.session_state.setdefault("tradealgo_sidebar_open", True)
     st.markdown(CSS, unsafe_allow_html=True)
