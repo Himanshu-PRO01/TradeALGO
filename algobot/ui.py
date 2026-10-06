@@ -506,7 +506,9 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         pointer-events: none;
         background: linear-gradient(180deg, transparent, rgba(47,125,246,.45), transparent);
     }
-    /* Hover is the only desktop sidebar control; remove Streamlit's native toggle button. */
+    /* Hover-only sidebar: remove every native Streamlit sidebar toggle/control. */
+    [data-testid="collapsedControl"],
+    button[kind="header-close"],
     [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarCollapseButton"] button,
     button[aria-label*="sidebar" i] {
@@ -514,7 +516,39 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         visibility: hidden !important;
         pointer-events: none !important;
     }
-    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"] { transition: none !important; }
+
+    /* Desktop sidebar: collapsed to a 42px edge, expanded on hover/focus. */
+    [data-testid="stSidebar"] {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        transform: translateX(-218px) !important;
+        transition: transform .3s cubic-bezier(.4,0,.2,1) !important;
+        z-index: 99999 !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,.15);
+    }
+
+    [data-testid="stSidebar"]:hover,
+    [data-testid="stSidebar"]:focus-within {
+        transform: translateX(0) !important;
+        box-shadow: 10px 0 34px rgba(0,0,0,.28) !important;
+    }
+
+    /* Keep sidebar labels readable at the expanded width. */
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a span:not(:first-child) {
+        width: auto !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        opacity: 1 !important;
+    }
+
+    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"] {
+        transition: none !important;
+    }
 }
 
 /* Mobile menu */
