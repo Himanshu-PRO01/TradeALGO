@@ -972,6 +972,211 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 }
 .ta-back-to-top span { opacity:.78; }
 
+/* ================================================================
+ * TradeALGO Desk Skin — shared visual system for every page.
+ * Keep page content/functionality intact; make every research/workflow
+ * page visually belong to the same dark Trading Desk product.
+ * ================================================================ */
+html, body,
+[data-testid="stApp"],
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] > section,
+.stApp {
+    background:#05090e !important;
+    color:#f4f7fb !important;
+}
+[data-testid="stAppViewContainer"] {
+    background:
+        radial-gradient(circle at 78% 0%,rgba(25,86,160,.09),transparent 25%),
+        linear-gradient(180deg,#05090e 0%,#070d14 55%,#05090e 100%) !important;
+}
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"] {
+    background:transparent !important;
+}
+.block-container {
+    max-width:1500px !important;
+    padding:1rem 1.35rem 4rem !important;
+    background:transparent !important;
+}
+h1,h2,h3,h4,h5,h6,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stCaptionContainer"] {
+    color:#f4f7fb;
+}
+[data-testid="stCaptionContainer"] {
+    color:#7f8d9d !important;
+}
+a { color:#6ea8ff; }
+hr { border-color:#182532 !important; }
+
+/* Common desk panels/cards */
+.ab-card,
+[data-testid="stExpander"],
+[data-testid="stMetric"],
+.st-key-top_menu_drawer {
+    border:1px solid #213344 !important;
+    border-radius:14px !important;
+    background:linear-gradient(145deg,#0d1721,#0a121b) !important;
+    box-shadow:0 12px 32px rgba(0,0,0,.14) !important;
+}
+.ab-card { color:#c7d0db; }
+.ab-card h4 { color:#f4f7fb; }
+.ab-card p { color:#8f9dad; }
+
+/* Expanders */
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary p {
+    color:#dfe7ef !important;
+}
+[data-testid="stExpander"] > details > div {
+    background:#0a121b !important;
+    border-top:1px solid #1b2937 !important;
+}
+
+/* Inputs/selectors */
+[data-baseweb="input"] > div,
+[data-baseweb="select"] > div,
+[data-baseweb="textarea"] > div,
+[data-testid="stNumberInput"] > div > div,
+[data-testid="stTextInput"] > div > div,
+[data-testid="stTextArea"] > div > div {
+    background:#0b141e !important;
+    border-color:#263749 !important;
+    color:#e7edf5 !important;
+}
+input, textarea {
+    color:#e7edf5 !important;
+    background:#0b141e !important;
+    caret-color:#2f7df6 !important;
+}
+[data-baseweb="select"] *,
+[data-baseweb="input"] *,
+[data-baseweb="textarea"] * {
+    color:#dfe7ef !important;
+}
+[data-baseweb="popover"],
+[data-baseweb="menu"] {
+    background:#0b141e !important;
+    border-color:#263749 !important;
+}
+[data-baseweb="menu"] li:hover { background:#142131 !important; }
+
+/* Buttons */
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button,
+.stDownloadButton > button {
+    border:1px solid #304357 !important;
+    border-radius:10px !important;
+    background:#0f1924 !important;
+    color:#dfe7ef !important;
+    font-weight:700 !important;
+    transition:all .16s ease !important;
+}
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover,
+.stDownloadButton > button:hover {
+    border-color:#2f7df6 !important;
+    background:#142235 !important;
+    color:#fff !important;
+    transform:translateY(-1px);
+}
+.stButton > button[kind="primary"],
+[data-testid="stFormSubmitButton"] > button[kind="primary"] {
+    background:#2378f3 !important;
+    border-color:#2378f3 !important;
+    color:#fff !important;
+}
+.stButton > button[kind="primary"]:hover,
+[data-testid="stFormSubmitButton"] > button[kind="primary"]:hover {
+    background:#2f87ff !important;
+    border-color:#2f87ff !important;
+}
+
+/* Tabs/radios/checkboxes */
+[data-baseweb="tab-list"] {
+    gap:4px !important;
+    background:#090f16 !important;
+    border:1px solid #182532 !important;
+    border-radius:10px !important;
+    padding:4px !important;
+}
+[data-baseweb="tab"] {
+    color:#8f9dad !important;
+    border-radius:7px !important;
+}
+[data-baseweb="tab"][aria-selected="true"] {
+    color:#fff !important;
+    background:#142235 !important;
+}
+[data-testid="stRadio"] label,
+[data-testid="stCheckbox"] label,
+[data-testid="stToggle"] label,
+[data-testid="stSelectbox"] label,
+[data-testid="stNumberInput"] label,
+[data-testid="stTextInput"] label,
+[data-testid="stTextArea"] label,
+[data-testid="stSlider"] label,
+[data-testid="stMultiSelect"] label {
+    color:#aeb9c7 !important;
+}
+
+/* Tables/dataframes */
+[data-testid="stDataFrame"],
+[data-testid="stTable"] {
+    border:1px solid #213344 !important;
+    border-radius:12px !important;
+    overflow:hidden !important;
+}
+[data-testid="stDataFrame"] * { border-color:#1b2937 !important; }
+
+/* Alerts/status blocks */
+[data-testid="stAlert"] {
+    border-radius:12px !important;
+    background:#0b151f !important;
+    border-color:#26384a !important;
+}
+[data-testid="stStatusWidget"] {
+    background:#0b151f !important;
+    border-color:#26384a !important;
+}
+
+/* Desk-style page title band */
+.ta-page-head {
+    border:1px solid #203143;
+    border-radius:16px;
+    margin:0 0 14px;
+    padding:22px 24px;
+    background:
+        radial-gradient(circle at 85% 50%,rgba(37,99,235,.18),transparent 28%),
+        linear-gradient(105deg,#0b121a 0%,#0c1724 55%,#07111d 100%);
+    box-shadow:0 18px 45px rgba(0,0,0,.16);
+}
+.ta-page-head .kicker {
+    display:inline-flex;
+    padding:6px 10px;
+    border:1px solid #28445b;
+    border-radius:999px;
+    background:#0c1a27;
+    color:#b9c7d7;
+    font-size:.63rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.ta-page-head h1 {
+    margin:10px 0 5px;
+    font-size:2rem;
+    line-height:1.08;
+    letter-spacing:-.045em;
+}
+.ta-page-head p {
+    margin:0;
+    color:#8f9dad;
+    font-size:.82rem;
+}
+
 /* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
     margin-bottom:4px !important;
