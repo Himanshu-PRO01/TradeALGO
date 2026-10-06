@@ -546,8 +546,24 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         opacity: 1 !important;
     }
 
-    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"] {
-        transition: none !important;
+    /* Prevent the expanded sidebar from sitting on top of the trading workspace.
+     * The sidebar is intentionally fixed, so reserve its full width only while
+     * it is open. The collapsed 42px edge remains non-blocking. */
+    [data-testid="stSidebar"]:hover ~ [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"],
+    [data-testid="stSidebar"]:focus-within ~ [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"] {
+        margin-left: 260px !important;
+        max-width: calc(100vw - 260px) !important;
+        transition: margin-left .3s cubic-bezier(.4,0,.2,1), max-width .3s cubic-bezier(.4,0,.2,1) !important;
+    }
+
+    [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"] {
+        transition: margin-left .3s cubic-bezier(.4,0,.2,1), max-width .3s cubic-bezier(.4,0,.2,1) !important;
+    }
+
+    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"],
+    body:has([data-testid="stSidebar"]:focus-within) [data-testid="stMainBlockContainer"] {
+        margin-left: 260px !important;
+        max-width: calc(100vw - 260px) !important;
     }
 }
 
