@@ -441,14 +441,31 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     font-weight:600;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a span {
+    width:auto;
+    min-width:0;
+    margin-right:0;
+    font-size:.88rem;
+    text-align:left;
+    opacity:.9;
+    overflow:visible;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a span:first-child {
     width:24px;
-    margin-right:3px;
+    min-width:24px;
+    flex:0 0 24px;
+    margin-right:7px;
     font-size:1rem;
     text-align:center;
-    opacity:.9;
+    line-height:1;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] span {
     opacity:1;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a p {
+    flex:1 1 auto;
+    min-width:0;
+    overflow:visible;
+    white-space:nowrap;
 }
 
 /* Sidebar footer/status */
