@@ -1574,14 +1574,6 @@ def header(title: str, subtitle: str = "", mode: Optional[str] = None) -> None:
                 on_change=_apply_theme_from_toggle,
                 args=("tradealgo_theme_toggle_top",),
             )
-            sidebar_label = "✕ Sidebar" if st.session_state.get("tradealgo_sidebar_open", True) else "☰ Sidebar"
-            st.button(
-                sidebar_label,
-                key="sidebar_toggle",
-                type="secondary",
-                help="Show or hide the TradeALGO side menu",
-                on_click=_toggle_sidebar,
-            )
             if st.button("☰ Menu", key="top_menu", type="secondary"):
                 st.session_state["top_menu_open"] = not st.session_state.get("top_menu_open", False)
                 st.rerun()
