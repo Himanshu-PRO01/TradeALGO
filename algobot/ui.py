@@ -463,6 +463,36 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     line-height:1.45;
 }
 
+/* Hover-expandable desktop sidebar — no toggle button required.
+ * The sidebar keeps a 42px edge visible and expands over the workspace on hover/focus.
+ * Streamlit's native mobile drawer remains unchanged below 769px.
+ */
+@media (min-width:769px) {
+    [data-testid="stSidebar"] {
+        transform: translateX(-194px) !important;
+        transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s ease !important;
+        will-change: transform;
+        z-index: 1000 !important;
+    }
+    [data-testid="stSidebar"]:hover,
+    [data-testid="stSidebar"]:focus-within {
+        transform: translateX(0) !important;
+        box-shadow: 10px 0 34px rgba(0,0,0,.28) !important;
+    }
+    [data-testid="stSidebar"]::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: -1px;
+        width: 2px;
+        height: 100%;
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent, rgba(47,125,246,.45), transparent);
+    }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"] { transition: none !important; }
+}
+
 /* Mobile menu */
 @media (max-width:768px) {
     [data-testid="stSidebar"] [data-testid="stPageLink"] a {
