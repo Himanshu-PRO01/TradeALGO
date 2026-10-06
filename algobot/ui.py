@@ -506,7 +506,14 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         pointer-events: none;
         background: linear-gradient(180deg, transparent, rgba(47,125,246,.45), transparent);
     }
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    /* Hover is the only desktop sidebar control; remove Streamlit's native toggle button. */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapseButton"] button,
+    button[aria-label*="sidebar" i] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
     body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"] { transition: none !important; }
 }
 
