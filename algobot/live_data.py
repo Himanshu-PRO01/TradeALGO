@@ -17,6 +17,8 @@ MARKETS: dict[str, str] = {
     "Reliance": "RELIANCE.NS",
     "HDFC Bank": "HDFCBANK.NS",
     "ICICI Bank": "ICICIBANK.NS",
+    "Maruti Suzuki": "MARUTI.NS",
+    "M&M": "M&M.NS",
     "TCS": "TCS.NS",
     "Infosys": "INFY.NS",
     "Nifty IT": "^CNXIT",

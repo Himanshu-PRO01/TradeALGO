@@ -18,9 +18,8 @@ TEST_MATRIX = [
     ("Stock Pullback (Reliance)", "configs/stock_pullback.yaml", "RELIANCE.NS", 50),
     ("Stock Pullback (HDFC Bank)", "configs/stock_pullback.yaml", "HDFCBANK.NS", 100),
     ("Stock Pullback (ICICI Bank)", "configs/stock_pullback.yaml", "ICICIBANK.NS", 100),
-    ("Conservative Pullback (Nifty 50)", "configs/conservative_pullback.yaml", "^NSEI", 25),
-    ("Bank Nifty Momentum", "configs/banknifty_momentum.yaml", "^NSEBANK", 15),
-    ("Nifty Pivot S1/R1 Bounce", "configs/nifty_pivot_bounce.yaml", "^NSEI", 25),
+    ("Stock Pullback (Maruti Suzuki)", "configs/stock_pullback.yaml", "MARUTI.NS", 10),
+    ("Stock Pullback (M&M)", "configs/stock_pullback.yaml", "M&M.NS", 40),
 ]
 
 

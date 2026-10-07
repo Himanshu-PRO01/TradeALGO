@@ -141,7 +141,8 @@ def main() -> None:
             {"symbol": "Reliance", "ticker": "RELIANCE.NS", "qty": 50},
             {"symbol": "HDFC Bank", "ticker": "HDFCBANK.NS", "qty": 100},
             {"symbol": "ICICI Bank", "ticker": "ICICIBANK.NS", "qty": 100},
-            {"symbol": "Nifty 50", "ticker": "^NSEI", "qty": 25},
+            {"symbol": "Maruti Suzuki", "ticker": "MARUTI.NS", "qty": 10},
+            {"symbol": "M&M", "ticker": "M&M.NS", "qty": 40},
         ]
 
     daemon = PaperTradingDaemon(
