@@ -1,0 +1,39 @@
+# Nifty 50 Floor Pivot Support/Resistance Bounce Strategy
+# Fades overextended moves back towards daily central pivot (PIV).
+name: nifty_pivot_bounce
+capital: 100000
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: piv,  type: pivot}
+      - {name: s1,   type: pivot_s1}
+      - {name: r1,   type: pivot_r1}
+      - {name: rsi5, type: rsi, period: 5}
+    entry_long:  "close > s1 and close_prev <= s1_prev and rsi5 < 35"
+    exit_long:   "close >= piv or rsi5 > 65"
+    entry_short: "close < r1 and close_prev >= r1_prev and rsi5 > 65"
+    exit_short:  "close <= piv or rsi5 < 35"
+  quantity: 25
+  allow_short: true
+  stop_loss_pct: 0.25
+  target_pct: 0.65
+
+risk:
+  max_daily_loss: 3000
+  max_trades_per_day: 1
+  max_position_value: 1000000
+  trading_start: "09:30"
+  no_new_entries_after: "14:15"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2

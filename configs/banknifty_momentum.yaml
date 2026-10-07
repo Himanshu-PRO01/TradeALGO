@@ -1,0 +1,38 @@
+# Bank Nifty Intraday Momentum Strategy
+# Exploits high-beta trending swings in Bank Nifty index futures using 9/21 EMA with RSI filter.
+name: banknifty_momentum
+capital: 150000
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: e9,    type: ema, period: 9}
+      - {name: e21,   type: ema, period: 21}
+      - {name: rsi14, type: rsi, period: 14}
+    entry_long:  "e9 > e21 and e9_prev <= e21_prev and rsi14 > 50 and rsi14 < 70"
+    exit_long:   "e9 < e21 or rsi14 > 75"
+    entry_short: "e9 < e21 and e9_prev >= e21_prev and rsi14 < 50 and rsi14 > 30"
+    exit_short:  "e9 > e21 or rsi14 < 25"
+  quantity: 15
+  allow_short: true
+  stop_loss_pct: 0.40
+  target_pct: 1.00
+
+risk:
+  max_daily_loss: 4000
+  max_trades_per_day: 2
+  max_position_value: 1000000
+  trading_start: "09:30"
+  no_new_entries_after: "14:15"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2
