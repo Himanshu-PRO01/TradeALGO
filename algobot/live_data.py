@@ -12,13 +12,17 @@ import pandas as pd
 
 MARKETS: dict[str, str] = {
     "Nifty 50": "^NSEI",
-    "Sensex": "^BSESN",
     "Bank Nifty": "^NSEBANK",
+    "Sensex": "^BSESN",
+    "Reliance": "RELIANCE.NS",
+    "HDFC Bank": "HDFCBANK.NS",
+    "TCS": "TCS.NS",
+    "Infosys": "INFY.NS",
     "Nifty IT": "^CNXIT",
-    "Nifty Midcap 100": "^NSEMDCP",
     "India VIX": "^INDIAVIX",
     "USD/INR": "INR=X",
 }
+
 
 # label -> (yfinance interval, yfinance period). Yahoo limits how far back
 # intraday intervals go (1m: ~7 days, 5m/15m: ~60 days), hence the periods.

@@ -28,7 +28,7 @@ _SWIPE_MENU_COMPONENT = None
 
 def is_dark_mode() -> bool:
     """Return the current TradeALGO appearance preference."""
-    return st.session_state.get("tradealgo_theme", "light") == "dark"
+    return st.session_state.get("tradealgo_theme", "dark") == "dark"
 
 
 def _market_logo_base64() -> str:
@@ -224,7 +224,40 @@ header[data-testid="stHeader"] {
 }
 @media(max-width:760px){.st-key-auth_card [data-testid="stHorizontalBlock"]{flex-direction:column!important}.ta-auth-brand{padding:30px 24px;border-right:0;border-bottom:1px solid var(--ta-border)}.ta-auth-logo-image{width:min(100%,430px);margin:-2px 0 8px}.ta-auth-logo-image img{max-height:130px}.ta-auth-kicker{margin-top:30px}.ta-auth-title{font-size:2.15rem}.ta-auth-form-head{padding:30px 24px 6px}.st-key-ab_login{padding:10px 24px 0}
 }
-.block-container { padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1500px; }
+.block-container,
+[data-testid="stMainBlockContainer"],
+.stMainBlockContainer {
+    padding-top: 0.25rem !important;
+    padding-bottom: 3rem !important;
+    max-width: 1540px !important;
+}
+/* Completely remove invisible utility elements from the layout flow */
+[data-testid="stElementContainer"]:has(> .stMarkdown > [data-testid="stMarkdownContainer"] > style:only-child),
+[data-testid="stElementContainer"]:has(#tradealgo-top),
+[data-testid="stElementContainer"].st-key-algobot_mobile_swipe_menu,
+[data-testid="stElementContainer"]:has(iframe[title*="swipe" i]) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+/* Isolate floating back-to-top button out of document flow */
+[data-testid="stElementContainer"]:has(.ta-back-to-top) {
+    position: fixed !important;
+    right: 24px !important;
+    bottom: 24px !important;
+    z-index: 999999 !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    pointer-events: none !important;
+}
+.ta-back-to-top {
+    pointer-events: auto !important;
+}
 h1, h2, h3 { letter-spacing: -0.01em; }
 
 /* Exact TradeALGO Market Desk logo asset */
@@ -480,65 +513,26 @@ h1, h2, h3 { letter-spacing: -0.01em; }
     line-height:1.45;
 }
 
-/* Hover-expandable desktop sidebar — no toggle button required.
- * The sidebar keeps a 42px edge visible and expands over the workspace on hover/focus.
- * Streamlit's native mobile drawer remains unchanged below 769px.
- */
+/* Professional docked desktop sidebar */
 @media (min-width:769px) {
     [data-testid="stSidebar"] {
-        transform: translateX(-194px) !important;
-        transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s ease !important;
-        will-change: transform;
-        z-index: 1000 !important;
-    }
-    [data-testid="stSidebar"]:hover,
-    [data-testid="stSidebar"]:focus-within {
-        transform: translateX(0) !important;
-        box-shadow: 10px 0 34px rgba(0,0,0,.28) !important;
-    }
-    [data-testid="stSidebar"]::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: -1px;
-        width: 2px;
-        height: 100%;
-        pointer-events: none;
-        background: linear-gradient(180deg, transparent, rgba(47,125,246,.45), transparent);
-    }
-    /* Hover-only sidebar: remove every native Streamlit sidebar toggle/control. */
-    [data-testid="collapsedControl"],
-    button[kind="header-close"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarCollapseButton"] button,
-    button[aria-label*="sidebar" i] {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
-    /* Desktop sidebar: collapsed to a 42px edge, expanded on hover/focus. */
-    [data-testid="stSidebar"] {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
+        position: relative !important;
+        width: 250px !important;
+        min-width: 250px !important;
+        max-width: 250px !important;
         height: 100vh !important;
-        width: 260px !important;
-        min-width: 260px !important;
-        max-width: 260px !important;
-        transform: translateX(-218px) !important;
-        transition: transform .3s cubic-bezier(.4,0,.2,1) !important;
-        z-index: 99999 !important;
-        box-shadow: 2px 0 10px rgba(0,0,0,.15);
+        background: #090e15 !important;
+        border-right: 1px solid #16202c !important;
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25) !important;
+        transform: none !important;
     }
 
-    [data-testid="stSidebar"]:hover,
-    [data-testid="stSidebar"]:focus-within {
-        transform: translateX(0) !important;
-        box-shadow: 10px 0 34px rgba(0,0,0,.28) !important;
+    [data-testid="stSidebar"] > div:first-child {
+        width: 250px !important;
+        background: #090e15 !important;
     }
 
-    /* Keep sidebar labels readable at the expanded width. */
+    /* Keep sidebar labels readable without clipping */
     [data-testid="stSidebar"] [data-testid="stPageLink"] a span:not(:first-child) {
         width: auto !important;
         min-width: 0 !important;
@@ -546,24 +540,19 @@ h1, h2, h3 { letter-spacing: -0.01em; }
         opacity: 1 !important;
     }
 
-    /* Prevent the expanded sidebar from sitting on top of the trading workspace.
-     * The sidebar is intentionally fixed, so reserve its full width only while
-     * it is open. The collapsed 42px edge remains non-blocking. */
-    [data-testid="stSidebar"]:hover ~ [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"],
-    [data-testid="stSidebar"]:focus-within ~ [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"] {
-        margin-left: 260px !important;
-        max-width: calc(100vw - 260px) !important;
-        transition: margin-left .3s cubic-bezier(.4,0,.2,1), max-width .3s cubic-bezier(.4,0,.2,1) !important;
-    }
-
-    [data-testid="stAppViewContainer"] [data-testid="stMainBlockContainer"] {
-        transition: margin-left .3s cubic-bezier(.4,0,.2,1), max-width .3s cubic-bezier(.4,0,.2,1) !important;
-    }
-
-    body:has([data-testid="stSidebar"]:hover) [data-testid="stMainBlockContainer"],
-    body:has([data-testid="stSidebar"]:focus-within) [data-testid="stMainBlockContainer"] {
-        margin-left: 260px !important;
-        max-width: calc(100vw - 260px) !important;
+    /* Style the sidebar toggle button cleanly */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 12px !important;
+        left: 12px !important;
+        z-index: 99999 !important;
+        background: rgba(12, 20, 31, 0.85) !important;
+        border: 1px solid #1e2c3d !important;
+        border-radius: 8px !important;
+        backdrop-filter: blur(8px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
     }
 }
 
@@ -940,37 +929,34 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 
 /* Floating back-to-top control */
 .ta-back-to-top {
-    position:fixed;
-    left:50%;
-    right:auto;
-    bottom:22px;
-    transform:translateX(-50%);
-    z-index:99999;
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    min-height:40px;
-    padding:0 13px;
-    border:1px solid #2B394A;
-    border-radius:999px;
-    background:rgba(18,25,35,.94);
-    color:#E7EDF5 !important;
-    text-decoration:none !important;
-    font-size:.76rem;
-    font-weight:800;
-    letter-spacing:.02em;
-    box-shadow:0 10px 30px rgba(0,0,0,.30);
-    backdrop-filter:blur(12px);
-    transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease;
+    position: fixed !important;
+    right: 24px !important;
+    bottom: 24px !important;
+    z-index: 99999 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(14, 22, 34, 0.9) !important;
+    border: 1px solid #233549 !important;
+    color: #94a3b8 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 4px 18px rgba(0,0,0,.35) !important;
+    transition: all .2s ease !important;
 }
 .ta-back-to-top:hover {
-    transform:translateX(-50%) translateY(-2px);
-    background:#172231;
-    border-color:#3B82F6;
-    box-shadow:0 12px 34px rgba(0,0,0,.38),0 0 0 3px rgba(59,130,246,.08);
-    color:#fff !important;
+    transform: translateY(-2px) !important;
+    background: #162436 !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25) !important;
 }
-.ta-back-to-top span { opacity:.78; }
+.ta-back-to-top span { display: none !important; }
 
 /* ================================================================
  * TradeALGO Desk Skin — shared visual system for every page.
@@ -1505,7 +1491,7 @@ html::-webkit-scrollbar-thumb:hover {
     color: #172033 !important;
 }
 @media (max-width:768px) {
-    .ta-back-to-top { left:50%; right:auto; bottom:14px; min-height:42px; padding:0 12px; }
+    .ta-back-to-top { right:16px; left:auto; bottom:16px; min-height:42px; padding:0 12px; transform:none; }
 }
 
 /* Sidebar appearance control */
@@ -1540,6 +1526,16 @@ def page_link(path: str, label: str, icon: str | None = None, use_container_widt
         if exc.__class__.__name__ == "StreamlitPageNotFoundError":
             href = path.replace(" ", "%20")
             st.markdown(f'<a href="/{href}" target="_self">{escape(label)}</a>', unsafe_allow_html=True)
+        else:
+            raise
+
+def safe_switch_page(path: str) -> None:
+    """Safely switch page, with an AppTest-safe fallback when called outside navigation registry."""
+    try:
+        st.switch_page(path)
+    except Exception as exc:
+        if exc.__class__.__name__ == "StreamlitPageNotFoundError":
+            st.session_state["_target_page"] = path
         else:
             raise
 
@@ -1892,7 +1888,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
                 type="primary" if i == index else "secondary",
                 width=170,
             ):
-                st.switch_page(path)
+                safe_switch_page(path)
 
     st.caption(
         f"Step {index+1} of {total} · scroll sideways to see all steps · "
@@ -1909,7 +1905,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
                 key=f"workflow_prev_{current_key}",
                 width="stretch",
             ):
-                st.switch_page(prev_step[2])
+                safe_switch_page(prev_step[2])
     with right:
         if next_step:
             if st.button(
@@ -1917,7 +1913,7 @@ def workflow_nav(current_key: str, complete: bool = False) -> None:
                 key=f"workflow_next_{current_key}",
                 width="stretch",
             ):
-                st.switch_page(next_step[2])
+                safe_switch_page(next_step[2])
         else:
             st.success("✅ Workflow complete — you have reached Live Trading.")
 

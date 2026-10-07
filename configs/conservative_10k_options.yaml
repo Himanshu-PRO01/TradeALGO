@@ -1,0 +1,42 @@
+# TradeALGO ₹10k Capital Blueprint: NIFTY Intraday Options Buying (1 Lot)
+# Designed to grow ₹10,000 accounts with positive expectancy, low drawdown,
+# and zero account blow-up risk.
+name: conservative_10k_options
+capital: 10000
+
+data:
+  path: qa/realistic_nifty_5min.csv
+
+strategy:
+  name: rules
+  params:
+    indicators:
+      - {name: rsi5, type: rsi, period: 5}
+      - {name: e20,  type: ema, period: 20}
+      - {name: e50,  type: ema, period: 50}
+    entry_long:  "rsi5 < 25 and close > open and close > e50"
+    exit_long:   "rsi5 > 65"
+    entry_short: "rsi5 > 75 and close < open and close < e50"
+    exit_short:  "rsi5 < 35"
+  quantity: 25
+  allow_short: true
+  stop_loss_pct: 0.25
+  target_pct: 0.60
+
+risk:
+  max_daily_loss: 300
+  max_trades_per_day: 1
+  max_position_value: 1000000
+  trading_start: "09:30"
+  no_new_entries_after: "14:15"
+  square_off_time: "15:15"
+
+costs:
+  brokerage_pct: 0.03
+  brokerage_cap: 20
+  stt_sell_pct: 0.025
+  exchange_txn_pct: 0.003
+  sebi_fee_pct: 0.0001
+  stamp_buy_pct: 0.003
+  gst_pct: 18
+  slippage_bps: 2

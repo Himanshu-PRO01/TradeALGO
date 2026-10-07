@@ -120,6 +120,67 @@ def summarize_auto_test(rows: list[dict], path: str | None = None) -> list[Lesso
     return lessons
 
 
+def analyze_and_learn_from_trades(trades: Any, metrics: dict | None = None, path: str | None = None) -> list[Lesson]:
+    """Inspect trade logs and metrics, diagnose mistakes, and record actionable lessons."""
+    if trades is None:
+        return []
+    import pandas as pd
+    df = trades if isinstance(trades, pd.DataFrame) else pd.DataFrame(trades)
+    if df.empty:
+        return []
+
+    lessons: list[Lesson] = []
+
+    # 1. Diagnose loss clustering by time-of-day
+    if "entry_time" in df.columns and "net_pnl" in df.columns:
+        times = pd.to_datetime(df["entry_time"])
+        morning_losses = df[(times.dt.hour == 9) & (times.dt.minute < 45) & (df["net_pnl"] < 0)]
+        if len(morning_losses) >= 1:
+            lessons.append(record_lesson(
+                "timing",
+                "Opening bell volatility whipsaw detected before 09:45.",
+                f"{len(morning_losses)} trade(s) triggered stop loss in first 30 mins of session.",
+                action="restrict trading_start to 09:45 or later",
+                path=path,
+            ))
+
+    # 2. Diagnose fee erosion (trades where gross PnL was positive or near zero but charges turned it negative)
+    if "gross_pnl" in df.columns and "net_pnl" in df.columns:
+        fee_drag_trades = df[(df["gross_pnl"] >= 0) & (df["net_pnl"] < 0)]
+        if len(fee_drag_trades) >= 1:
+            lessons.append(record_lesson(
+                "friction",
+                "Transaction charges exceeded gross edge on small scalp moves.",
+                f"{len(fee_drag_trades)} winning/breakeven gross trade(s) became net losses after brokerage and STT.",
+                action="enforce higher min target ratio and cap max daily trades",
+                path=path,
+            ))
+
+    # 3. Diagnose consecutive losses
+    if metrics and metrics.get("max_loss_streak", 0) >= 2:
+        lessons.append(record_lesson(
+            "drawdown",
+            "Consecutive stop-outs observed during adverse regime.",
+            f"Encountered {metrics['max_loss_streak']} consecutive losses.",
+            action="enforce cooldown period after consecutive stops",
+            path=path,
+        ))
+
+    # 4. Stop-loss execution frequency
+    if "exit_reason" in df.columns and len(df) >= 3:
+        stop_outs = df[df["exit_reason"] == "stop"]
+        if len(stop_outs) / len(df) > 0.40:
+            lessons.append(record_lesson(
+                "stop_placement",
+                "High stop-out rate (>40%) indicates entry trigger is too sensitive.",
+                f"{len(stop_outs)} of {len(df)} trades hit full stop loss.",
+                action="tighten entry conditions with stronger confirmation or wider stop with smaller size",
+                path=path,
+            ))
+
+    return lessons
+
+
 def research_shortlist(rows: list[dict]) -> list[dict]:
     """Return a transparent research shortlist; not a profit guarantee."""
     valid = [r for r in rows if bool(r.get("risk_rules_ok"))]

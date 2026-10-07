@@ -74,3 +74,14 @@ def test_empty_config_uses_defaults():
     cfg = validate_config(None)
     assert cfg["capital"] == 100000
     assert cfg["risk"]["square_off_time"].strftime("%H:%M") == "15:15"
+
+
+def test_all_repo_configs_validate():
+    from pathlib import Path
+    from algobot.config import load_config
+    cfg_dir = Path(__file__).resolve().parents[1] / "configs"
+    for yaml_path in cfg_dir.glob("*.yaml"):
+        loaded = load_config(yaml_path)
+        assert loaded["capital"] > 0
+        assert "strategy" in loaded
+

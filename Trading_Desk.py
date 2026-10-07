@@ -31,16 +31,16 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewContainer"]>
 [data-testid="stMain"],[data-testid="stMainBlockContainer"]{
   background:transparent!important;
 }
-.block-container{max-width:1500px!important;padding:1rem 1.35rem 4rem!important;background:transparent!important}
+.block-container{max-width:1500px!important;padding:0.35rem 1.35rem 4rem!important;background:transparent!important}
 [data-testid="stHeader"]{background:#05090e!important}
 [data-testid="stToolbar"]{background:#05090e!important}
 
 .ta-shell{color:var(--ta-text)}
 .ta-safety-strip{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 13px;border:1px solid #274033;border-radius:9px;background:linear-gradient(90deg,#09130f,#0a1110);color:#dce8e1;font-size:.68rem}.ta-safety-strip>span{color:var(--ta-green);font-size:.9rem}.ta-safety-strip b{font-size:.67rem;letter-spacing:.08em}.ta-safety-strip em{padding:4px 7px;border:1px solid rgba(22,199,132,.28);border-radius:999px;color:var(--ta-green);font-style:normal;font-weight:800;font-size:.56rem}.ta-safety-strip small{margin-left:auto;color:#7f8d9d}@media(max-width:600px){.ta-safety-strip{flex-wrap:wrap}.ta-safety-strip small{width:100%;margin-left:0}}
 .ta-topbar{display:flex;align-items:center;gap:14px;height:58px;margin-bottom:12px}
-.ta-brand{font-size:1.15rem;font-weight:900;letter-spacing:.01em;white-space:nowrap}
+.ta-brand{font-size:1.15rem;font-weight:900;letter-spacing:.01em;white-space:nowrap;color:#f4f7fb}
 .ta-brand b{color:var(--ta-blue)}
-.ta-search{height:40px;flex:1;max-width:470px;border:1px solid #263749;border-radius:10px;background:#0b141e;color:#8494a7;padding:10px 14px;font-size:.78rem}
+.ta-search{height:40px;flex:1;max-width:470px;border:1px solid #263749;border-radius:10px;background:#0b141e;color:#8494a7;padding:0 14px;font-size:.78rem;display:flex;align-items:center;justify-content:space-between;white-space:nowrap;overflow:hidden}
 .ta-market{margin-left:auto;display:flex;gap:28px;align-items:center}
 .ta-market small,.ta-user small{display:block;color:#7d8da0;font-size:.65rem}
 .ta-market strong{font-size:.9rem}.ta-up{color:var(--ta-green)}.ta-down{color:var(--ta-red)}
@@ -87,13 +87,11 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewContainer"]>
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="ta-shell">', unsafe_allow_html=True)
-
 # Top utility bar — intentionally mirrors the reference layout.
 st.markdown("""
-<div id="tradealgo-top" class="ta-topbar">
+<div class="ta-topbar">
   <div class="ta-brand">📈 Trade<span style="color:#2f7df6">ALGO</span></div>
-  <div class="ta-search">⌕ &nbsp; Search symbols (e.g. NIFTY, RELIANCE, AAPL)... &nbsp;&nbsp; <b style="float:right;color:#aebdce">Ctrl K</b></div>
+  <div class="ta-search"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⌕ &nbsp; Search symbols (e.g. NIFTY, RELIANCE, AAPL)...</span> <b style="color:#aebdce;margin-left:8px;white-space:nowrap;">Ctrl K</b></div>
   <div class="ta-market">
     <div><small>NIFTY</small><strong>24,612.30 &nbsp;<span class="ta-up">+1.24%</span></strong></div>
     <div><small>SENSEX</small><strong>80,432.12 &nbsp;<span class="ta-up">+1.10%</span></strong></div>
@@ -268,4 +266,3 @@ st.markdown("""
   <span>Documentation &nbsp;&nbsp; Report Issue &nbsp;&nbsp; Feedback &nbsp;&nbsp; ◌</span>
 </div>
 """,unsafe_allow_html=True)
-st.markdown('</div>',unsafe_allow_html=True)

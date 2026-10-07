@@ -16,7 +16,10 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import requests
-import yfinance as yf
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 from .audit import run_audit
 from .config import validate_config
 from .engine import run_backtest
@@ -73,6 +76,8 @@ def _yf_symbol(symbol: str) -> str:
     return f"{s}.NS"
 
 def fetch_yfinance(symbol: str, period: str = "2y", interval: str = "1d") -> SourceResult:
+    if yf is None:
+        return SourceResult("Yahoo Finance", "price", False, detail="yfinance is not installed.")
     ticker = _yf_symbol(symbol)
     try:
         raw = yf.download(ticker, period=period, interval=interval, auto_adjust=False, progress=False)

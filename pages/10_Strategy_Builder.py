@@ -122,7 +122,7 @@ with strategies_scope() as library:
                 st.session_state["last_raw"] = record["config"]
                 st.session_state["selected_saved_strategy"] = record["id"]
                 library.mark_used(record["id"])
-                st.switch_page("pages/5_Backtest.py")
+                ui.safe_switch_page("pages/5_Backtest.py")
     else:
         st.caption("No saved strategies yet. Run a backtest and use **Save strategy + results** to create your first one.")
 

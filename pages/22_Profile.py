@@ -137,7 +137,7 @@ for col, (num, title, desc, path) in zip(cols, steps):
             unsafe_allow_html=True,
         )
         if st.button(f"Open {title}", key=f"profile_open_{num}", width="stretch"):
-            st.switch_page(path)
+            ui.safe_switch_page(path)
 
 st.markdown('<div class="profile-section">🔐 Account & safety</div>', unsafe_allow_html=True)
 st.info(

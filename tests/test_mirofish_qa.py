@@ -1,5 +1,5 @@
 from pathlib import Path
-from algobot.mirofish_qa import build_strategy_evidence, SAFE_PAGES
+from algobot.mirofish_qa import build_strategy_evidence, run_website_swarm, SAFE_PAGES
 from algobot.config import load_config
 
 def test_strategy_evidence_is_deterministic():
@@ -11,3 +11,10 @@ def test_strategy_evidence_is_deterministic():
 
 def test_website_swarm_allowlist_excludes_execution_pages():
     assert all("Live" not in p and "OpenAlgo" not in p for p in SAFE_PAGES)
+
+def test_website_swarm_executes_safely():
+    root = Path(__file__).resolve().parents[1]
+    res = run_website_swarm(root, agents=1, max_pages=1, action_rounds=1, timeout=20.0)
+    assert res.journeys_tested >= 1
+    assert res.pass_rate == 100.0
+    assert not res.safety_violations

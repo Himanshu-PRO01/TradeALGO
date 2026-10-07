@@ -1,0 +1,24 @@
+{
+  "lessons": [
+    {
+      "action": "enforce cooldown period after consecutive stops",
+      "category": "drawdown",
+      "confidence": "low",
+      "evidence": "Encountered 3 consecutive losses.",
+      "first_seen": "2026-10-06T21:28:59.101375+00:00",
+      "last_seen": "2026-10-06T21:28:59.101375+00:00",
+      "message": "Consecutive stop-outs observed during adverse regime.",
+      "occurrences": 1
+    },
+    {
+      "action": "enforce higher min target ratio and cap max daily trades",
+      "category": "friction",
+      "confidence": "medium",
+      "evidence": "2 winning/breakeven gross trade(s) became net losses after brokerage and STT.",
+      "first_seen": "2026-10-06T21:51:14.888271+00:00",
+      "last_seen": "2026-10-06T21:53:57.456596+00:00",
+      "message": "Transaction charges exceeded gross edge on small scalp moves.",
+      "occurrences": 3
+    }
+  ]
+}

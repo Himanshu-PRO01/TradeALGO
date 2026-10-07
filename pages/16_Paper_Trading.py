@@ -50,15 +50,27 @@ with kill_switch_scope() as switch:
         else:
             st.caption("No halts or resumes recorded yet.")
 
+configs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs")
+available_configs = sorted([f for f in os.listdir(configs_dir) if f.endswith(".yaml")])
+default_ix = available_configs.index("conservative_10k_options.yaml") if "conservative_10k_options.yaml" in available_configs else 0
+
 raw = st.session_state.get("last_raw")
+options_list = (["Session Backtest Strategy"] + available_configs) if raw else available_configs
+cfg_choice = st.selectbox(
+    "Strategy Configuration",
+    options_list,
+    index=0 if raw else default_ix,
+    key="paper_strategy_select",
+)
+
 try:
-    if raw is not None:
+    if raw is not None and cfg_choice == "Session Backtest Strategy":
         base_cfg = validate_config(raw)
-        st.info("Using the strategy from your last Backtest.")
+        st.info("Using the strategy from your last Backtest session.")
     else:
-        demo = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "demo_rules.yaml")
-        base_cfg = load_config(demo)
-        st.info("Using the demo strategy. Run a Backtest first to paper-trade your own strategy.")
+        chosen_path = os.path.join(configs_dir, cfg_choice)
+        base_cfg = load_config(chosen_path)
+        st.info(f"Using strategy: `{base_cfg.get('name', cfg_choice)}` (Capital: ₹{base_cfg.get('capital', 10000):,}, Risk SL: {base_cfg.get('strategy', {}).get('stop_loss_pct', 0.25)}%)")
 except ConfigError as exc:
     st.error(f"The settings are not valid: {exc}")
     st.stop()
@@ -103,6 +115,9 @@ else:
 
 with paper_scope() as log:
     added = log_new_trades(log, run_key, symbol_label, closed) if closed is not None else 0
+    if added and closed is not None and not closed.empty:
+        from algobot.learning import analyze_and_learn_from_trades
+        analyze_and_learn_from_trades(closed)
     summary = log.summary(run_key)
     history = log.all_trades(run_key)
 
@@ -142,6 +157,14 @@ with paper_scope() as log:
         ui.show_table(history.sort_values("exit_time", ascending=False))
     else:
         st.caption("No finished paper trades logged yet for this market, timeframe and strategy.")
+
+    from algobot.learning import load_memory
+    mem_lessons = load_memory().get("lessons", [])
+    if mem_lessons:
+        with st.expander(f"🧠 System Learning & Mistakes Memory ({len(mem_lessons)} lessons logged)", expanded=True):
+            for l in mem_lessons:
+                st.markdown(f"**[{l.get('category','').upper()}] {l.get('message','')}**")
+                st.caption(f"Evidence: {l.get('evidence','')} · Action: `{l.get('action','')}` · Confidence: {l.get('confidence','')}")
 
     with st.expander("Reset this paper log"):
         st.caption("Clears logged paper trades for this exact strategy + market + timeframe combination only.")
