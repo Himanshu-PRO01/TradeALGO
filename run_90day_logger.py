@@ -109,6 +109,11 @@ def main() -> None:
         help="Target trading days for compliance certification (default: 90)",
     )
     parser.add_argument(
+        "--multi-asset",
+        action="store_true",
+        help="Monitor multi-asset portfolio (Nifty 50, Bank Nifty, Fin Nifty, Reliance, HDFC Bank)",
+    )
+    parser.add_argument(
         "--daemon",
         action="store_true",
         help="Run continuously 24/7 (sleeps outside market hours, wakes up on open)",
@@ -130,6 +135,16 @@ def main() -> None:
         print_status(args.config, args.symbol)
         return
 
+    portfolio_assets = None
+    if args.multi_asset:
+        portfolio_assets = [
+            {"symbol": "Nifty 50", "ticker": "^NSEI", "qty": 25},
+            {"symbol": "Bank Nifty", "ticker": "^NSEBANK", "qty": 15},
+            {"symbol": "Fin Nifty", "ticker": "NIFTY_FIN_SERVICE.NS", "qty": 25},
+            {"symbol": "Reliance", "ticker": "RELIANCE.NS", "qty": 50},
+            {"symbol": "HDFC Bank", "ticker": "HDFCBANK.NS", "qty": 100},
+        ]
+
     daemon = PaperTradingDaemon(
         config_path=args.config,
         symbol=args.symbol,
@@ -138,6 +153,7 @@ def main() -> None:
         period=args.period,
         poll_interval_seconds=args.poll,
         target_days=args.target_days,
+        assets=portfolio_assets,
     )
 
     if args.once:

@@ -78,12 +78,17 @@ class PaperLog:
         self.db.commit()
         return self.db.total_changes - before
 
-    def all_trades(self, run_key: str) -> pd.DataFrame:
+    def all_trades(self, run_key: Optional[str] = None) -> pd.DataFrame:
         cols = ["entry_time", "exit_time", "side", "qty", "entry_price", "exit_price",
                 "gross_pnl", "costs", "net_pnl", "exit_reason", "logged_at"]
-        cur = self.db.execute(
-            f"SELECT {', '.join(cols)} FROM paper_trades WHERE run_key = ? ORDER BY exit_time", (run_key,)
-        )
+        if run_key is not None:
+            cur = self.db.execute(
+                f"SELECT {', '.join(cols)} FROM paper_trades WHERE run_key = ? ORDER BY exit_time", (run_key,)
+            )
+        else:
+            cur = self.db.execute(
+                f"SELECT {', '.join(cols)} FROM paper_trades ORDER BY exit_time"
+            )
         return pd.DataFrame(cur.fetchall(), columns=cols)
 
     def summary(self, run_key: str) -> dict:

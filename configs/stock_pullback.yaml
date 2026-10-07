@@ -1,7 +1,7 @@
-# Conservative regime-filtered pullback strategy designed to protect capital,
-# reduce transaction churn, and harvest positive expectancy in Indian indices.
-name: conservative_pullback
-capital: 10000
+# Stock Pullback Strategy: Mean-reversion on high-liquidity Nifty heavyweights
+# (Reliance, HDFC Bank, ICICI Bank). Exploits intraday overextensions aligned with 50-EMA trend.
+name: stock_pullback
+capital: 100000
 
 data:
   path: qa/realistic_nifty_5min.csv
@@ -17,15 +17,15 @@ strategy:
     exit_long:   "rsi5 > 60"
     entry_short: "rsi5 > 75 and close < open and close < e50"
     exit_short:  "rsi5 < 40"
-  quantity: 25
+  quantity: 100
   allow_short: true
-  stop_loss_pct: 0.20
-  target_pct: 0.60
+  stop_loss_pct: 0.35
+  target_pct: 0.75
 
 risk:
-  max_daily_loss: 3000
-  max_trades_per_day: 1
-  max_position_value: 1000000
+  max_daily_loss: 2000
+  max_trades_per_day: 2
+  max_position_value: 250000
   trading_start: "09:30"
   no_new_entries_after: "14:15"
   square_off_time: "15:15"

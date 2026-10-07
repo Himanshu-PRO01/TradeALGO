@@ -231,6 +231,7 @@ class PaperTradingDaemon:
         poll_interval_seconds: int = 60,
         db_path: str = "paper_trades.db",
         target_days: int = 90,
+        assets: Optional[list[dict]] = None,
     ):
         self.config_path = config_path
         self.symbol = symbol
@@ -240,6 +241,7 @@ class PaperTradingDaemon:
         self.poll_interval = poll_interval_seconds
         self.db_path = db_path
         self.target_days = target_days
+        self.assets = assets
 
         self.cfg = load_config(config_path)
         self.log = PaperLog(self.db_path)
@@ -260,16 +262,73 @@ class PaperTradingDaemon:
 
     def export_trade_audit_csv(self) -> None:
         """Dumps all closed paper trades with itemized statutory costs to CSV."""
-        df = self.log.all_trades(self.run_key)
+        df = self.log.all_trades() if self.assets else self.log.all_trades(self.run_key)
         if not df.empty:
             AUDIT_DIR.mkdir(parents=True, exist_ok=True)
             df.to_csv(TRADES_CSV, index=False)
 
-    def evaluate_market_tick(self) -> tuple[dict, Optional[dict], dict]:
+    def evaluate_market_tick(self) -> tuple[dict, Optional[dict], dict, dict]:
         """Fetches current delayed OHLCV candles, checks strategy rules,
 
         and updates persistent paper trade records.
         """
+        import copy
+
+        if self.assets:
+            total_new = 0
+            open_snap = None
+            last_close = 0.0
+            last_ts = None
+            total_bars = 0
+            for a in self.assets:
+                sym = a["symbol"]
+                tick = a["ticker"]
+                qty = a.get("qty", self.cfg["strategy"]["quantity"])
+                a_cfg = copy.deepcopy(self.cfg)
+                a_cfg["strategy"]["quantity"] = qty
+                try:
+                    df = fetch_ohlc(tick, self.interval, self.period)
+                    res = evaluate(a_cfg, df)
+                    o_snap, closed = split_open_and_closed(res)
+                    r_key = run_key_for(a_cfg, sym, f"{self.interval} (intraday)")
+                    added = log_new_trades(self.log, r_key, sym, closed)
+                    total_new += added
+                    last_close = df["close"].iloc[-1]
+                    last_ts = df.index[-1]
+                    total_bars += len(df)
+                    if o_snap and not open_snap:
+                        open_snap = o_snap
+                except Exception as ex:
+                    logger.warning(f"Error evaluating asset {sym}: {ex}")
+
+            if total_new > 0:
+                print(f"[{dt.datetime.now(IST).strftime('%H:%M:%S')}] +{total_new} newly exited trade(s) logged across portfolio.")
+                self.export_trade_audit_csv()
+
+            all_trades_df = self.log.all_trades()
+            realized_pnl = float(all_trades_df["net_pnl"].sum()) if not all_trades_df.empty else 0.0
+            starting_cap = float(self.cfg["capital"])
+            account = {
+                "starting_capital": starting_cap,
+                "realized_pnl": realized_pnl,
+                "unrealized_pnl": float(open_snap.get("net_pnl", 0.0)) if open_snap else 0.0,
+                "virtual_equity": starting_cap + realized_pnl,
+            }
+            total_count = len(all_trades_df)
+            wins = int((all_trades_df["net_pnl"] > 0).sum()) if total_count > 0 else 0
+            summary = {
+                "trades": total_count,
+                "net": realized_pnl,
+                "win_rate_pct": (wins / total_count * 100.0) if total_count > 0 else None,
+            }
+            status_info = {
+                "timestamp": last_ts,
+                "close": last_close,
+                "candles": total_bars,
+                "new_trades": total_new,
+            }
+            return account, open_snap, summary, status_info
+
         df = fetch_ohlc(self.ticker, self.interval, self.period)
         latest_ts = df.index[-1]
         latest_close = df["close"].iloc[-1]
@@ -314,7 +373,7 @@ class PaperTradingDaemon:
             return
 
         # Fetch trades closed on this calendar date
-        trades_df = self.log.all_trades(self.run_key)
+        trades_df = self.log.all_trades() if self.assets else self.log.all_trades(self.run_key)
         starting_capital = float(self.cfg["capital"])
 
         if not trades_df.empty:

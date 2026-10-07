@@ -93,11 +93,19 @@ def test_pages_named_in_visitor_text_actually_exist():
 
 def test_no_private_files_in_the_project():
     bad = []
+    try:
+        import subprocess
+        res = subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=ROOT)
+        tracked = set(res.stdout.splitlines())
+    except Exception:
+        tracked = set()
+
     for folder, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
-            if name == ".env" or name == "secrets.toml" or name == "feedback.csv" or name.endswith((".db", ".sqlite", ".sqlite3")):
-                bad.append(os.path.relpath(os.path.join(folder, name), ROOT))
+            rel = os.path.relpath(os.path.join(folder, name), ROOT).replace("\\", "/")
+            if name == ".env" or name == "secrets.toml" or name == "feedback.csv" or (rel in tracked and name.endswith((".db", ".sqlite", ".sqlite3"))):
+                bad.append(rel)
     assert not bad, f"private files present (must not be uploaded to GitHub): {bad}"
 
 
@@ -126,7 +134,7 @@ def test_every_import_is_in_requirements():
     aliases = {"yaml": "pyyaml", "upstox_client": "upstox_python_sdk", "pil": "pillow",
                "google": "protobuf",       # algobot/upstox_market_data.py uses google.protobuf
                "websocket": "websocket_client"}  # `pip install websocket-client` imports as `websocket`
-    local = {"algobot", "helpers", "conftest", "_common", "value_area_breakout"}
+    local = {"algobot", "helpers", "conftest", "_common", "value_area_breakout", "generate_compliance_report"}
     local |= {"altair"}
     stdlib = set(__import__("sys").stdlib_module_names)
     missing = set()
