@@ -120,6 +120,7 @@ with strategies_scope() as library:
             record = library.get(selected["id"])
             if record:
                 st.session_state["last_raw"] = record["config"]
+                st.session_state["saved_backtest_cfg"] = record["config"]
                 st.session_state["selected_saved_strategy"] = record["id"]
                 library.mark_used(record["id"])
                 ui.safe_switch_page("pages/5_Backtest.py")

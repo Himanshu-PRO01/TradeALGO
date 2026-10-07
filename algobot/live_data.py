@@ -16,6 +16,7 @@ MARKETS: dict[str, str] = {
     "Sensex": "^BSESN",
     "Reliance": "RELIANCE.NS",
     "HDFC Bank": "HDFCBANK.NS",
+    "ICICI Bank": "ICICIBANK.NS",
     "TCS": "TCS.NS",
     "Infosys": "INFY.NS",
     "Nifty IT": "^CNXIT",
@@ -27,11 +28,11 @@ MARKETS: dict[str, str] = {
 # label -> (yfinance interval, yfinance period). Yahoo limits how far back
 # intraday intervals go (1m: ~7 days, 5m/15m: ~60 days), hence the periods.
 INTERVALS: dict[str, tuple[str, str]] = {
-    "1 minute (scalping)": ("1m", "1d"),
-    "5 minutes (intraday)": ("5m", "5d"),
-    "15 minutes": ("15m", "1mo"),
-    "1 hour": ("60m", "3mo"),
-    "1 day": ("1d", "1y"),
+    "1 minute (scalping)": ("1m", "5d"),
+    "5 minutes (intraday)": ("5m", "1mo"),
+    "15 minutes": ("15m", "60d"),
+    "1 hour": ("60m", "6mo"),
+    "1 day": ("1d", "2y"),
 }
 
 
@@ -49,6 +50,8 @@ def fetch_ohlc(ticker: str, interval: str, period: str) -> pd.DataFrame:
         ) from exc
     try:
         df = yf.download(ticker, interval=interval, period=period, progress=False, auto_adjust=False)
+        if (df is None or df.empty) and period not in ("5d", "1d"):
+            df = yf.download(ticker, interval=interval, period="5d", progress=False, auto_adjust=False)
     except Exception as exc:
         raise LiveDataError(f"Could not fetch data for {ticker}: {exc}") from exc
     if df is None or df.empty:

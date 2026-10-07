@@ -35,12 +35,49 @@ entry_short: "flow < 45 and flow < flow_prev"
 exit_short:  "flow > 50"
 """
 
+STOCK_PULLBACK_RULES = """\
+indicators:
+  - {name: rsi5, type: rsi, period: 5}
+  - {name: e20,  type: ema, period: 20}
+  - {name: e50,  type: ema, period: 50}
+entry_long:  "rsi5 < 25 and close > open and close > e50"
+exit_long:   "rsi5 > 60"
+entry_short: "rsi5 > 75 and close < open and close < e50"
+exit_short:  "rsi5 < 40"
+"""
+
+NIFTY_PIVOT_RULES = """\
+indicators:
+  - {name: piv,  type: pivot}
+  - {name: s1,   type: pivot_s1}
+  - {name: r1,   type: pivot_r1}
+  - {name: rsi5, type: rsi, period: 5}
+entry_long:  "close > s1 and close_prev <= s1_prev and rsi5 < 35"
+exit_long:   "close >= piv or rsi5 > 65"
+entry_short: "close < r1 and close_prev >= r1_prev and rsi5 > 65"
+exit_short:  "close <= piv or rsi5 < 35"
+"""
+
+BANKNIFTY_MOM_RULES = """\
+indicators:
+  - {name: e9,    type: ema, period: 9}
+  - {name: e21,   type: ema, period: 21}
+  - {name: rsi14, type: rsi, period: 14}
+entry_long:  "e9 > e21 and e9_prev <= e21_prev and rsi14 > 50 and rsi14 < 70"
+exit_long:   "e9 < e21 or rsi14 > 75"
+entry_short: "e9 < e21 and e9_prev >= e21_prev and rsi14 < 50 and rsi14 > 30"
+exit_short:  "e9 > e21 or rsi14 < 25"
+"""
+
 # Kept as the "Write my own rules" starting template -- not a ready-made choice
 # of its own, just a familiar, simple starting point to edit from.
 DEFAULT_RULES = HMA_RULES
 
 # Strategy choices (label -> one-line plain description)
 K_HMA = "HMA trend rule (ready-made)"
+K_PULLBACK = "Stock Pullback (Bluechip Mean Reversion — Tested)"
+K_PIVOT = "Nifty Pivot Bounce (Floor S1/R1 Reversal — Tested)"
+K_MOM = "Bank Nifty Momentum (Fast/Slow Trend + RSI — Tested)"
 K_FLOW = "Order flow / volume pressure (ready-made)"
 K_SMA = "Moving-average crossover (ready-made)"
 K_NEW = "New Era Strategy 1.0"
@@ -48,9 +85,12 @@ K_OWN = "Write my own rules (advanced)"
 KIND_HELP = {
     K_HMA: "Buys when price is above a Hull Moving Average (HMA) that is itself still rising. Sells when the HMA "
            "turns down. The HMA hugs price more closely than a plain moving average, so it reacts sooner.",
+    K_PULLBACK: "High-win-rate intraday mean reversion for bluechips (Reliance, HDFC Bank, ICICI Bank). "
+                "Buys when RSI(5) dips below 25 while above 50 EMA; exits when RSI reaches 60.",
+    K_PIVOT: "Floor pivot reversal for Nifty 50 index. Buys when price bounces off S1 with oversold RSI; exits at central pivot.",
+    K_MOM: "9/21 EMA trend following with RSI(14) momentum filter for Bank Nifty intraday swings.",
     K_FLOW: "Buys when the Money Flow Index — price combined with volume, as a proxy for buying/selling pressure — "
-            "is above 55 and still rising. Sells when it drops back under 50. Not real tick-by-tick order flow: this "
-            "engine only has candle (OHLCV) data, no bid/ask tape, so it estimates pressure from price and volume.",
+            "is above 55 and still rising. Sells when it drops back under 50. Note: Requires volume data (use with stocks, not index spot tickers).",
     K_SMA: "Buys when the short-term average price crosses above the long-term one, sells when it crosses back. "
            "The simplest classic.",
     K_NEW: "The New Era Strategy 1.0 rules, translated for this backtester.",
@@ -146,6 +186,18 @@ elif kind == K_FLOW:
     strategy_name = "rules"
     with st.expander("See the exact rules behind this idea"):
         st.code(FLOW_RULES, language="yaml")
+elif kind == K_PULLBACK:
+    strategy_name = "rules"
+    with st.expander("See the exact rules behind this idea"):
+        st.code(STOCK_PULLBACK_RULES, language="yaml")
+elif kind == K_PIVOT:
+    strategy_name = "rules"
+    with st.expander("See the exact rules behind this idea"):
+        st.code(PIVOT_RULES, language="yaml")
+elif kind == K_MOM:
+    strategy_name = "rules"
+    with st.expander("See the exact rules behind this idea"):
+        st.code(BANKNIFTY_MOM_RULES, language="yaml")
 else:
     strategy_name = "rules"
     with st.expander("See the exact rules behind this idea"):
@@ -163,6 +215,8 @@ elif source == SRC_REAL:
     c1, c2 = st.columns(2)
     hist_symbol = c1.selectbox("Market", list(MARKETS), key="hist_symbol")
     hist_interval = c2.selectbox("Candle size", list(INTERVALS), index=1, key="hist_interval")
+    if hist_symbol in ("Nifty 50", "Bank Nifty", "Sensex") and kind == K_FLOW:
+        st.warning("⚠️ Yahoo Finance index data has 0 volume; Order flow / MFI requires volume. Select a stock like Reliance or TCS to test this rule.")
     st.caption("Needs internet. Free data from Yahoo Finance, slightly delayed. A good result on one period is still "
                "just one run: use the Reality check page next.")
 else:
@@ -246,6 +300,12 @@ try:
         params = {"sl_max_points_percent": float(new_era_sl), "target_ratio": float(new_era_ratio)}
     elif kind == K_FLOW:
         params = yaml.safe_load(FLOW_RULES)
+    elif kind == K_PULLBACK:
+        params = yaml.safe_load(STOCK_PULLBACK_RULES)
+    elif kind == K_PIVOT:
+        params = yaml.safe_load(NIFTY_PIVOT_RULES)
+    elif kind == K_MOM:
+        params = yaml.safe_load(BANKNIFTY_MOM_RULES)
     else:
         params = yaml.safe_load(HMA_RULES)
     raw = {
@@ -259,7 +319,7 @@ try:
                   "stt_sell_pct": stt_sell, "exchange_txn_pct": exch, "sebi_fee_pct": sebi, "stamp_buy_pct": stamp,
                   "gst_pct": gst, "slippage_bps": slippage},
     }
-    saved_cfg = st.session_state.pop("saved_backtest_cfg", None)
+    saved_cfg = st.session_state.pop("saved_backtest_cfg", None) or st.session_state.pop("last_raw", None)
     if saved_cfg:
         raw = saved_cfg
     cfg = validate_config(raw)
@@ -357,12 +417,28 @@ if result is not None:
             count = library.count()
             st.success(f"Saved **{save_name.strip()}**. You now have {count} saved strateg{'y' if count == 1 else 'ies'}.")
     blocked_big = result.rejections.get("position_too_large", 0)
+    has_zero_volume = (
+        prices is not None
+        and "volume" in prices.columns
+        and float(prices["volume"].sum()) == 0.0
+    )
+    uses_volume = kind == K_FLOW or any(
+        isinstance(i, dict) and i.get("type") in ("mfi", "vwap")
+        for i in (cfg.get("strategy", {}).get("params", {}).get("indicators") or [])
+    )
     if m["trades"] == 0 and blocked_big:
         st.warning(f"The idea found {blocked_big} chances to trade, but every one was blocked because a single trade "
                    f"would be bigger than your limit of {ui.inr(max_position)}. Prices on this data are high (an index "
                    "like Nifty is worth lakhs per 10 units). Fix: open **Money, stop-loss and daily limits** above and "
                    "either lower **Quantity per trade** (try 1 or 2) or raise **Max money in one trade** "
                    "(or set it to 0 for no limit), then run again.")
+        if st.button("⚡ One-click fix: Set Quantity=1 & Max Position=0 (no limit)", key="btn_fix_pos_limit"):
+            st.session_state["quantity"] = 1
+            st.session_state["max_position"] = 0
+            st.rerun()
+    elif m["trades"] == 0 and has_zero_volume and uses_volume:
+        st.warning("⚠️ This strategy requires volume (e.g. MFI or VWAP), but free Yahoo Finance index feeds (^NSEI, ^NSEBANK) "
+                   "do not report volume (volume is 0). To test this idea, switch Step 2 Market to a liquid stock like Reliance, TCS, or Infosys.")
     elif m["trades"] == 0:
         st.info("The rule never triggered on this data, so there is nothing to judge yet. "
                 "Try a longer period or a different idea.")
