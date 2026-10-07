@@ -1481,17 +1481,21 @@ html::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 0 8px rgba(37,99,235,.22) !important;
 }
 .ta-back-to-top {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
     background: #ffffff !important;
     color: #172033 !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 8px 24px rgba(15,23,42,.12) !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 4px 16px rgba(15,23,42,.12) !important;
 }
 .ta-back-to-top:hover {
     background: #f1f5f9 !important;
-    color: #172033 !important;
+    color: #2563eb !important;
 }
+.ta-back-to-top span { display: none !important; }
 @media (max-width:768px) {
-    .ta-back-to-top { right:16px; left:auto; bottom:16px; min-height:42px; padding:0 12px; transform:none; }
+    .ta-back-to-top { right:16px !important; bottom:16px !important; }
 }
 
 /* Sidebar appearance control */
@@ -1653,8 +1657,8 @@ def theme_toggle() -> None:
 
 def setup(title: str, icon: str = "📈", layout: str = "wide") -> None:
     """First call on every page: page settings, styling, and the password screen if one is set."""
-    st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="locked")
-    st.session_state.setdefault("tradealgo_theme", "light")
+    st.set_page_config(page_title=f"{title} | TradeALGO", page_icon=icon, layout=layout, initial_sidebar_state="auto")
+    st.session_state.setdefault("tradealgo_theme", "dark")
     st.session_state.setdefault("tradealgo_sidebar_open", True)
     st.markdown(CSS, unsafe_allow_html=True)
     if not st.session_state["tradealgo_sidebar_open"]:
