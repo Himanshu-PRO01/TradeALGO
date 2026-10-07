@@ -73,18 +73,18 @@ def main() -> None:
     )
     parser.add_argument(
         "--config",
-        default="configs/conservative_pullback.yaml",
-        help="Path to strategy config YAML (default: configs/conservative_pullback.yaml)",
+        default="configs/stock_pullback.yaml",
+        help="Path to strategy config YAML (default: configs/stock_pullback.yaml)",
     )
     parser.add_argument(
         "--symbol",
-        default="Nifty 50",
-        help="Display market symbol (default: Nifty 50)",
+        default="Reliance",
+        help="Display market symbol (default: Reliance)",
     )
     parser.add_argument(
         "--ticker",
-        default="^NSEI",
-        help="Market data ticker (default: ^NSEI)",
+        default="RELIANCE.NS",
+        help="Market data ticker (default: RELIANCE.NS)",
     )
     parser.add_argument(
         "--interval",
@@ -111,7 +111,7 @@ def main() -> None:
     parser.add_argument(
         "--multi-asset",
         action="store_true",
-        help="Monitor multi-asset portfolio (Nifty 50, Bank Nifty, Fin Nifty, Reliance, HDFC Bank)",
+        help="Monitor winning bluechip portfolio (Reliance, HDFC Bank, ICICI Bank, Nifty 50)",
     )
     parser.add_argument(
         "--daemon",
@@ -138,11 +138,10 @@ def main() -> None:
     portfolio_assets = None
     if args.multi_asset:
         portfolio_assets = [
-            {"symbol": "Nifty 50", "ticker": "^NSEI", "qty": 25},
-            {"symbol": "Bank Nifty", "ticker": "^NSEBANK", "qty": 15},
-            {"symbol": "Fin Nifty", "ticker": "NIFTY_FIN_SERVICE.NS", "qty": 25},
             {"symbol": "Reliance", "ticker": "RELIANCE.NS", "qty": 50},
             {"symbol": "HDFC Bank", "ticker": "HDFCBANK.NS", "qty": 100},
+            {"symbol": "ICICI Bank", "ticker": "ICICIBANK.NS", "qty": 100},
+            {"symbol": "Nifty 50", "ticker": "^NSEI", "qty": 25},
         ]
 
     daemon = PaperTradingDaemon(
