@@ -1,0 +1,2 @@
+strategy,symbol,days_logged,starting_capital,ending_equity,net_pnl,return_pct,total_trades,win_rate_pct,max_drawdown,total_charges,audit_verified
+conservative_pullback,Nifty 50,1,10000.0,8147.18,-1852.8199999999997,-18.5282,0,0.0,-1820.56,0.0,True

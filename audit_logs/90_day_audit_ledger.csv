@@ -1,0 +1,2 @@
+day_index,date,strategy,symbol,starting_equity,ending_equity,daily_gross_pnl,daily_charges,daily_net_pnl,daily_return_pct,trade_count,win_count,win_rate_pct,cumulative_net_pnl,cumulative_return_pct,max_drawdown,audit_hash,logged_at_utc
+1,2026-10-07,conservative_pullback,Nifty 50,10000.00,8147.18,0.00,0.00,0.00,0.00,0,0,0.0,-1852.82,-18.53,-1820.56,17bca70ae0e248e7d9350fe0f9e21e928a8dbf46c5550e9d07ce3a5cbf6fac0f,2026-10-07T11:35:51.251685+00:00

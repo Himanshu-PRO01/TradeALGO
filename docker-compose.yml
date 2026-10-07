@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  # 24/7 Background Paper Trading Daemon & 90-Day SEBI Audit Logger
+  logger:
+    build: .
+    container_name: tradealgo_90day_logger
+    restart: unless-stopped
+    command: python run_90day_logger.py --daemon
+    volumes:
+      - ./audit_logs:/app/audit_logs
+      - ./paper_trades.db:/app/paper_trades.db
+      - ./configs:/app/configs
+    environment:
+      - TZ=Asia/Kolkata
+      - PYTHONUNBUFFERED=1
+
+  # Institutional Dark Trading Desk Web Terminal
+  trading-desk:
+    build: .
+    container_name: tradealgo_trading_desk
+    restart: unless-stopped
+    command: streamlit run Trading_Desk.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./audit_logs:/app/audit_logs
+      - ./paper_trades.db:/app/paper_trades.db
+      - ./configs:/app/configs
+    environment:
+      - TZ=Asia/Kolkata
+      - ALGOBOT_HOSTED=0

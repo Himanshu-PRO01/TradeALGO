@@ -126,7 +126,7 @@ def test_every_import_is_in_requirements():
     aliases = {"yaml": "pyyaml", "upstox_client": "upstox_python_sdk", "pil": "pillow",
                "google": "protobuf",       # algobot/upstox_market_data.py uses google.protobuf
                "websocket": "websocket_client"}  # `pip install websocket-client` imports as `websocket`
-    local = {"algobot", "helpers", "conftest", "_common"}
+    local = {"algobot", "helpers", "conftest", "_common", "value_area_breakout"}
     local |= {"altair"}
     stdlib = set(__import__("sys").stdlib_module_names)
     missing = set()
