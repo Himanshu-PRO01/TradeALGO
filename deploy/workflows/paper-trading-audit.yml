@@ -34,6 +34,6 @@ jobs:
         run: |
           git config --global user.name "TradeALGO Audit Bot"
           git config --global user.email "bot@tradealgo.local"
-          git add audit_logs/ paper_trades.db
+          git add -f audit_logs/ paper_trades.db
           git diff --staged --quiet || git commit -m "chore: record daily 90-day paper trading audit [skip ci]"
           git push
