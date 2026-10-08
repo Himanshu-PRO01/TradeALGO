@@ -1,11 +1,14 @@
 """Backtest: see how a trading idea would have done on past prices, with pretend money."""
+import glob
 import io
+import os
 
 import pandas as pd
 import streamlit as st
 import yaml
 
 from algobot import ui
+from algobot.ai_provider import ProviderError, read_strategy_image
 from algobot.appstate import experiments_scope, strategies_scope
 from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
@@ -13,6 +16,8 @@ from algobot.data import DataError, generate_sample_data, load_csv
 from algobot.explain import explain_config
 from algobot.live_data import INTERVALS, MARKETS, LiveDataError, fetch_ohlc
 from algobot.lookahead import run_lookahead_checks
+from algobot.mirofish_qa import build_strategy_evidence
+from algobot.mirofish_sim import run_mirofish
 from algobot.prompt import AI_STRATEGY_PROMPT
 from algobot.report import summary_text
 from algobot.runner import check_strategy, run_from_dict
@@ -33,6 +38,17 @@ entry_long:  "flow > 55 and flow > flow_prev"
 exit_long:   "flow < 50"
 entry_short: "flow < 45 and flow < flow_prev"
 exit_short:  "flow > 50"
+"""
+
+CONSERVATIVE_10K_RULES = """\
+indicators:
+  - {name: rsi5, type: rsi, period: 5}
+  - {name: e20,  type: ema, period: 20}
+  - {name: e50,  type: ema, period: 50}
+entry_long:  "rsi5 < 25 and close > open and close > e50"
+exit_long:   "rsi5 > 65"
+entry_short: "rsi5 > 75 and close < open and close < e50"
+exit_short:  "rsi5 < 35"
 """
 
 STOCK_PULLBACK_RULES = """\
@@ -57,6 +73,7 @@ exit_long:   "close >= piv or rsi5 > 65"
 entry_short: "close < r1 and close_prev >= r1_prev and rsi5 > 65"
 exit_short:  "close <= piv or rsi5 < 35"
 """
+PIVOT_RULES = NIFTY_PIVOT_RULES
 
 BANKNIFTY_MOM_RULES = """\
 indicators:
@@ -75,7 +92,10 @@ DEFAULT_RULES = HMA_RULES
 
 # Strategy choices (label -> one-line plain description)
 K_HMA = "HMA trend rule (ready-made)"
+K_10K = "Conservative 10k Pullback (₹10,000 Capital — Tested)"
 K_PULLBACK = "Stock Pullback (Bluechip Mean Reversion — Tested)"
+K_YAML = "📁 Load from configs/ YAML (conservative_10k.yaml, etc.)"
+K_VISION = "📸 AI Photo-to-Strategy (Upload strategy photo / screenshot)"
 K_PIVOT = "Nifty Pivot Bounce (Floor S1/R1 Reversal — Tested)"
 K_MOM = "Bank Nifty Momentum (Fast/Slow Trend + RSI — Tested)"
 K_FLOW = "Order flow / volume pressure (ready-made)"
@@ -85,8 +105,12 @@ K_OWN = "Write my own rules (advanced)"
 KIND_HELP = {
     K_HMA: "Buys when price is above a Hull Moving Average (HMA) that is itself still rising. Sells when the HMA "
            "turns down. The HMA hugs price more closely than a plain moving average, so it reacts sooner.",
+    K_10K: "Regime-filtered pullback calibrated specifically for ₹10,000 capital. "
+           "Dip-buy when RSI(5) dips < 25 above 50 EMA; limits daily loss to ₹300 (configs/conservative_10k.yaml).",
     K_PULLBACK: "High-win-rate intraday mean reversion for bluechips (Reliance, HDFC Bank, ICICI Bank). "
                 "Buys when RSI(5) dips below 25 while above 50 EMA; exits when RSI reaches 60.",
+    K_YAML: "Load any strategy YAML configuration file directly from the repository configs/ directory.",
+    K_VISION: "Upload a photo, screenshot, or handwritten notes of a strategy. Multimodal AI reads it and extracts backtest rules.",
     K_PIVOT: "Floor pivot reversal for Nifty 50 index. Buys when price bounces off S1 with oversold RSI; exits at central pivot.",
     K_MOM: "9/21 EMA trend following with RSI(14) momentum filter for Bank Nifty intraday swings.",
     K_FLOW: "Buys when the Money Flow Index — price combined with volume, as a proxy for buying/selling pressure — "
@@ -151,8 +175,75 @@ def colour_pnl(value):
 st.markdown("### Step 1 · Pick a trading idea")
 kind = st.radio("Which idea do you want to test?", list(KIND_HELP), captions=list(KIND_HELP.values()),
                 key="strategy_kind")
-own_rules = kind == K_OWN
-if kind == K_OWN:
+own_rules = kind in (K_OWN, K_VISION)
+yaml_loaded_cfg = {}
+
+# Auto-adjust sensible defaults if strategy preset changed
+if st.session_state.get("_bt_prev_kind") != kind:
+    st.session_state["_bt_prev_kind"] = kind
+    if kind == K_10K:
+        st.session_state["capital"] = 10000
+        st.session_state["quantity"] = 25
+        st.session_state["stop_pct"] = 0.25
+        st.session_state["target_pct"] = 0.60
+        st.session_state["max_loss"] = 300
+        st.session_state["max_trades"] = 1
+
+if kind == K_10K:
+    strategy_name = "rules"
+    st.info("💡 Calibrated for ₹10,000 capital: limits maximum daily loss to ₹300 (3%) and uses a regime-filtered pullback setup.")
+    with st.expander("See the exact rules behind this idea", expanded=True):
+        st.code(CONSERVATIVE_10K_RULES, language="yaml")
+elif kind == K_YAML:
+    strategy_name = "rules"
+    cfg_files = sorted(glob.glob("configs/*.yaml"))
+    def_idx = 0
+    for idx, cpath in enumerate(cfg_files):
+        if "conservative_10k.yaml" in cpath.replace("\\", "/"):
+            def_idx = idx
+            break
+    selected_yaml = st.selectbox("Pick a strategy YAML from configs/", cfg_files, index=def_idx, key="bt_yaml_select")
+    if selected_yaml and os.path.exists(selected_yaml):
+        with open(selected_yaml, "r", encoding="utf-8") as yf:
+            yaml_raw_text = yf.read()
+        with st.expander(f"View content of {os.path.basename(selected_yaml)}", expanded=True):
+            st.code(yaml_raw_text, language="yaml")
+        try:
+            yaml_loaded_cfg = yaml.safe_load(yaml_raw_text) or {}
+        except Exception as exc:
+            st.error(f"Could not parse YAML: {exc}")
+elif kind == K_VISION:
+    strategy_name = "rules"
+    st.markdown("#### 📸 Upload photo or screenshot of strategy")
+    st.caption("Upload a TradingView chart screenshot, Pine script screenshot, or photo of handwritten strategy rules.")
+    photo_file = st.file_uploader("Upload strategy image (PNG, JPG, WEBP)", type=["png", "jpg", "jpeg", "webp"], key="bt_photo_file")
+    if photo_file:
+        st.image(photo_file, caption="Uploaded Strategy Image", width=420)
+
+    with st.expander("AI Vision Provider & API Key (Optional if already set in environment)"):
+        st.caption("TradeALGO automatically checks GEMINI_API_KEY / OPENAI_API_KEY from environment, or enter a key below:")
+        v_prov = st.selectbox("Vision Provider", ["Google Gemini (gemini-2.5-flash)", "OpenAI (gpt-4o-mini / gpt-4o)", "Anthropic Claude"], key="bt_v_prov")
+        prov_code = "gemini" if "Gemini" in v_prov else ("anthropic" if "Anthropic" in v_prov else "openai")
+        custom_key = st.text_input("API Key (password masked)", type="password", key="bt_v_key")
+
+    if photo_file and st.button("🤖 Read Photo & Extract Strategy with AI", type="primary", key="bt_v_btn"):
+        with st.spinner("Multimodal AI is reading and converting strategy to strict YAML rules..."):
+            try:
+                mime = photo_file.type or "image/png"
+                res = read_strategy_image(photo_file.getvalue(), mime_type=mime, custom_key=custom_key.strip(), provider_name=prov_code)
+                st.session_state["vision_rules_text"] = res["yaml"]
+                st.session_state["vision_explanation"] = res["explanation"]
+                st.success("Strategy extracted successfully from photo!")
+            except Exception as exc:
+                st.error(f"AI Vision extraction error: {exc}. Please enter an API key above or enter rules below.")
+
+    if st.session_state.get("vision_explanation"):
+        st.info(f"**AI detected:** {st.session_state['vision_explanation']}")
+
+    vision_rules_text = st.text_area("Your rules (edit, or verify what the AI extracted)",
+                                     st.session_state.get("vision_rules_text", DEFAULT_RULES),
+                                     height=230, key="vision_rules_text")
+elif kind == K_OWN:
     strategy_name = "rules"
     rules_text = st.text_area("Your rules (edit, or paste what an AI wrote)", DEFAULT_RULES, height=230,
                               key="rules_text")
@@ -227,24 +318,30 @@ st.markdown("### Optional · Money and safety settings")
 st.caption("The defaults are sensible. You do not need to change anything to continue.")
 with st.expander("Money, stop-loss and daily limits"):
     c1, c2, c3 = st.columns(3)
-    capital = c1.number_input("Starting pretend money (Rs)", min_value=1000, value=100000, step=1000, key="capital",
+    def_cap = 10000 if kind == K_10K else 100000
+    def_qty = 25 if kind == K_10K else 10
+    capital = c1.number_input("Starting pretend money (Rs)", min_value=1000, value=def_cap, step=1000, key="capital",
                               help="The pretend account balance the backtest starts with.")
-    quantity = c2.number_input("Quantity per trade", min_value=1, value=10, step=1, key="quantity",
+    quantity = c2.number_input("Quantity per trade", min_value=1, value=def_qty, step=1, key="quantity",
                                help="How many shares/units to buy or sell each time the rule fires.")
     allow_short = c3.checkbox("Also bet on the price falling (short selling)", value=False, key="allow_short",
                               help="Short selling means selling first, hoping the price falls. Leave this off if you "
                                    "only want to buy first and sell later.")
     c1, c2, c3 = st.columns(3)
-    stop_pct = c1.number_input("Stop-loss (%) · 0 = off", min_value=0.0, value=0.5, step=0.1, key="stop_pct",
+    def_stop = 0.25 if kind == K_10K else 0.5
+    def_target = 0.60 if kind == K_10K else 1.0
+    def_loss = 300 if kind == K_10K else 2000
+    stop_pct = c1.number_input("Stop-loss (%) · 0 = off", min_value=0.0, value=def_stop, step=0.1, key="stop_pct",
                                help="Automatically exit if the price moves against you by this percent, to cap the "
                                     "loss on one trade.")
-    target_pct = c2.number_input("Profit target (%) · 0 = off", min_value=0.0, value=1.0, step=0.1, key="target_pct",
+    target_pct = c2.number_input("Profit target (%) · 0 = off", min_value=0.0, value=def_target, step=0.1, key="target_pct",
                                  help="Automatically take profit once the price moves in your favour by this percent.")
-    max_loss = c3.number_input("Stop for the day after losing (Rs) · 0 = off", min_value=0, value=2000, step=100,
+    max_loss = c3.number_input("Stop for the day after losing (Rs) · 0 = off", min_value=0, value=def_loss, step=100,
                                key="max_loss",
                                help="A daily 'enough for today' brake, so one bad day can't run away.")
     c1, c2, c3 = st.columns(3)
-    max_trades = c1.number_input("Max trades per day · 0 = no limit", min_value=0, value=6, step=1, key="max_trades",
+    def_trades = 1 if kind == K_10K else 6
+    max_trades = c1.number_input("Max trades per day · 0 = no limit", min_value=0, value=def_trades, step=1, key="max_trades",
                                  help="Caps how many times the rule is allowed to trade in a single day.")
     max_position = c2.number_input("Max money in one trade (Rs) · 0 = no limit", min_value=0, value=50000, step=1000,
                                    key="max_position",
@@ -294,6 +391,18 @@ try:
         params = yaml.safe_load(rules_text)
         if not isinstance(params, dict):
             raise ConfigError("The rules box must contain settings like entry_long: \"...\".")
+    elif kind == K_VISION:
+        params = yaml.safe_load(vision_rules_text)
+        if not isinstance(params, dict):
+            raise ConfigError("The rules box must contain settings like entry_long: \"...\".")
+    elif kind == K_10K:
+        params = yaml.safe_load(CONSERVATIVE_10K_RULES)
+    elif kind == K_YAML:
+        if isinstance(yaml_loaded_cfg.get("strategy"), dict):
+            strategy_name = yaml_loaded_cfg["strategy"].get("name", "rules")
+            params = yaml_loaded_cfg["strategy"].get("params", {})
+        else:
+            params = yaml_loaded_cfg
     elif kind == K_SMA:
         params = {"fast": int(fast), "slow": int(slow)}
     elif kind == K_NEW:
@@ -327,6 +436,7 @@ try:
 except (ConfigError, yaml.YAMLError) as exc:
     st.error(f"Please fix this first: {exc}")
     st.stop()
+
 
 # Plain-English readback. Ready-made ideas just show it tucked away; your own rules must be confirmed.
 with st.expander("What exactly will be tested? (in plain English)", expanded=own_rules):
@@ -522,5 +632,95 @@ if result is not None:
             for reason, count in result.rejections.items():
                 st.write(f"Entries blocked ({reason}): {count}")
         st.text(summary_text(result))
+
+    # ------------------------------------------------------------ MiroFish Swarm Audit
+    st.divider()
+    st.markdown("### 🐟 MiroFish Agent Swarm · Strategy Audit Jobs")
+    st.caption(
+        "Put your strategy in front of an adversarial cohort of synthetic agents acting as different work jobs "
+        "(Risk Manager, Adversarial Attacker, Optimizer, Momentum, Contrarian, Beginner). "
+        "The swarm stress-tests your strategy across 6 independent market regimes (trend, chop, mean reversion, volatile, shocks, noise)."
+    )
+    col_mf1, col_mf2 = st.columns([2, 1])
+    mf_rounds = col_mf1.slider("Stress test rounds across regimes", 6, 24, 12, key="bt_mf_rounds")
+    mf_btn = col_mf2.button("🐟 Run MiroFish Agent Swarm Check", key="btn_run_mirofish_check", type="primary")
+
+    if mf_btn:
+        with st.spinner("MiroFish agents are running adversarial checks across market regimes..."):
+            try:
+                ev_report = build_strategy_evidence(cfg, rounds=mf_rounds, days=8, seed=9001)
+                strat_score = min(1.0, max(0.0, ev_report.profitable_rate / 100.0))
+                risk_score = 0.8 if ev_report.worst_drawdown < cfg.get("capital", 10000) * 0.1 else 0.4
+                sim_rep, cohort, msgs, graph, events = run_mirofish(
+                    agents=8, ticks=24, seed=700, strategy_score=strat_score, risk_score=risk_score
+                )
+                st.session_state["bt_mf_audit"] = {
+                    "evidence": ev_report,
+                    "sim": sim_rep,
+                    "cohort": cohort,
+                    "msgs": msgs,
+                }
+                st.success("MiroFish Agent Swarm Audit Completed!")
+            except Exception as exc:
+                st.error(f"MiroFish audit failed: {exc}")
+
+    audit = st.session_state.get("bt_mf_audit")
+    if audit:
+        ev = audit["evidence"]
+        sim = audit["sim"]
+        cohort = audit["cohort"]
+
+        v_col, c_col, pf_col, dd_col = st.columns(4)
+        v_col.metric("Adversarial Verdict", ev.verdict)
+        c_col.metric("Swarm Consensus", f"{sim.consensus:+.2f}", f"Strength {sim.consensus_strength:.2f}")
+        pf_col.metric("Mean Profit Factor", f"{ev.mean_profit_factor:.2f}", f"{ev.profitable_rate:.0f}% profitable")
+        dd_col.metric("Worst Drawdown", f"Rs {ev.worst_drawdown:,.0f}")
+
+        st.markdown("#### 👷 Agent Work Jobs Breakdown")
+        job_rows = []
+        for a in cohort:
+            role_desc = {
+                "beginner": "🚸 Beginner Auditor · Assesses fee drag & small-account survivability",
+                "risk_manager": "🛡️ Risk Manager · Audits capital protection & drawdown limits",
+                "momentum": "🌊 Momentum Specialist · Audits trend continuation regimes",
+                "contrarian": "🔄 Contrarian Auditor · Audits mean-reversion & chop resilience",
+                "optimizer": "📊 Optimizer & Stats · Audits profit factor & trade frequency",
+                "impatient": "⚡ Rapid Execution · Tests signal latency & churn",
+                "power_user": "🛠️ Power User · Stress-tests sizing & session rules",
+                "adversarial": "⚔️ Adversarial Attacker · Actively probes shock & noise failure modes",
+            }.get(a.persona.name, f"{a.persona.name} ({a.persona.role})")
+
+            job_rows.append({
+                "Agent Job": role_desc,
+                "Stance": f"{a.stance:+.2f} ({'Bullish' if a.stance > 0.2 else ('Defensive' if a.stance < -0.2 else 'Neutral')})",
+                "Strategy Belief": f"{a.memory.beliefs['strategy_quality']:.2f}",
+                "Risk Belief": f"{a.memory.beliefs['risk_safety']:.2f}",
+                "Simulated P&L": f"{a.pnl:+.2f}",
+                "Debate Messages": a.messages,
+            })
+        st.dataframe(job_rows, hide_index=True, use_container_width=True)
+
+        if ev.failure_modes:
+            st.error("⚠️ Adversarial Failure Modes Found: " + " · ".join(ev.failure_modes))
+        else:
+            st.success("✅ No critical failure modes detected across independent stress regimes.")
+
+        with st.expander("📊 View Independent Regime Stress-Test Evidence"):
+            st.dataframe(
+                [
+                    {
+                        "Market Regime": item.regime.capitalize(),
+                        "Net P&L (Rs)": round(item.pnl, 2),
+                        "Trades": item.trades,
+                        "Profit Factor": round(item.profit_factor, 2),
+                        "Drawdown (Rs)": round(item.drawdown, 2),
+                        "Passed Stress": "✅ Pass" if item.passed else "❌ Fail",
+                    }
+                    for item in ev.evidence
+                ],
+                hide_index=True,
+                use_container_width=True,
+            )
+
 ui.workflow_nav("backtest", complete=st.session_state.get("result") is not None)
 ui.footer_note()

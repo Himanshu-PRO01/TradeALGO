@@ -106,26 +106,52 @@ st.divider()
 
 with strategies_scope() as library:
     saved = library.list()
-    saved_count = len(saved)
+    import glob, os, yaml
+    repo_configs = []
+    for f in sorted(glob.glob("configs/*.yaml")):
+        try:
+            with open(f, "r", encoding="utf-8") as yf:
+                c = yaml.safe_load(yf)
+            if isinstance(c, dict) and "name" in c:
+                fname = os.path.basename(f)
+                cap = c.get("capital", 10000)
+                repo_configs.append({
+                    "id": f"file:{f}",
+                    "name": f"📁 {fname} (Rs {cap:,})",
+                    "market": c.get("name", "config"),
+                    "metrics": {"trades": "YAML"},
+                    "config": c,
+                })
+        except Exception:
+            pass
+    all_strategies = saved + repo_configs
+    saved_count = len(all_strategies)
     st.markdown("### 🗂️ My saved strategies")
-    st.metric("Strategies saved", saved_count)
-    if saved:
+    st.metric("Strategies available", saved_count)
+    if all_strategies:
         selected = st.selectbox(
             "Choose a saved strategy",
-            saved,
+            all_strategies,
             format_func=lambda item: f"{item['name']} · {item['market'] or 'Custom'} · {item['metrics'].get('trades', 0)} trades",
             key="saved_strategy_picker",
         )
         if st.button("▶ Use selected strategy in Backtest", key="use_saved_strategy"):
-            record = library.get(selected["id"])
-            if record:
-                st.session_state["last_raw"] = record["config"]
-                st.session_state["saved_backtest_cfg"] = record["config"]
-                st.session_state["selected_saved_strategy"] = record["id"]
-                library.mark_used(record["id"])
+            if selected["id"].startswith("file:"):
+                st.session_state["last_raw"] = selected["config"]
+                st.session_state["saved_backtest_cfg"] = selected["config"]
+                st.session_state["selected_saved_strategy"] = selected["id"]
                 ui.safe_switch_page("pages/5_Backtest.py")
+            else:
+                record = library.get(selected["id"])
+                if record:
+                    st.session_state["last_raw"] = record["config"]
+                    st.session_state["saved_backtest_cfg"] = record["config"]
+                    st.session_state["selected_saved_strategy"] = record["id"]
+                    library.mark_used(record["id"])
+                    ui.safe_switch_page("pages/5_Backtest.py")
     else:
         st.caption("No saved strategies yet. Run a backtest and use **Save strategy + results** to create your first one.")
+
 
 if st.button("Load supplied New Era Strategy 1.0 profile", key="load_new_era_profile"):
     st.session_state["strategy_rules"] = {
