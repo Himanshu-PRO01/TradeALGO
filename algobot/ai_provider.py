@@ -1,25 +1,43 @@
 from __future__ import annotations
 import base64
-import json, os, urllib.error, urllib.request
+import json, os, re, urllib.error, urllib.request
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 class ProviderError(RuntimeError):
     pass
 
 def _find_gemini_key() -> str:
-    # 1. Check YAML secret files: secret.yml, secrets.yml, secret.yaml, secrets.yaml
+    # 0. Check Streamlit session_state if running in Streamlit
+    try:
+        import streamlit as st
+        for k in ("custom_ai_key", "gemini_api_key", "bt_direct_gemini_key", "bt_user_pasted_key", "user_api_key"):
+            v = st.session_state.get(k)
+            if v and str(v).strip():
+                val = str(v).strip()
+                if not val.startswith("AQ.") and (val.startswith("AIza") or len(val) >= 20):
+                    return val
+    except Exception:
+        pass
+
+    # 1. Check YAML, TOML, and env secret files
     candidate_files = [
         "secret.yml",
         "secrets.yml",
         "secret.yaml",
         "secrets.yaml",
+        "secrets.toml",
+        "secret.toml",
+        os.path.join(".streamlit", "secrets.toml"),
+        os.path.join(".streamlit", "secret.toml"),
         os.path.join(".streamlit", "secret.yml"),
         os.path.join(".streamlit", "secrets.yml"),
         os.path.join(".streamlit", "secret.yaml"),
         os.path.join(".streamlit", "secrets.yaml"),
+        ".env",
+        ".env.local",
     ]
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml"):
+    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml", "secrets.toml", ".streamlit/secrets.toml", ".env"):
         p = os.path.join(base_dir, rel)
         if p not in candidate_files:
             candidate_files.append(p)
@@ -62,12 +80,36 @@ def _find_gemini_key() -> str:
     for fpath in candidate_files:
         if os.path.exists(fpath):
             try:
-                import yaml
                 with open(fpath, "r", encoding="utf-8") as f:
-                    content = yaml.safe_load(f)
-                res = _walk(content)
-                if res:
-                    return res
+                    raw_content = f.read()
+                # Fast regex match for Google AI Studio keys
+                m = re.search(r"\b(AIza[0-9A-Za-z_-]{30,})\b", raw_content)
+                if m:
+                    return m.group(1).strip()
+                # Try structured parsing (YAML or TOML)
+                try:
+                    import yaml
+                    content = yaml.safe_load(raw_content)
+                    res = _walk(content)
+                    if res:
+                        return res
+                except Exception:
+                    pass
+                # Line-by-line fallback (for .env or key: value format)
+                for line in raw_content.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        v_clean = v.strip().strip("'\"")
+                        if _match_val(k.strip(), v_clean):
+                            return v_clean
+                    elif ":" in line:
+                        k, v = line.split(":", 1)
+                        v_clean = v.strip().strip("'\"")
+                        if _match_val(k.strip(), v_clean):
+                            return v_clean
             except Exception:
                 pass
 
@@ -91,9 +133,45 @@ def _find_gemini_key() -> str:
     # 3. Streamlit secrets
     try:
         import streamlit as st
-        res = _walk(st.secrets)
-        if res:
-            return res
+        # Direct lookup of common key names
+        for sec_name in (
+            "GEMINI_API_KEY", "gemini_api_key",
+            "GOOGLE_API_KEY", "google_api_key",
+            "GEMINI_KEY", "gemini_key",
+            "GOOGLE_FLASH_KEY", "google_flash_key",
+            "GEMINI", "gemini", "GOOGLE", "google",
+            "API_KEY", "api_key", "KEY", "key"
+        ):
+            try:
+                v = st.secrets.get(sec_name)
+                if v and str(v).strip():
+                    val = str(v).strip()
+                    if _match_val(sec_name, val):
+                        return val
+            except Exception:
+                pass
+        # Check nested tables: [gemini], [google], [ai], [general]
+        for sec in ("gemini", "google", "ai", "general", "secrets", "default"):
+            try:
+                tbl = st.secrets.get(sec)
+                if tbl and hasattr(tbl, "get"):
+                    for k in ("api_key", "key", "gemini_api_key", "token", "secret"):
+                        v = tbl.get(k)
+                        if v and str(v).strip() and _match_val(k, str(v).strip()):
+                            return str(v).strip()
+                if tbl and hasattr(tbl, "items"):
+                    for k, v in tbl.items():
+                        if v and str(v).strip() and _match_val(str(k), str(v).strip()):
+                            return str(v).strip()
+            except Exception:
+                pass
+        try:
+            d = st.secrets.to_dict() if hasattr(st.secrets, "to_dict") else dict(st.secrets)
+            res = _walk(d)
+            if res:
+                return res
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -572,12 +650,13 @@ class AnthropicProvider(AIProvider):
 
 class GeminiProvider(AIProvider):
     name = "gemini"
-    DEFAULT_MODEL = "gemini-3.5-flash"
+    DEFAULT_MODEL = "gemini-2.5-flash"
     CANDIDATE_MODELS = (
-        "gemini-3.5-flash",
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.5-pro",
     )
 
     def __init__(self, key, model="", timeout=60):
@@ -612,7 +691,7 @@ class GeminiProvider(AIProvider):
             except ProviderError as exc:
                 last_err = exc
                 err_text = str(exc).lower()
-                if any(k in err_text for k in ("404", "not found", "model")):
+                if any(k in err_text for k in ("404", "400", "403", "not found", "model", "deprecated", "unknown", "permission", "access", "unsupported", "resource_exhausted", "quota")):
                     continue
                 raise exc
         if last_err:
@@ -653,7 +732,7 @@ class GeminiProvider(AIProvider):
             except ProviderError as exc:
                 last_err = exc
                 err_text = str(exc).lower()
-                if any(k in err_text for k in ("404", "not found", "model")):
+                if any(k in err_text for k in ("404", "400", "403", "not found", "model", "deprecated", "unknown", "permission", "access", "unsupported", "resource_exhausted", "quota")):
                     continue
                 raise exc
         if last_err:
@@ -721,34 +800,60 @@ def _send(req, timeout, vendor):
     except json.JSONDecodeError as e:
         raise ProviderError(f"{vendor} returned invalid JSON.") from e
 
-def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIProvider]:
+def get_provider(custom_key: str = "", provider_name: str = "", model: str = "") -> Optional[AIProvider]:
     pname = (provider_name or "").lower().strip()
     if custom_key:
-        if custom_key.startswith("AIza") or "gemini" in pname or "google" in pname or "flash" in pname:
-            return GeminiProvider(custom_key, _value("GEMINI_MODEL") or "gemini-3.5-flash")
-        if custom_key.startswith("xai-") or "grok" in pname or "xai" in pname:
-            return GrokProvider(custom_key, _value("GROK_MODEL") or "grok-4.5")
+        if custom_key.startswith("AIza") or any(t in pname for t in ("gemini", "google", "flash")):
+            return GeminiProvider(custom_key, model or _value("GEMINI_MODEL") or "gemini-2.5-flash")
+        if custom_key.startswith("xai-") or any(t in pname for t in ("grok", "xai")):
+            return GrokProvider(custom_key, model or _value("GROK_MODEL") or "grok-4.5")
         if custom_key.startswith("gsk_") or "groq" in pname:
-            return GroqProvider(custom_key, _value("GROQ_MODEL") or "llama-3.2-11b-vision-preview")
-        if "anthropic" in pname or "claude" in pname:
-            return AnthropicProvider(custom_key, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
-        return OpenAIProvider(custom_key, _value("OPENAI_MODEL") or "gpt-4o-mini")
+            return GroqProvider(custom_key, model or _value("GROQ_MODEL") or "openai/gpt-oss-120b")
+        if any(t in pname for t in ("anthropic", "claude")):
+            return AnthropicProvider(custom_key, model or _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+        if "openai" in pname or custom_key.startswith("sk-"):
+            return OpenAIProvider(custom_key, model or _value("OPENAI_MODEL") or "gpt-4o-mini")
+        return GeminiProvider(custom_key, model or _value("GEMINI_MODEL") or "gemini-2.5-flash")
 
-    if pname in ("gemini", "google", "flash"):
+    if any(t in pname for t in ("gemini", "google", "flash")):
         gemini_k = _find_gemini_key()
         if gemini_k:
-            return GeminiProvider(gemini_k, _value("GEMINI_MODEL") or "gemini-3.5-flash")
+            return GeminiProvider(gemini_k, model or _value("GEMINI_MODEL") or "gemini-2.5-flash")
         return None
 
-    # 1. Dual key resolution: Google Gemini 3.5 Flash + Groq (with automatic token failover)
+    if "groq" in pname:
+        groq_k = _find_groq_key()
+        if groq_k:
+            return GroqProvider(groq_k, model or _value("GROQ_MODEL") or "openai/gpt-oss-120b")
+        return None
+
+    if any(t in pname for t in ("grok", "xai")):
+        grok_k = _find_grok_key()
+        if groq_k:
+            return GroqProvider(grok_k, model or _value("GROK_MODEL") or "grok-4.5")
+        return None
+
+    if any(t in pname for t in ("anthropic", "claude")):
+        k = _value("ANTHROPIC_API_KEY")
+        if k:
+            return AnthropicProvider(k, model or _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+        return None
+
+    if "openai" in pname:
+        k = _value("OPENAI_API_KEY")
+        if k:
+            return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o-mini")
+        return None
+
+    # 1. Multi-provider resolution with automatic failover
     gemini_k = _find_gemini_key()
     groq_k = _find_groq_key()
 
     active_list = []
     if gemini_k:
-        active_list.append(GeminiProvider(gemini_k, _value("GEMINI_MODEL") or "gemini-3.5-flash"))
+        active_list.append(GeminiProvider(gemini_k, model or _value("GEMINI_MODEL") or "gemini-2.5-flash"))
     if groq_k:
-        active_list.append(GroqProvider(groq_k, _value("GROQ_MODEL") or "openai/gpt-oss-120b"))
+        active_list.append(GroqProvider(groq_k, model or _value("GROQ_MODEL") or "openai/gpt-oss-120b"))
 
     if len(active_list) > 1:
         return FallbackProvider(active_list)
@@ -758,27 +863,37 @@ def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIPr
     # 2. Check Grok / xAI key
     grok_k = _find_grok_key()
     if grok_k:
-        return GrokProvider(grok_k, _value("GROK_MODEL") or "grok-4.5")
+        return GrokProvider(grok_k, model or _value("GROK_MODEL") or "grok-4.5")
 
     # 3. Fallbacks
     k = _value("ANTHROPIC_API_KEY")
     if k:
-        return AnthropicProvider(k, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+        return AnthropicProvider(k, model or _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
 
     k = _value("OPENAI_API_KEY")
     if k:
-        return OpenAIProvider(k, _value("OPENAI_MODEL") or "gpt-4o-mini")
+        return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o-mini")
 
     return None
 
 
-def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom_key: str = "", provider_name: str = "") -> dict:
+def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom_key: str = "", provider_name: str = "", model: str = "") -> dict:
     """Reads a strategy photo/screenshot and extracts strict TradeALGO rules YAML."""
-    provider = get_provider(custom_key=custom_key, provider_name=provider_name)
+    provider = get_provider(custom_key=custom_key, provider_name=provider_name, model=model)
     if not provider:
-        target = "Google Gemini" if ("gemini" in (provider_name or "").lower() or not provider_name) else "AI"
+        pname = (provider_name or "").lower()
+        if "groq" in pname:
+            target = "Groq"
+        elif any(t in pname for t in ("grok", "xai")):
+            target = "xAI Grok"
+        elif "openai" in pname:
+            target = "OpenAI"
+        elif any(t in pname for t in ("anthropic", "claude")):
+            target = "Anthropic"
+        else:
+            target = "Google Gemini"
         raise ProviderError(
-            f"No {target} API key found. Please add your key to secret.yml (e.g. GEMINI_API_KEY: 'AIza...'), Streamlit secrets, or environment variables."
+            f"No {target} API key found. Please paste your API key in the box above, or add GEMINI_API_KEY / {target.upper().replace(' ', '_')}_API_KEY to secret.yml / Streamlit secrets."
         )
 
     system_prompt = (

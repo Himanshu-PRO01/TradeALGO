@@ -26,7 +26,7 @@ def test_gemini_is_preferred_when_configured(monkeypatch):
     provider = get_provider()
 
     assert isinstance(provider, GeminiProvider)
-    assert provider.model == "gemini-3.5-flash"
+    assert provider.model == "gemini-2.5-flash"
     assert provider.key == "AIza-test-gemini-key"
 
 
