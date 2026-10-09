@@ -4,7 +4,7 @@ import pytest
 
 from algobot.config import ConfigError
 from algobot.data import generate_sample_data
-from algobot.indicators import add_indicators, add_prev_columns, hma, mfi, rsi, sma, wma
+from algobot.indicators import add_indicators, add_prev_columns, cci, hma, mfi, rsi, sma, wma
 from algobot.strategy import RuleStrategy, SmaCrossover, build_strategy, evaluate_rule
 from helpers import make_bars, make_cfg
 
@@ -19,6 +19,7 @@ SPECS = [
     {"name": "w5", "type": "wma", "period": 5},
     {"name": "h9", "type": "hma", "period": 9},
     {"name": "mf7", "type": "mfi", "period": 7},
+    {"name": "c5", "type": "cci", "period": 5},
 ]
 
 
@@ -67,6 +68,39 @@ def test_mfi_is_high_when_rising_price_is_backed_by_volume_and_bounded_0_to_100(
         "close": np.arange(1.0, 30.0), "volume": np.full(29, 1000.0),
     })
     assert mfi(up, 14).dropna().eq(100.0).all()
+
+
+def test_cci_matches_formula_and_detects_channels():
+    # Standard Lambert calculation verification
+    bars = [
+        (10, 12, 9, 11),
+        (11, 13, 10, 12),
+        (12, 14, 11, 13),
+        (13, 15, 12, 14),
+        (14, 16, 13, 15),
+    ]
+    df = make_bars(bars)
+    c = cci(df, 5).dropna()
+    assert len(c) == 1
+    # Constant progression: TP = 11, 12, 13, 14, 15 (mean = 13, mad = 1.2, TP_last - mean = 2)
+    # CCI = 2 / (0.015 * 1.2) = 111.111111...
+    assert pytest.approx(c.iloc[0], 0.001) == 111.111
+
+
+def test_cci_flat_series_returns_zero():
+    # If price doesn't deviate from mean at all, CCI should be 0.0 without division by zero error
+    flat = make_bars([(100, 100, 100, 100)] * 10)
+    c = cci(flat, 5).dropna()
+    assert (c == 0.0).all()
+
+
+def test_indicator_supports_cci_80_from_user_rule():
+    # Explicitly test cci_80 as reported by the user
+    df = generate_sample_data(days=10, seed=1)
+    spec = [{"name": "cci_80", "type": "cci", "period": 80}]
+    out = add_indicators(df, spec)
+    assert "cci_80" in out.columns
+    assert not out["cci_80"].dropna().empty
 
 
 def test_indicators_never_look_into_the_future():

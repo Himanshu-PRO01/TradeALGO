@@ -44,6 +44,8 @@ def describe_indicator(spec: dict) -> str:
         what = f"{period}-bar RSI (0 to 100) of the {source}"
     elif kind == "atr":
         what = f"{period}-bar average true range (typical bar size)"
+    elif kind == "cci":
+        what = f"{period}-bar CCI (Commodity Channel Index)"
     elif kind == "highest":
         what = f"highest high of the previous {period} bars"
     elif kind == "lowest":

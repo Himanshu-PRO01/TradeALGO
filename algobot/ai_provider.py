@@ -775,7 +775,7 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
         "Format the output strictly as a valid YAML rules block inside ```yaml ... ``` tags, adhering to this format:\n\n"
         "```yaml\n"
         "indicators:\n"
-        "  - {name: <name>, type: <sma|ema|wma|hma|rsi|mfi|atr|highest|lowest|vwap|pivot|pivot_s1|pivot_r1>, period: <int>}\n"
+        "  - {name: <name>, type: <sma|ema|wma|hma|rsi|mfi|cci|atr|highest|lowest|vwap|pivot|pivot_s1|pivot_r1>, period: <int>}\n"
         "entry_long: \"<condition>\"\n"
         "exit_long: \"<condition>\"\n"
         "entry_short: \"<condition>\"\n"

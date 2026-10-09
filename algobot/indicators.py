@@ -13,7 +13,7 @@ from .config import ConfigError
 from .levels import LEVEL_TYPES, SWING_TYPES, OPENING_RANGE_TYPES, compute_level
 
 BASE_COLUMNS = ("open", "high", "low", "close", "volume")
-INDICATOR_TYPES = ("sma", "ema", "rsi", "atr", "highest", "lowest", "vwap", "wma", "hma", "mfi") + LEVEL_TYPES
+INDICATOR_TYPES = ("sma", "ema", "rsi", "atr", "highest", "lowest", "vwap", "wma", "hma", "mfi", "cci") + LEVEL_TYPES
 _NEEDS_PERIOD = SWING_TYPES + OPENING_RANGE_TYPES
 NEEDS_NO_PERIOD = ("vwap",) + tuple(k for k in LEVEL_TYPES if k not in _NEEDS_PERIOD)
 
@@ -77,6 +77,37 @@ def mfi(df: pd.DataFrame, n: int) -> pd.Series:
     out = out.where(~((neg_flow == 0.0) & pos_flow.notna()), 100.0)
     # No flow either way (e.g. zero volume): neutral, not a false signal.
     out = out.where(~((neg_flow == 0.0) & (pos_flow == 0.0)), 50.0)
+    return out
+
+
+def cci(df: pd.DataFrame | pd.Series, n: int, source: str | None = None) -> pd.Series:
+    """Commodity Channel Index (Donald Lambert, 1980).
+
+    Measures price deviation from its statistical mean.
+    Typical price TP = (high + low + close) / 3 by default (or user-specified source).
+    Mean Absolute Deviation MD = sum(|TP_i - SMA(TP, n)|) / n.
+    CCI = (TP - SMA(TP, n)) / (0.015 * MD).
+    Normal channel fluctuates between -100 and +100. Overbought > +100, oversold < -100.
+    """
+    if isinstance(df, pd.DataFrame):
+        if source and source in df.columns:
+            tp = df[source].astype(float)
+        elif "high" in df.columns and "low" in df.columns and "close" in df.columns:
+            tp = (df["high"] + df["low"] + df["close"]) / 3.0
+        elif "close" in df.columns:
+            tp = df["close"].astype(float)
+        else:
+            tp = df.iloc[:, 0].astype(float)
+    elif isinstance(df, pd.Series):
+        tp = df.astype(float)
+    else:
+        raise ValueError("CCI requires a DataFrame or Series.")
+
+    sma_tp = tp.rolling(n).mean()
+    mad = tp.rolling(n).apply(lambda x: float(np.mean(np.abs(x - np.mean(x)))), raw=True)
+    denom = 0.015 * mad
+    out = (tp - sma_tp) / denom.replace(0.0, np.nan)
+    out = out.where(~((mad == 0.0) & sma_tp.notna()), 0.0)
     return out
 
 
@@ -164,6 +195,9 @@ def add_indicators(df: pd.DataFrame, specs: list) -> pd.DataFrame:
             df[name] = hma(df[source], period)
         elif kind == "mfi":
             df[name] = mfi(df, period)
+        elif kind == "cci":
+            src = spec.get("source") if "source" in spec else None
+            df[name] = cci(df, period, source=src)
         elif kind == "highest":
             df[name] = highest(df, period)
         elif kind == "lowest":

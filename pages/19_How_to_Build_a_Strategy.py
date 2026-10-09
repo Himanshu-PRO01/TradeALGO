@@ -69,8 +69,10 @@ ind_col1, ind_col2 = st.columns(2)
 with ind_col1:
     st.markdown("**Need a period**")
     st.markdown(
-        "- `sma`, `ema` -- moving average (period = bars)\n"
+        "- `sma`, `ema`, `wma`, `hma` -- moving averages (period = bars)\n"
         "- `rsi` -- 0-100 momentum oscillator (period = bars)\n"
+        "- `mfi` -- 0-100 volume-weighted money flow index (period = bars)\n"
+        "- `cci` -- Commodity Channel Index oscillator (period = bars)\n"
         "- `atr` -- average true range, a volatility measure (period = bars)\n"
         "- `highest`, `lowest` -- highest high / lowest low of the **previous** n bars\n"
         "- `swing_high`, `swing_low` -- a swing point confirmed by `period` bars on each side\n"
