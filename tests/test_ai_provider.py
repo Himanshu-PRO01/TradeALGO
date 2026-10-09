@@ -205,3 +205,34 @@ def test_cross_key_collision_protection(tmp_path, monkeypatch):
     # Groq must NOT steal it
     assert _find_groq_key() == ""
 
+
+def test_gemini_key_discovered_from_toml_and_raw_regex(tmp_path, monkeypatch):
+    from algobot.ai_provider import _find_gemini_key
+
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
+    # Test discovery from .streamlit/secrets.toml with TOML equals syntax
+    st_dir = tmp_path / ".streamlit"
+    st_dir.mkdir(parents=True, exist_ok=True)
+    (st_dir / "secrets.toml").write_text('GEMINI_API_KEY = "AIzaTomlKeyTest12345678901234567890"\n')
+
+    monkeypatch.chdir(tmp_path)
+    assert _find_gemini_key() == "AIzaTomlKeyTest12345678901234567890"
+
+    # Test discovery even if user wrote YAML colon in secrets.toml (common Streamlit Cloud mistake)
+    (st_dir / "secrets.toml").write_text('GEMINI_API_KEY: "AIzaColonKeyTest12345678901234567890"\n')
+    assert _find_gemini_key() == "AIzaColonKeyTest12345678901234567890"
+
+
+def test_find_openai_key_discovers_from_secret_yml(tmp_path, monkeypatch):
+    from algobot.ai_provider import _find_openai_key
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    secret_file = tmp_path / "secret.yml"
+    secret_file.write_text("OPENAI_API_KEY: 'sk-proj-OpenAITestKey12345678901234567890'\n")
+
+    monkeypatch.chdir(tmp_path)
+    assert _find_openai_key() == "sk-proj-OpenAITestKey12345678901234567890"
+
+

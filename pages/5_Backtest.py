@@ -17,9 +17,11 @@ try:
         _find_gemini_key,
         _find_groq_key,
         _find_grok_key,
+        _find_openai_key,
         find_gemini_key,
         find_groq_key,
         find_grok_key,
+        find_openai_key,
         get_ai_status,
         read_strategy_image,
     )
@@ -34,9 +36,11 @@ except ImportError:
             _find_gemini_key,
             _find_groq_key,
             _find_grok_key,
+            _find_openai_key,
             find_gemini_key,
             find_groq_key,
             find_grok_key,
+            find_openai_key,
             get_ai_status,
             read_strategy_image,
         )
@@ -56,9 +60,13 @@ except ImportError:
         def _find_grok_key() -> str:
             return ""
 
+        def _find_openai_key() -> str:
+            return ""
+
         find_gemini_key = _find_gemini_key
         find_groq_key = _find_groq_key
         find_grok_key = _find_grok_key
+        find_openai_key = _find_openai_key
 
         def read_strategy_image(*args, **kwargs):
             raise ProviderError("AI Provider is temporarily reloading. Please refresh the page.")
@@ -384,36 +392,37 @@ elif kind == K_VISION:
             else:
                 prov_name, prov_model = "gemini", "gemini-2.5-flash"
 
-            pasted_key_input = st.text_input(
-                "🔑 Paste API Key (or auto-detect from secret.yml / secrets)",
-                value=st.session_state.get("custom_ai_key", ""),
-                type="password",
-                placeholder="AIzaSy... (Gemini) or gsk_... (Groq)",
-                key="bt_direct_ai_key_input",
-                help="Paste your API key here directly if secret.yml is not detected.",
-            )
-            if pasted_key_input != st.session_state.get("custom_ai_key", ""):
-                st.session_state["custom_ai_key"] = pasted_key_input.strip()
+            # Auto-detect key strictly from secrets / secret.yml (NO webpage text input)
+            active_key = ""
+            if prov_name == "gemini" and callable(globals().get("_find_gemini_key")):
+                active_key = _find_gemini_key()
+            elif prov_name == "groq" and callable(globals().get("_find_groq_key")):
+                active_key = _find_groq_key()
+            elif prov_name == "grok" and callable(globals().get("_find_grok_key")):
+                active_key = _find_grok_key()
+            elif prov_name == "openai" and callable(globals().get("_find_openai_key")):
+                active_key = _find_openai_key()
 
-            active_key = (st.session_state.get("custom_ai_key") or "").strip()
-            if not active_key:
-                if prov_name == "gemini" and callable(globals().get("_find_gemini_key")):
-                    active_key = _find_gemini_key()
-                elif prov_name == "groq" and callable(globals().get("_find_groq_key")):
-                    active_key = _find_groq_key()
-                elif prov_name == "grok" and callable(globals().get("_find_grok_key")):
-                    active_key = _find_grok_key()
+            key_var_map = {
+                "gemini": "GEMINI_API_KEY",
+                "groq": "GROQ_API_KEY",
+                "grok": "XAI_API_KEY",
+                "openai": "OPENAI_API_KEY",
+            }
+            expected_key_var = key_var_map.get(prov_name, f"{prov_name.upper()}_API_KEY")
 
             if active_key:
                 badge_title = f"{prov_name.upper()} ACTIVE · {prov_model.upper()}"
-                src_label = "Pasted in box above" if (st.session_state.get("custom_ai_key") or "").strip() else "Auto-detected from secrets / secret.yml"
-                badge_desc = f"Key ready ({src_label}). Ready to analyze charts, screenshots & handwritten strategies."
+                badge_desc = "Key connected securely from secrets (secret.yml / Streamlit Secrets). Ready to analyze charts, screenshots & handwritten strategies."
                 badge_color = "#20D9A0"
                 badge_bg = "rgba(32, 217, 160, 0.08)"
                 badge_border = "rgba(32, 217, 160, 0.28)"
             else:
-                badge_title = f"WAITING FOR {prov_name.upper()} KEY"
-                badge_desc = f"Paste your {prov_name.capitalize()} key in the box above or add to <code>secret.yml</code> / Streamlit Secrets."
+                badge_title = f"WAITING FOR {prov_name.upper()} KEY IN SECRETS"
+                if prov_name == "gemini":
+                    badge_desc = "Add <code>GEMINI_API_KEY: 'AIza...'</code> in <code>secret.yml</code> (local) or in Streamlit Cloud <b>Settings &rarr; Secrets</b> (<code>GEMINI_API_KEY = 'AIza...'</code>)."
+                else:
+                    badge_desc = f"Add <code>{expected_key_var}: '...'</code> in <code>secret.yml</code> (local) or in Streamlit Cloud <b>Settings &rarr; Secrets</b> (<code>{expected_key_var} = '...'</code>)."
                 badge_color = "#F59E0B"
                 badge_bg = "rgba(245, 158, 11, 0.08)"
                 badge_border = "rgba(245, 158, 11, 0.28)"
@@ -432,21 +441,24 @@ elif kind == K_VISION:
 
             extract_btn = st.button("⚡ Read Photo & Extract Strategy", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
             if photo_file and extract_btn:
-                with st.spinner(f"Analyzing image and extracting strict TradeALGO rules with {selected_engine}..."):
-                    try:
-                        mime = photo_file.type or "image/png"
-                        res = read_strategy_image(
-                            photo_file.getvalue(),
-                            mime_type=mime,
-                            custom_key=active_key,
-                            provider_name=prov_name,
-                            model=prov_model,
-                        )
-                        st.session_state["vision_rules_text"] = res["yaml"]
-                        st.session_state["vision_explanation"] = res["explanation"]
-                        st.success(f"✅ Strategy extracted successfully with {selected_engine}!")
-                    except Exception as exc:
-                        st.error(f"Vision extraction error: {exc}")
+                if not active_key:
+                    st.error(f"❌ No {prov_name.capitalize()} API key found in secrets. Please configure `{expected_key_var}` in `secret.yml` (local) or in Streamlit Cloud **App Settings → Secrets**.")
+                else:
+                    with st.spinner(f"Analyzing image and extracting strict TradeALGO rules with {selected_engine}..."):
+                        try:
+                            mime = photo_file.type or "image/png"
+                            res = read_strategy_image(
+                                photo_file.getvalue(),
+                                mime_type=mime,
+                                custom_key=active_key,
+                                provider_name=prov_name,
+                                model=prov_model,
+                            )
+                            st.session_state["vision_rules_text"] = res["yaml"]
+                            st.session_state["vision_explanation"] = res["explanation"]
+                            st.success(f"✅ Strategy extracted successfully with {selected_engine}!")
+                        except Exception as exc:
+                            st.error(f"Vision extraction error: {exc}")
 
     if st.session_state.get("vision_explanation"):
         st.markdown(f"""

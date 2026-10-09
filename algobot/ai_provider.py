@@ -6,168 +6,177 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 class ProviderError(RuntimeError):
     pass
 
-def _find_gemini_key() -> str:
-    # 0. Check Streamlit session_state if running in Streamlit
-    try:
-        import streamlit as st
-        for k in ("custom_ai_key", "gemini_api_key", "bt_direct_gemini_key", "bt_user_pasted_key", "user_api_key"):
-            v = st.session_state.get(k)
-            if v and str(v).strip():
-                val = str(v).strip()
-                if not val.startswith("AQ.") and (val.startswith("AIza") or len(val) >= 20):
-                    return val
-    except Exception:
-        pass
+def _get_candidate_secret_files() -> List[str]:
+    user_home = os.path.expanduser("~")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cwd = os.getcwd()
 
-    # 1. Check YAML, TOML, and env secret files
-    candidate_files = [
+    roots = [
+        cwd,
+        base_dir,
+        user_home,
+        "/mount/src/tradealgo",
+        "/mount/src/tradealgo-main",
+        "/home/appuser",
+        "/root",
+    ]
+    filenames = [
         "secret.yml",
         "secrets.yml",
         "secret.yaml",
         "secrets.yaml",
         "secrets.toml",
         "secret.toml",
-        os.path.join(".streamlit", "secrets.toml"),
-        os.path.join(".streamlit", "secret.toml"),
-        os.path.join(".streamlit", "secret.yml"),
-        os.path.join(".streamlit", "secrets.yml"),
-        os.path.join(".streamlit", "secret.yaml"),
-        os.path.join(".streamlit", "secrets.yaml"),
         ".env",
         ".env.local",
     ]
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml", "secrets.toml", ".streamlit/secrets.toml", ".env"):
-        p = os.path.join(base_dir, rel)
-        if p not in candidate_files:
-            candidate_files.append(p)
+    subdirs = ["", ".streamlit", "configs"]
 
-    def _match_val(k_name: str, val_str: str) -> bool:
-        if not val_str:
-            return False
-        # Do not mistake Groq, Grok, OpenAI keys, or IDE OAuth/bearer tokens for Gemini keys
-        if val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("sk-") or val_str.startswith("AQ."):
-            return False
-        if val_str.startswith("AIza"):
-            return True
-        k_lower = k_name.lower()
-        if any(term in k_lower for term in ("gemini", "google", "flash")):
-            return True
-        if k_lower in ("api_key", "key", "secret", "token"):
-            return True
+    candidates: List[str] = []
+    for r in roots:
+        if not r:
+            continue
+        for sub in subdirs:
+            for fn in filenames:
+                p = os.path.normpath(os.path.join(r, sub, fn))
+                if p not in candidates:
+                    candidates.append(p)
+    return candidates
+
+
+def _read_file_safe(fpath: str) -> str:
+    if not os.path.exists(fpath):
+        return ""
+    try:
+        with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except Exception:
+        return ""
+
+
+def _match_gemini_val(k_name: str, val_str: str) -> bool:
+    if not val_str:
         return False
+    # Avoid other provider prefixes or internal IDE tokens
+    if val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("sk-") or val_str.startswith("AQ."):
+        return False
+    if val_str.startswith("AIza"):
+        return True
+    k_lower = k_name.lower()
+    if any(term in k_lower for term in ("gemini", "google", "flash")):
+        return True
+    if k_lower in ("api_key", "key", "secret", "token"):
+        return True
+    return False
 
-    def _walk(obj):
-        if not obj:
-            return None
-        if isinstance(obj, (str, int, float)):
-            s = str(obj).strip()
-            if s.startswith("AIza"):
-                return s
-        if hasattr(obj, "items") or isinstance(obj, dict):
-            for k, v in obj.items():
-                if isinstance(v, (str, int, float)):
-                    val = str(v).strip()
-                    if _match_val(str(k), val):
-                        return val
-            for k, v in obj.items():
-                if isinstance(v, dict) or hasattr(v, "items"):
-                    res = _walk(v)
-                    if res:
-                        return res
+
+def _walk_gemini(obj):
+    if not obj:
         return None
+    if isinstance(obj, (str, int, float)):
+        s = str(obj).strip()
+        if s.startswith("AIza"):
+            return s
+    if hasattr(obj, "items") or isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (str, int, float)):
+                val = str(v).strip()
+                if _match_gemini_val(str(k), val):
+                    return val
+        for k, v in obj.items():
+            if isinstance(v, dict) or hasattr(v, "items"):
+                res = _walk_gemini(v)
+                if res:
+                    return res
+    return None
 
-    for fpath in candidate_files:
-        if os.path.exists(fpath):
-            try:
-                with open(fpath, "r", encoding="utf-8") as f:
-                    raw_content = f.read()
-                # Fast regex match for Google AI Studio keys
-                m = re.search(r"\b(AIza[0-9A-Za-z_-]{30,})\b", raw_content)
-                if m:
-                    return m.group(1).strip()
-                # Try structured parsing (YAML or TOML)
-                try:
-                    import yaml
-                    content = yaml.safe_load(raw_content)
-                    res = _walk(content)
-                    if res:
-                        return res
-                except Exception:
-                    pass
-                # Line-by-line fallback (for .env or key: value format)
-                for line in raw_content.splitlines():
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    if "=" in line:
-                        k, v = line.split("=", 1)
-                        v_clean = v.strip().strip("'\"")
-                        if _match_val(k.strip(), v_clean):
-                            return v_clean
-                    elif ":" in line:
-                        k, v = line.split(":", 1)
-                        v_clean = v.strip().strip("'\"")
-                        if _match_val(k.strip(), v_clean):
-                            return v_clean
-            except Exception:
-                pass
+
+def _find_gemini_key() -> str:
+    # 1. Candidate secret files (secret.yml, secrets.toml, .env, etc.)
+    # We check files first with regex: this ensures that even if Streamlit Cloud secrets
+    # has invalid TOML (e.g. user pasted YAML GEMINI_API_KEY: AIza...), we immediately extract it!
+    for fpath in _get_candidate_secret_files():
+        raw_content = _read_file_safe(fpath)
+        if not raw_content:
+            continue
+        m = re.search(r"\b(AIza[0-9A-Za-z_-]{30,})\b", raw_content)
+        if m:
+            return m.group(1).strip()
+        try:
+            import yaml
+            content = yaml.safe_load(raw_content)
+            res = _walk_gemini(content)
+            if res:
+                return res
+        except Exception:
+            pass
+        for line in raw_content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_gemini_val(k.strip(), v_clean):
+                    return v_clean
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_gemini_val(k.strip(), v_clean):
+                    return v_clean
 
     # 2. Environment variables
     for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_FLASH_KEY", "GEMINI_KEY", "GOOGLE_KEY"):
         v = os.environ.get(env_name) or os.environ.get(env_name.lower())
         if v and str(v).strip():
             s = str(v).strip()
-            if s.startswith("AQ."):
-                continue
-            return s
+            if not s.startswith("AQ."):
+                return s
     for k, v in os.environ.items():
         if v and str(v).strip().startswith("AIza"):
             return str(v).strip()
         if any(term in k.lower() for term in ("gemini", "google", "flash")) and v and str(v).strip():
             s = str(v).strip()
-            if s.startswith("AQ."):
-                continue
-            return s
+            if not s.startswith("AQ."):
+                return s
 
     # 3. Streamlit secrets
     try:
         import streamlit as st
-        # Direct lookup of common key names
         for sec_name in (
             "GEMINI_API_KEY", "gemini_api_key",
             "GOOGLE_API_KEY", "google_api_key",
-            "GEMINI_KEY", "gemini_key",
             "GOOGLE_FLASH_KEY", "google_flash_key",
+            "GEMINI_KEY", "gemini_key",
+            "GOOGLE_KEY", "google_key",
             "GEMINI", "gemini", "GOOGLE", "google",
-            "API_KEY", "api_key", "KEY", "key"
+            "API_KEY", "api_key", "KEY", "key",
         ):
             try:
                 v = st.secrets.get(sec_name)
                 if v and str(v).strip():
                     val = str(v).strip()
-                    if _match_val(sec_name, val):
+                    if _match_gemini_val(sec_name, val):
                         return val
             except Exception:
                 pass
-        # Check nested tables: [gemini], [google], [ai], [general]
-        for sec in ("gemini", "google", "ai", "general", "secrets", "default"):
+        for sec in ("gemini", "google", "ai", "general", "secrets", "default", "keys"):
             try:
                 tbl = st.secrets.get(sec)
                 if tbl and hasattr(tbl, "get"):
-                    for k in ("api_key", "key", "gemini_api_key", "token", "secret"):
-                        v = tbl.get(k)
-                        if v and str(v).strip() and _match_val(k, str(v).strip()):
+                    for k in ("api_key", "key", "gemini_api_key", "google_api_key", "token", "secret"):
+                        v = tbl.get(k) or tbl.get(k.upper())
+                        if v and str(v).strip() and _match_gemini_val(k, str(v).strip()):
                             return str(v).strip()
                 if tbl and hasattr(tbl, "items"):
                     for k, v in tbl.items():
-                        if v and str(v).strip() and _match_val(str(k), str(v).strip()):
+                        if v and str(v).strip() and _match_gemini_val(str(k), str(v).strip()):
                             return str(v).strip()
             except Exception:
                 pass
         try:
             d = st.secrets.to_dict() if hasattr(st.secrets, "to_dict") else dict(st.secrets)
-            res = _walk(d)
+            res = _walk_gemini(d)
             if res:
                 return res
         except Exception:
@@ -178,121 +187,73 @@ def _find_gemini_key() -> str:
     return ""
 
 
-def _find_grok_key() -> str:
-    # 1. Environment variables
-    for env_name in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "GROK_AI_KEY"):
-        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
-        if v and str(v).strip():
-            return str(v).strip()
-    for k, v in os.environ.items():
-        if v and str(v).strip().startswith("xai-"):
-            return str(v).strip()
-        if any(term in k.lower() for term in ("grok", "xai")) and v and str(v).strip():
-            return str(v).strip()
+def _match_groq_val(k_name: str, val_str: str) -> bool:
+    if not val_str:
+        return False
+    if val_str.startswith("AIza") or val_str.startswith("xai-") or val_str.startswith("sk-") or val_str.startswith("AQ."):
+        return False
+    if val_str.startswith("gsk_"):
+        return True
+    k_lower = k_name.lower()
+    if "groq" in k_lower:
+        return True
+    if k_lower in ("api_key", "key", "secret", "token"):
+        return True
+    return False
 
-    # 2. Streamlit secrets
-    try:
-        import streamlit as st
-        for k in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "GROK_AI_KEY", "API_KEY", "KEY"):
-            try:
-                v = st.secrets.get(k) or st.secrets.get(k.lower())
-                if v and str(v).strip():
-                    val = str(v).strip()
-                    if val.startswith("xai-") or "grok" in k.lower() or "xai" in k.lower():
-                        return val
-            except Exception:
-                pass
 
-        def _scan(obj):
-            if not obj:
-                return None
-            if hasattr(obj, "items"):
-                for k, v in obj.items():
-                    k_str = str(k).strip()
-                    k_lower = k_str.lower()
-                    if isinstance(v, (str, int, float)):
-                        val = str(v).strip()
-                        if val.startswith("xai-"):
-                            return val
-                        if any(term in k_lower for term in ("grok", "xai")) and val:
-                            return val
-                for k, v in obj.items():
-                    if hasattr(v, "items") or isinstance(v, dict):
-                        res = _scan(v)
-                        if res:
-                            return res
-            return None
-        res = _scan(st.secrets)
-        if res:
-            return res
-    except Exception:
-        pass
-
-    return ""
+def _walk_groq(obj):
+    if not obj:
+        return None
+    if isinstance(obj, (str, int, float)):
+        s = str(obj).strip()
+        if s.startswith("gsk_"):
+            return s
+    if hasattr(obj, "items") or isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (str, int, float)):
+                val = str(v).strip()
+                if _match_groq_val(str(k), val):
+                    return val
+        for k, v in obj.items():
+            if isinstance(v, dict) or hasattr(v, "items"):
+                res = _walk_groq(v)
+                if res:
+                    return res
+    return None
 
 
 def _find_groq_key() -> str:
-    # 1. Check YAML secret files: secret.yml, secrets.yml, secret.yaml, secrets.yaml
-    candidate_files = [
-        "secret.yml",
-        "secrets.yml",
-        "secret.yaml",
-        "secrets.yaml",
-        os.path.join(".streamlit", "secret.yml"),
-        os.path.join(".streamlit", "secrets.yml"),
-        os.path.join(".streamlit", "secret.yaml"),
-        os.path.join(".streamlit", "secrets.yaml"),
-    ]
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml"):
-        p = os.path.join(base_dir, rel)
-        if p not in candidate_files:
-            candidate_files.append(p)
-
-    def _match_val(k_name: str, val_str: str) -> bool:
-        if not val_str:
-            return False
-        # Do not mistake Gemini, Grok, or OpenAI keys for Groq keys
-        if val_str.startswith("AIza") or val_str.startswith("xai-") or val_str.startswith("sk-"):
-            return False
-        if val_str.startswith("gsk_"):
-            return True
-        k_lower = k_name.lower()
-        if "groq" in k_lower:
-            return True
-        return False
-
-    def _walk(obj):
-        if not obj:
-            return None
-        if isinstance(obj, (str, int, float)):
-            s = str(obj).strip()
-            if s.startswith("gsk_"):
-                return s
-        if hasattr(obj, "items") or isinstance(obj, dict):
-            for k, v in obj.items():
-                if isinstance(v, (str, int, float)):
-                    val = str(v).strip()
-                    if _match_val(str(k), val):
-                        return val
-            for k, v in obj.items():
-                if isinstance(v, dict) or hasattr(v, "items"):
-                    res = _walk(v)
-                    if res:
-                        return res
-        return None
-
-    for fpath in candidate_files:
-        if os.path.exists(fpath):
-            try:
-                import yaml
-                with open(fpath, "r", encoding="utf-8") as f:
-                    content = yaml.safe_load(f)
-                res = _walk(content)
-                if res:
-                    return res
-            except Exception:
-                pass
+    # 1. Candidate secret files
+    for fpath in _get_candidate_secret_files():
+        raw_content = _read_file_safe(fpath)
+        if not raw_content:
+            continue
+        m = re.search(r"\b(gsk_[0-9A-Za-z]{30,})\b", raw_content)
+        if m:
+            return m.group(1).strip()
+        try:
+            import yaml
+            content = yaml.safe_load(raw_content)
+            res = _walk_groq(content)
+            if res:
+                return res
+        except Exception:
+            pass
+        for line in raw_content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_groq_val(k.strip(), v_clean):
+                    return v_clean
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_groq_val(k.strip(), v_clean):
+                    return v_clean
 
     # 2. Environment variables
     for env_name in ("GROQ_API_KEY", "GROQ_KEY", "GROQ"):
@@ -308,9 +269,248 @@ def _find_groq_key() -> str:
     # 3. Streamlit secrets
     try:
         import streamlit as st
-        res = _walk(st.secrets)
-        if res:
-            return res
+        for k in ("GROQ_API_KEY", "groq_api_key", "GROQ_KEY", "groq_key", "GROQ", "groq"):
+            try:
+                v = st.secrets.get(k)
+                if v and str(v).strip():
+                    return str(v).strip()
+            except Exception:
+                pass
+        for sec in ("groq", "ai", "general", "secrets"):
+            try:
+                tbl = st.secrets.get(sec)
+                if tbl and hasattr(tbl, "get"):
+                    for k in ("api_key", "key", "groq_api_key"):
+                        v = tbl.get(k)
+                        if v and str(v).strip():
+                            return str(v).strip()
+            except Exception:
+                pass
+        try:
+            d = st.secrets.to_dict() if hasattr(st.secrets, "to_dict") else dict(st.secrets)
+            res = _walk_groq(d)
+            if res:
+                return res
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    return ""
+
+
+def _match_grok_val(k_name: str, val_str: str) -> bool:
+    if not val_str:
+        return False
+    if val_str.startswith("AIza") or val_str.startswith("gsk_") or val_str.startswith("sk-") or val_str.startswith("AQ."):
+        return False
+    if val_str.startswith("xai-"):
+        return True
+    k_lower = k_name.lower()
+    if any(term in k_lower for term in ("grok", "xai")):
+        return True
+    return False
+
+
+def _walk_grok(obj):
+    if not obj:
+        return None
+    if isinstance(obj, (str, int, float)):
+        s = str(obj).strip()
+        if s.startswith("xai-"):
+            return s
+    if hasattr(obj, "items") or isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (str, int, float)):
+                val = str(v).strip()
+                if _match_grok_val(str(k), val):
+                    return val
+        for k, v in obj.items():
+            if isinstance(v, dict) or hasattr(v, "items"):
+                res = _walk_grok(v)
+                if res:
+                    return res
+    return None
+
+
+def _find_grok_key() -> str:
+    # 1. Candidate secret files
+    for fpath in _get_candidate_secret_files():
+        raw_content = _read_file_safe(fpath)
+        if not raw_content:
+            continue
+        m = re.search(r"\b(xai-[0-9A-Za-z]{30,})\b", raw_content)
+        if m:
+            return m.group(1).strip()
+        try:
+            import yaml
+            content = yaml.safe_load(raw_content)
+            res = _walk_grok(content)
+            if res:
+                return res
+        except Exception:
+            pass
+        for line in raw_content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_grok_val(k.strip(), v_clean):
+                    return v_clean
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_grok_val(k.strip(), v_clean):
+                    return v_clean
+
+    # 2. Environment variables
+    for env_name in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "CUSTOM_AI_KEY"):
+        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
+        if v and str(v).strip():
+            return str(v).strip()
+    for k, v in os.environ.items():
+        if v and str(v).strip().startswith("xai-"):
+            return str(v).strip()
+        if any(term in k.lower() for term in ("grok", "xai")) and v and str(v).strip():
+            return str(v).strip()
+
+    # 3. Streamlit secrets
+    try:
+        import streamlit as st
+        for k in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI"):
+            try:
+                v = st.secrets.get(k) or st.secrets.get(k.lower())
+                if v and str(v).strip():
+                    return str(v).strip()
+            except Exception:
+                pass
+        for sec in ("grok", "xai", "general", "secrets"):
+            try:
+                tbl = st.secrets.get(sec)
+                if tbl and hasattr(tbl, "get"):
+                    for k in ("api_key", "key", "grok_api_key", "xai_api_key"):
+                        v = tbl.get(k) or tbl.get(k.upper())
+                        if v and str(v).strip():
+                            return str(v).strip()
+            except Exception:
+                pass
+        try:
+            d = st.secrets.to_dict() if hasattr(st.secrets, "to_dict") else dict(st.secrets)
+            res = _walk_grok(d)
+            if res:
+                return res
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    return ""
+
+
+def _match_openai_val(k_name: str, val_str: str) -> bool:
+    if not val_str:
+        return False
+    if val_str.startswith("AIza") or val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("AQ."):
+        return False
+    if val_str.startswith("sk-"):
+        return True
+    k_lower = k_name.lower()
+    if "openai" in k_lower:
+        return True
+    return False
+
+
+def _walk_openai(obj):
+    if not obj:
+        return None
+    if isinstance(obj, (str, int, float)):
+        s = str(obj).strip()
+        if s.startswith("sk-"):
+            return s
+    if hasattr(obj, "items") or isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (str, int, float)):
+                val = str(v).strip()
+                if _match_openai_val(str(k), val):
+                    return val
+        for k, v in obj.items():
+            if isinstance(v, dict) or hasattr(v, "items"):
+                res = _walk_openai(v)
+                if res:
+                    return res
+    return None
+
+
+def _find_openai_key() -> str:
+    # 1. Candidate secret files
+    for fpath in _get_candidate_secret_files():
+        raw_content = _read_file_safe(fpath)
+        if not raw_content:
+            continue
+        m = re.search(r"\b(sk-[0-9A-Za-z_-]{30,})\b", raw_content)
+        if m:
+            return m.group(1).strip()
+        try:
+            import yaml
+            content = yaml.safe_load(raw_content)
+            res = _walk_openai(content)
+            if res:
+                return res
+        except Exception:
+            pass
+        for line in raw_content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_openai_val(k.strip(), v_clean):
+                    return v_clean
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                v_clean = v.strip().strip("'\"")
+                if _match_openai_val(k.strip(), v_clean):
+                    return v_clean
+
+    # 2. Environment variables
+    for env_name in ("OPENAI_API_KEY", "OPENAI_KEY", "OPENAI"):
+        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
+        if v and str(v).strip():
+            return str(v).strip()
+    for k, v in os.environ.items():
+        if v and str(v).strip().startswith("sk-"):
+            return str(v).strip()
+
+    # 3. Streamlit secrets
+    try:
+        import streamlit as st
+        for k in ("OPENAI_API_KEY", "openai_api_key", "OPENAI_KEY", "openai_key", "OPENAI", "openai"):
+            try:
+                v = st.secrets.get(k)
+                if v and str(v).strip():
+                    return str(v).strip()
+            except Exception:
+                pass
+        for sec in ("openai", "general", "secrets", "api"):
+            try:
+                tbl = st.secrets.get(sec)
+                if tbl and hasattr(tbl, "get"):
+                    for k in ("api_key", "key", "openai_api_key"):
+                        v = tbl.get(k)
+                        if v and str(v).strip():
+                            return str(v).strip()
+            except Exception:
+                pass
+        try:
+            d = st.secrets.to_dict() if hasattr(st.secrets, "to_dict") else dict(st.secrets)
+            res = _walk_openai(d)
+            if res:
+                return res
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -829,8 +1029,8 @@ def get_provider(custom_key: str = "", provider_name: str = "", model: str = "")
 
     if any(t in pname for t in ("grok", "xai")):
         grok_k = _find_grok_key()
-        if groq_k:
-            return GroqProvider(grok_k, model or _value("GROK_MODEL") or "grok-4.5")
+        if grok_k:
+            return GrokProvider(grok_k, model or _value("GROK_MODEL") or "grok-4.5")
         return None
 
     if any(t in pname for t in ("anthropic", "claude")):
@@ -840,9 +1040,9 @@ def get_provider(custom_key: str = "", provider_name: str = "", model: str = "")
         return None
 
     if "openai" in pname:
-        k = _value("OPENAI_API_KEY")
+        k = _find_openai_key()
         if k:
-            return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o-mini")
+            return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o")
         return None
 
     # 1. Multi-provider resolution with automatic failover
@@ -870,9 +1070,9 @@ def get_provider(custom_key: str = "", provider_name: str = "", model: str = "")
     if k:
         return AnthropicProvider(k, model or _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
 
-    k = _value("OPENAI_API_KEY")
+    k = _find_openai_key()
     if k:
-        return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o-mini")
+        return OpenAIProvider(k, model or _value("OPENAI_MODEL") or "gpt-4o")
 
     return None
 
@@ -893,7 +1093,7 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
         else:
             target = "Google Gemini"
         raise ProviderError(
-            f"No {target} API key found. Please paste your API key in the box above, or add GEMINI_API_KEY / {target.upper().replace(' ', '_')}_API_KEY to secret.yml / Streamlit secrets."
+            f"No {target} API key found in secrets. Please configure {target.upper().replace(' ', '_')}_API_KEY in secret.yml or Streamlit secrets."
         )
 
     system_prompt = (
@@ -969,6 +1169,7 @@ def get_ai_status() -> Dict[str, Any]:
 find_gemini_key = _find_gemini_key
 find_groq_key = _find_groq_key
 find_grok_key = _find_grok_key
+find_openai_key = _find_openai_key
 
 __all__ = [
     "ProviderError",
@@ -985,9 +1186,11 @@ __all__ = [
     "find_gemini_key",
     "find_groq_key",
     "find_grok_key",
+    "find_openai_key",
     "_find_gemini_key",
     "_find_groq_key",
     "_find_grok_key",
+    "_find_openai_key",
 ]
 
 
