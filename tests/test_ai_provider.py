@@ -158,3 +158,50 @@ def test_groq_provider_does_not_put_key_in_provider_errors(monkeypatch):
         provider.generate("system", "user")
 
     assert "secret-groq-key" not in str(exc.value)
+
+
+def test_get_ai_status_and_aliases(monkeypatch):
+    from algobot.ai_provider import (
+        find_gemini_key,
+        find_groq_key,
+        get_ai_status,
+    )
+
+    monkeypatch.setenv("GEMINI_API_KEY", "AIzaTestKey")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_TestGroqKey")
+
+    assert find_gemini_key() == "AIzaTestKey"
+    assert find_groq_key() == "gsk_TestGroqKey"
+
+    st = get_ai_status()
+    assert st["gemini_connected"] is True
+    assert st["groq_connected"] is True
+    assert st["dual_active"] is True
+    assert st["primary"] == "gemini"
+    assert st["backup"] == "groq"
+
+
+def test_cross_key_collision_protection(tmp_path, monkeypatch):
+    from algobot.ai_provider import _find_gemini_key, _find_groq_key
+
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+    # File with generic API_KEY pointing to a Groq key
+    secret_file = tmp_path / "secret.yml"
+    secret_file.write_text("API_KEY: 'gsk_SomeGroqKey'\n")
+
+    monkeypatch.chdir(tmp_path)
+    # Gemini must NOT steal the Groq key
+    assert _find_gemini_key() == ""
+    # Groq MUST recognize it
+    assert _find_groq_key() == "gsk_SomeGroqKey"
+
+    # Now change to an AIza key
+    secret_file.write_text("API_KEY: 'AIzaSomeGeminiKey'\n")
+    # Gemini MUST recognize it
+    assert _find_gemini_key() == "AIzaSomeGeminiKey"
+    # Groq must NOT steal it
+    assert _find_groq_key() == ""
+

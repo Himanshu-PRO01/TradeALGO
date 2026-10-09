@@ -1,7 +1,7 @@
 from __future__ import annotations
 import base64
 import json, os, urllib.error, urllib.request
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 class ProviderError(RuntimeError):
     pass
@@ -26,6 +26,9 @@ def _find_gemini_key() -> str:
 
     def _match_val(k_name: str, val_str: str) -> bool:
         if not val_str:
+            return False
+        # Do not mistake Groq, Grok, or OpenAI keys for Gemini keys
+        if val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("sk-"):
             return False
         if val_str.startswith("AIza"):
             return True
@@ -165,6 +168,9 @@ def _find_groq_key() -> str:
     def _match_val(k_name: str, val_str: str) -> bool:
         if not val_str:
             return False
+        # Do not mistake Gemini, Grok, or OpenAI keys for Groq keys
+        if val_str.startswith("AIza") or val_str.startswith("xai-") or val_str.startswith("sk-"):
+            return False
         if val_str.startswith("gsk_"):
             return True
         k_lower = k_name.lower()
@@ -262,7 +268,7 @@ class FallbackProvider(AIProvider):
     """Executes requests using primary provider and seamlessly fails over to backup on token/rate/quota limits."""
     name = "fallback"
 
-    def __init__(self, providers: list[AIProvider]):
+    def __init__(self, providers: List[AIProvider]):
         self.providers = [p for p in providers if p is not None]
         if not self.providers:
             raise ValueError("FallbackProvider requires at least one provider.")
@@ -798,4 +804,44 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
         yaml_text = raw.strip()
 
     return {"yaml": yaml_text, "explanation": explanation, "raw": raw}
+
+
+def get_ai_status() -> Dict[str, Any]:
+    """Inspects credentials and returns active AI engine connection state."""
+    gemini_k = _find_gemini_key()
+    groq_k = _find_groq_key()
+    return {
+        "gemini_connected": bool(gemini_k),
+        "groq_connected": bool(groq_k),
+        "dual_active": bool(gemini_k and groq_k),
+        "primary": "gemini" if gemini_k else ("groq" if groq_k else None),
+        "backup": "groq" if (gemini_k and groq_k) else None,
+    }
+
+
+# Public aliases
+find_gemini_key = _find_gemini_key
+find_groq_key = _find_groq_key
+find_grok_key = _find_grok_key
+
+__all__ = [
+    "ProviderError",
+    "AIProvider",
+    "FallbackProvider",
+    "GeminiProvider",
+    "GroqProvider",
+    "GrokProvider",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "get_provider",
+    "read_strategy_image",
+    "get_ai_status",
+    "find_gemini_key",
+    "find_groq_key",
+    "find_grok_key",
+    "_find_gemini_key",
+    "_find_groq_key",
+    "_find_grok_key",
+]
+
 

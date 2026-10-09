@@ -9,7 +9,51 @@ import streamlit as st
 import yaml
 
 from algobot import ui
-from algobot.ai_provider import ProviderError, _find_gemini_key, _find_groq_key, read_strategy_image
+
+# Resilient import from ai_provider with auto-reload for hot deployment
+try:
+    from algobot.ai_provider import (
+        ProviderError,
+        _find_gemini_key,
+        _find_groq_key,
+        find_gemini_key,
+        find_groq_key,
+        get_ai_status,
+        read_strategy_image,
+    )
+except ImportError:
+    import importlib
+    import sys
+    if "algobot.ai_provider" in sys.modules:
+        importlib.reload(sys.modules["algobot.ai_provider"])
+    try:
+        from algobot.ai_provider import (
+            ProviderError,
+            _find_gemini_key,
+            _find_groq_key,
+            find_gemini_key,
+            find_groq_key,
+            get_ai_status,
+            read_strategy_image,
+        )
+    except Exception:
+        class ProviderError(RuntimeError):
+            pass
+
+        def get_ai_status() -> dict:
+            return {"gemini_connected": False, "groq_connected": False, "dual_active": False}
+
+        def _find_gemini_key() -> str:
+            return ""
+
+        def _find_groq_key() -> str:
+            return ""
+
+        find_gemini_key = _find_gemini_key
+        find_groq_key = _find_groq_key
+
+        def read_strategy_image(*args, **kwargs):
+            raise ProviderError("AI Provider is temporarily reloading. Please refresh the page.")
 from algobot.appstate import experiments_scope, strategies_scope
 from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
@@ -307,9 +351,9 @@ elif kind == K_VISION:
 
     with col_prov:
         with st.container():
-            st.markdown("##### ⚡ Dual Vision Engine (Gemini 3.5 Flash + Groq Failover)")
-            gemini_connected = bool(_find_gemini_key())
-            groq_connected = bool(_find_groq_key())
+            status = get_ai_status() if callable(globals().get("get_ai_status")) else {}
+            gemini_connected = status.get("gemini_connected", False) or bool(_find_gemini_key())
+            groq_connected = status.get("groq_connected", False) or bool(_find_groq_key())
             if gemini_connected and groq_connected:
                 badge_title = "DUAL AI READY · AUTO-FAILOVER ACTIVE"
                 badge_desc = "Gemini 3.5 Flash is primary. If tokens run out or rate limits hit, Groq automatically takes over."
