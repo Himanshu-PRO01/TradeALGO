@@ -803,6 +803,24 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
     else:
         yaml_text = raw.strip()
 
+    if yaml_text:
+        try:
+            import yaml
+            from .strategy import normalize_rule_expression
+            parsed = yaml.safe_load(yaml_text)
+            if isinstance(parsed, dict):
+                changed = False
+                for rkey in ("entry_long", "exit_long", "entry_short", "exit_short"):
+                    if rkey in parsed and isinstance(parsed[rkey], str):
+                        norm = normalize_rule_expression(parsed[rkey])
+                        if norm != parsed[rkey]:
+                            parsed[rkey] = norm
+                            changed = True
+                if changed:
+                    yaml_text = yaml.safe_dump(parsed, sort_keys=False).strip()
+        except Exception:
+            pass
+
     return {"yaml": yaml_text, "explanation": explanation, "raw": raw}
 
 

@@ -16,6 +16,7 @@ Both are DEMOS to prove the pipeline works. Neither is a recommendation.
 """
 from __future__ import annotations
 
+import ast
 import re
 
 import numpy as np
@@ -301,6 +302,47 @@ _ALLOWED_CHARS = re.compile(r"^[A-Za-z0-9_\s\.\+\-\*/%<>=!&|()~]*$")
 _RULE_NAMES = ("entry_long", "exit_long", "entry_short", "exit_short")
 
 
+def normalize_rule_expression(expr: str) -> str:
+    """Pre-processes common trading syntax (e.g. crossover / crossunder / cross)
+    into standard TradeALGO expressions using <col> and <col>_prev.
+    """
+    if not expr or not isinstance(expr, str):
+        return ""
+    s = str(expr).strip()
+    # Strip 'ta.' prefix: ta.crossover -> crossover, ta.crossunder -> crossunder, etc.
+    s = re.sub(r"\bta\.(crossover|crossunder|cross|cross_above|cross_below)\b", r"\1", s)
+
+    arg = r"([A-Za-z_]\w*|-?\d+(?:\.\d+)?)"
+
+    def _crossover_sub(m):
+        a, b = m.group(1).strip(), m.group(2).strip()
+        a_prev = f"{a}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", a) else a
+        b_prev = f"{b}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", b) else b
+        return f"(({a} > {b}) and ({a_prev} <= {b_prev}))"
+
+    def _crossunder_sub(m):
+        a, b = m.group(1).strip(), m.group(2).strip()
+        a_prev = f"{a}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", a) else a
+        b_prev = f"{b}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", b) else b
+        return f"(({a} < {b}) and ({a_prev} >= {b_prev}))"
+
+    def _cross_sub(m):
+        a, b = m.group(1).strip(), m.group(2).strip()
+        a_prev = f"{a}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", a) else a
+        b_prev = f"{b}_prev" if not re.match(r"^-?\d+(?:\.\d+)?$", b) else b
+        return f"((({a} > {b}) and ({a_prev} <= {b_prev})) or (({a} < {b}) and ({a_prev} >= {b_prev})))"
+
+    s = re.sub(rf"\b(?:crossover|cross_above)\s*\(\s*{arg}\s*,\s*{arg}\s*\)", _crossover_sub, s)
+    s = re.sub(rf"\b(?:crossunder|cross_below)\s*\(\s*{arg}\s*,\s*{arg}\s*\)", _crossunder_sub, s)
+    s = re.sub(rf"\bcross\s*\(\s*{arg}\s*,\s*{arg}\s*\)", _cross_sub, s)
+
+    # 1-arg crossover(a) -> crossover(a, 0)
+    s = re.sub(rf"\b(?:crossover|cross_above)\s*\(\s*{arg}\s*\)", r"((\1 > 0) and (\1_prev <= 0))", s)
+    s = re.sub(rf"\b(?:crossunder|cross_below)\s*\(\s*{arg}\s*\)", r"((\1 < 0) and (\1_prev >= 0))", s)
+
+    return s
+
+
 def check_expression(expr: str, label: str) -> None:
     """Allow only simple conditions: comparisons, arithmetic, and/or/not.
 
@@ -312,21 +354,37 @@ def check_expression(expr: str, label: str) -> None:
             f"Rule '{label}' contains characters that are not allowed. Use only "
             "column names, numbers, + - * / comparisons, and/or/not and brackets."
         )
-    stripped = re.sub(r"\b(and|or|not)\b", " ", expr)
-    if re.search(r"[A-Za-z_]\w*\s*\(", stripped):
-        raise ConfigError(f"Rule '{label}': function calls are not allowed.")
-    if re.search(r"[A-Za-z_]\s*\.", stripped) or "__" in expr:
-        raise ConfigError(
-            f"Rule '{label}': '.' after a name is not allowed. For the previous bar "
-            "use the _prev columns, for example close_prev."
-        )
+    if "__" in expr:
+        raise ConfigError(f"Rule '{label}': '__' is not allowed in expressions.")
+
+    try:
+        tree = ast.parse(expr, mode="eval")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                raise ConfigError(f"Rule '{label}': function calls are not allowed.")
+            if isinstance(node, ast.Attribute):
+                raise ConfigError(
+                    f"Rule '{label}': '.' after a name is not allowed. For the previous bar "
+                    "use the _prev columns, for example close_prev."
+                )
+    except SyntaxError:
+        # Fallback when ast cannot parse (e.g. invalid syntax): verify without 'and (' false positive
+        stripped = re.sub(r"\b(and|or|not)\b\s*\(", " (", expr)
+        stripped = re.sub(r"\b(and|or|not)\b", " ", stripped)
+        if re.search(r"[A-Za-z_]\w*\s*\(", stripped):
+            raise ConfigError(f"Rule '{label}': function calls are not allowed.")
+        if re.search(r"[A-Za-z_]\s*\.", stripped):
+            raise ConfigError(
+                f"Rule '{label}': '.' after a name is not allowed. For the previous bar "
+                "use the _prev columns, for example close_prev."
+            )
 
 
 def evaluate_rule(df: pd.DataFrame, expr: Optional[str], label: str) -> pd.Series:
     """Evaluate a rule over all bars. Missing values (indicator warm-up) count as False."""
     if expr is None or str(expr).strip() == "":
         return pd.Series(False, index=df.index)
-    expr = str(expr)
+    expr = normalize_rule_expression(str(expr))
     check_expression(expr, label)
     try:
         result = df.eval(expr)

@@ -215,3 +215,33 @@ def test_build_strategy_unknown_name():
     cfg = make_cfg(strategy={"name": "does_not_exist"})
     with pytest.raises(ConfigError, match="Unknown strategy"):
         build_strategy(cfg)
+
+
+def test_parentheses_after_boolean_operator_do_not_trigger_function_call_error():
+    # Previous bug: 'ident and (sub_expr)' was collapsed to 'ident (sub_expr)' and rejected as function call
+    df = make_bars([(10, 11, 9, 10)] * 5)
+    df = add_prev_columns(add_indicators(df, [{"name": "s2", "type": "sma", "period": 2}]))
+    # This must NOT raise "Rule 'exit_long': function calls are not allowed"
+    res = evaluate_rule(df, "close < s2 and (s2 < s2_prev)", "exit_long")
+    assert isinstance(res, pd.Series)
+
+
+def test_crossover_and_crossunder_syntax_normalization():
+    from algobot.strategy import normalize_rule_expression
+
+    # Pine script and AI style functions are automatically expanded to standard TradeALGO rules
+    assert normalize_rule_expression("ta.crossunder(cci_80, 100)") == "((cci_80 < 100) and (cci_80_prev >= 100))"
+    assert normalize_rule_expression("crossover(close, ema_20)") == "((close > ema_20) and (close_prev <= ema_20_prev))"
+    assert normalize_rule_expression("crossunder(cci_80, -100)") == "((cci_80 < -100) and (cci_80_prev >= -100))"
+    assert normalize_rule_expression("cross(close, ema_20)") == "(((close > ema_20) and (close_prev <= ema_20_prev)) or ((close < ema_20) and (close_prev >= ema_20_prev)))"
+
+
+def test_evaluate_rule_executes_crossunder_with_cci_80():
+    df = generate_sample_data(days=5, seed=4)
+    df = add_indicators(df, [{"name": "cci_80", "type": "cci", "period": 80}])
+    df = add_prev_columns(df)
+    # The exact rule that raised the user error:
+    res = evaluate_rule(df, "crossunder(cci_80, 100)", "exit_long")
+    assert isinstance(res, pd.Series)
+    assert res.dtype == bool
+
