@@ -182,7 +182,7 @@ def test_the_old_entry_point_still_starts_the_same_page():
 
 
 def test_every_page_in_the_menu_loads_with_no_exception():
-    pages = sorted(os.listdir(os.path.join(ROOT, "pages")))
+    pages = [p for p in sorted(os.listdir(os.path.join(ROOT, "pages"))) if p.endswith(".py")]
     assert len(pages) >= 8
     for name in pages:
         at = app(os.path.join("pages", name))

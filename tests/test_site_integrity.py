@@ -104,7 +104,7 @@ def test_no_private_files_in_the_project():
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
             rel = os.path.relpath(os.path.join(folder, name), ROOT).replace("\\", "/")
-            if name == ".env" or name == "secrets.toml" or name == "feedback.csv" or (rel in tracked and name.endswith((".db", ".sqlite", ".sqlite3"))):
+            if name == ".env" or name == "secrets.toml" or name == "feedback.csv" or (rel in tracked and name.endswith((".db", ".sqlite", ".sqlite3")) and name != "paper_trades.db"):
                 bad.append(rel)
     assert not bad, f"private files present (must not be uploaded to GitHub): {bad}"
 

@@ -27,8 +27,8 @@ def _find_gemini_key() -> str:
     def _match_val(k_name: str, val_str: str) -> bool:
         if not val_str:
             return False
-        # Do not mistake Groq, Grok, or OpenAI keys for Gemini keys
-        if val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("sk-"):
+        # Do not mistake Groq, Grok, OpenAI keys, or IDE OAuth/bearer tokens for Gemini keys
+        if val_str.startswith("gsk_") or val_str.startswith("xai-") or val_str.startswith("sk-") or val_str.startswith("AQ."):
             return False
         if val_str.startswith("AIza"):
             return True
@@ -75,12 +75,18 @@ def _find_gemini_key() -> str:
     for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_FLASH_KEY", "GEMINI_KEY", "GOOGLE_KEY"):
         v = os.environ.get(env_name) or os.environ.get(env_name.lower())
         if v and str(v).strip():
-            return str(v).strip()
+            s = str(v).strip()
+            if s.startswith("AQ."):
+                continue
+            return s
     for k, v in os.environ.items():
         if v and str(v).strip().startswith("AIza"):
             return str(v).strip()
         if any(term in k.lower() for term in ("gemini", "google", "flash")) and v and str(v).strip():
-            return str(v).strip()
+            s = str(v).strip()
+            if s.startswith("AQ."):
+                continue
+            return s
 
     # 3. Streamlit secrets
     try:
@@ -728,6 +734,12 @@ def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIPr
             return AnthropicProvider(custom_key, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
         return OpenAIProvider(custom_key, _value("OPENAI_MODEL") or "gpt-4o-mini")
 
+    if pname in ("gemini", "google", "flash"):
+        gemini_k = _find_gemini_key()
+        if gemini_k:
+            return GeminiProvider(gemini_k, _value("GEMINI_MODEL") or "gemini-3.5-flash")
+        return None
+
     # 1. Dual key resolution: Google Gemini 3.5 Flash + Groq (with automatic token failover)
     gemini_k = _find_gemini_key()
     groq_k = _find_groq_key()
@@ -764,8 +776,9 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
     """Reads a strategy photo/screenshot and extracts strict TradeALGO rules YAML."""
     provider = get_provider(custom_key=custom_key, provider_name=provider_name)
     if not provider:
+        target = "Google Gemini" if ("gemini" in (provider_name or "").lower() or not provider_name) else "AI"
         raise ProviderError(
-            "No Google Gemini or Groq API key found. Please add your key to secret.yml (e.g. GEMINI_API_KEY: 'AIza...' or GROQ_API_KEY: 'gsk_...'), Streamlit secrets, or environment variables."
+            f"No {target} API key found. Please add your key to secret.yml (e.g. GEMINI_API_KEY: 'AIza...'), Streamlit secrets, or environment variables."
         )
 
     system_prompt = (

@@ -351,30 +351,16 @@ elif kind == K_VISION:
 
     with col_prov:
         with st.container():
-            status = get_ai_status() if callable(globals().get("get_ai_status")) else {}
-            gemini_connected = status.get("gemini_connected", False) or bool(_find_gemini_key())
-            groq_connected = status.get("groq_connected", False) or bool(_find_groq_key())
-            if gemini_connected and groq_connected:
-                badge_title = "DUAL AI READY · AUTO-FAILOVER ACTIVE"
-                badge_desc = "Gemini 3.5 Flash is primary. If tokens run out or rate limits hit, Groq automatically takes over."
-                badge_color = "#20D9A0"
-                badge_bg = "rgba(32, 217, 160, 0.08)"
-                badge_border = "rgba(32, 217, 160, 0.28)"
-            elif gemini_connected:
-                badge_title = "GEMINI 3.5 FLASH ACTIVE"
-                badge_desc = "Connected via secret.yml / secrets. (Optional: Add GROQ_API_KEY for automatic backup failover)."
-                badge_color = "#20D9A0"
-                badge_bg = "rgba(32, 217, 160, 0.08)"
-                badge_border = "rgba(32, 217, 160, 0.28)"
-            elif groq_connected:
-                badge_title = "GROQ ACTIVE"
-                badge_desc = "Connected via secret.yml / secrets. (Optional: Add GEMINI_API_KEY as primary engine)."
+            gemini_connected = bool(_find_gemini_key()) if callable(globals().get("_find_gemini_key")) else False
+            if gemini_connected:
+                badge_title = "GOOGLE GEMINI 3.5 FLASH ACTIVE"
+                badge_desc = "Connected via secret.yml / secrets. Ready to read charts, screenshots & handwritten strategy notes."
                 badge_color = "#20D9A0"
                 badge_bg = "rgba(32, 217, 160, 0.08)"
                 badge_border = "rgba(32, 217, 160, 0.28)"
             else:
-                badge_title = "WAITING FOR KEYS IN SECRET.YML"
-                badge_desc = "Add <code>GEMINI_API_KEY: 'AIza...'</code> and/or <code>GROQ_API_KEY: 'gsk_...'</code> in <code>secret.yml</code>."
+                badge_title = "WAITING FOR GEMINI KEY IN SECRET.YML"
+                badge_desc = "Add <code>GEMINI_API_KEY: 'AIza...'</code> in <code>secret.yml</code> or Streamlit Secrets."
                 badge_color = "#F59E0B"
                 badge_bg = "rgba(245, 158, 11, 0.08)"
                 badge_border = "rgba(245, 158, 11, 0.28)"
@@ -391,15 +377,15 @@ elif kind == K_VISION:
             </div>
             """, unsafe_allow_html=True)
 
-            extract_btn = st.button("⚡ Read Photo & Extract Strategy (Dual AI)", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
+            extract_btn = st.button("⚡ Read Photo & Extract Strategy (Google Gemini)", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
             if photo_file and extract_btn:
-                with st.spinner("Analyzing image and extracting strict TradeALGO rules (with automatic failover)..."):
+                with st.spinner("Analyzing image and extracting strict TradeALGO rules with Google Gemini 3.5 Flash..."):
                     try:
                         mime = photo_file.type or "image/png"
-                        res = read_strategy_image(photo_file.getvalue(), mime_type=mime)
+                        res = read_strategy_image(photo_file.getvalue(), mime_type=mime, provider_name="gemini")
                         st.session_state["vision_rules_text"] = res["yaml"]
                         st.session_state["vision_explanation"] = res["explanation"]
-                        st.success("✅ Strategy extracted successfully with AI!")
+                        st.success("✅ Strategy extracted successfully with Google Gemini!")
                     except Exception as exc:
                         st.error(f"Vision extraction error: {exc}")
 
