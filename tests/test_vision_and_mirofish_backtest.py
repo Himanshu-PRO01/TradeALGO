@@ -103,3 +103,19 @@ def test_mirofish_agent_swarm_audit_runs_on_strategy_config():
     assert "risk_manager" in roles
     assert "adversarial" in roles
     assert "optimizer" in roles
+
+
+def test_backtest_page_rerun_with_existing_result_does_not_raise_name_error():
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    assert not at.exception
+    at.button(key="btn_run").click().run()
+    assert not at.exception
+    assert at.session_state["result"] is not None
+    # Simulate a rerun where run_clicked and check_clicked are False
+    at.run()
+    assert not at.exception
+    if at.slider(key="bt_window"):
+        at.slider(key="bt_window").set_value(200).run()
+        assert not at.exception
+

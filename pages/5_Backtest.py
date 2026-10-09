@@ -643,6 +643,8 @@ with st.expander("Extra safety check (optional): make sure the rule isn't secret
                "This check proves your rule only uses information available at the time.")
     check_clicked = st.button("Run the peek-ahead check", key="btn_lookahead", disabled=not confirmed)
 
+prices = st.session_state.get("last_prices")
+
 if check_clicked or run_clicked:
     try:
         prices = load_prices()
@@ -700,10 +702,11 @@ if result is not None:
             count = library.count()
             st.success(f"Saved **{save_name.strip()}**. You now have {count} saved strateg{'y' if count == 1 else 'ies'}.")
     blocked_big = result.rejections.get("position_too_large", 0)
+    prices_check = prices if prices is not None else st.session_state.get("last_prices")
     has_zero_volume = (
-        prices is not None
-        and "volume" in prices.columns
-        and float(prices["volume"].sum()) == 0.0
+        isinstance(prices_check, pd.DataFrame)
+        and "volume" in prices_check.columns
+        and float(prices_check["volume"].sum()) == 0.0
     )
     uses_volume = kind == K_FLOW or any(
         isinstance(i, dict) and i.get("type") in ("mfi", "vwap")
@@ -767,7 +770,7 @@ if result is not None:
 
     tab_price, tab_equity, tab_trades, tab_notes = st.tabs(["Chart", "Account balance", "Trade list", "Details"])
     with tab_price:
-        prices_now = st.session_state.get("last_prices")
+        prices_now = prices if prices is not None else st.session_state.get("last_prices")
         if prices_now is not None:
             window = st.slider("Candles shown (latest)", 100, 1000, 300, step=50, key="bt_window")
             ui.show_chart(candlestick(prices_now, trades=result.trades, height=360, max_bars=int(window)))
