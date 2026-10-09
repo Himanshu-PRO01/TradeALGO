@@ -1,5 +1,6 @@
 """Backtest: see how a trading idea would have done on past prices, with pretend money."""
 import glob
+from html import escape
 import io
 import os
 
@@ -94,14 +95,34 @@ DEFAULT_RULES = HMA_RULES
 K_HMA = "HMA trend rule (ready-made)"
 K_10K = "Conservative 10k Pullback (₹10,000 Capital — Tested)"
 K_PULLBACK = "Stock Pullback (Bluechip Mean Reversion — Tested)"
-K_YAML = "📁 Load from configs/ YAML (conservative_10k.yaml, etc.)"
-K_VISION = "📸 AI Photo-to-Strategy (Upload strategy photo / screenshot)"
 K_PIVOT = "Nifty Pivot Bounce (Floor S1/R1 Reversal — Tested)"
 K_MOM = "Bank Nifty Momentum (Fast/Slow Trend + RSI — Tested)"
 K_FLOW = "Order flow / volume pressure (ready-made)"
 K_SMA = "Moving-average crossover (ready-made)"
 K_NEW = "New Era Strategy 1.0"
 K_OWN = "Write my own rules (advanced)"
+
+# Dedicated modes for external/custom sources
+K_YAML = "📁 Load from configs/ YAML (conservative_10k.yaml, etc.)"
+K_VISION = "📸 AI Photo-to-Strategy (Upload strategy photo / screenshot)"
+
+PRESET_STRATEGIES = [
+    K_HMA,
+    K_10K,
+    K_PULLBACK,
+    K_PIVOT,
+    K_MOM,
+    K_FLOW,
+    K_SMA,
+    K_NEW,
+    K_OWN,
+]
+
+MODE_PRESET = "🎯 Tested & Ready-Made Strategies"
+MODE_VISION = "📸 AI Photo-to-Strategy (Upload Image)"
+MODE_YAML = "📁 Load from configs/ YAML"
+STRATEGY_MODES = [MODE_PRESET, MODE_VISION, MODE_YAML]
+
 KIND_HELP = {
     K_HMA: "Buys when price is above a Hull Moving Average (HMA) that is itself still rising. Sells when the HMA "
            "turns down. The HMA hugs price more closely than a plain moving average, so it reacts sooner.",
@@ -109,8 +130,6 @@ KIND_HELP = {
            "Dip-buy when RSI(5) dips < 25 above 50 EMA; limits daily loss to ₹300 (configs/conservative_10k.yaml).",
     K_PULLBACK: "High-win-rate intraday mean reversion for bluechips (Reliance, HDFC Bank, ICICI Bank). "
                 "Buys when RSI(5) dips below 25 while above 50 EMA; exits when RSI reaches 60.",
-    K_YAML: "Load any strategy YAML configuration file directly from the repository configs/ directory.",
-    K_VISION: "Upload a photo, screenshot, or handwritten notes of a strategy. Multimodal AI reads it and extracts backtest rules.",
     K_PIVOT: "Floor pivot reversal for Nifty 50 index. Buys when price bounces off S1 with oversold RSI; exits at central pivot.",
     K_MOM: "9/21 EMA trend following with RSI(14) momentum filter for Bank Nifty intraday swings.",
     K_FLOW: "Buys when the Money Flow Index — price combined with volume, as a proxy for buying/selling pressure — "
@@ -120,6 +139,8 @@ KIND_HELP = {
     K_NEW: "The New Era Strategy 1.0 rules, translated for this backtester.",
     K_OWN: "Type exact buy/sell conditions yourself, or paste ones an AI wrote. "
            "You will be asked to confirm them before running.",
+    K_YAML: "Load any strategy YAML configuration file directly from the repository configs/ directory.",
+    K_VISION: "Upload a photo, screenshot, or handwritten notes of a strategy. Multimodal AI reads it and extracts backtest rules.",
 }
 
 # Price data choices
@@ -173,8 +194,40 @@ def colour_pnl(value):
 
 # ------------------------------------------------------------ step 1: the idea
 st.markdown("### Step 1 · Pick a trading idea")
-kind = st.radio("Which idea do you want to test?", list(KIND_HELP), captions=list(KIND_HELP.values()),
-                key="strategy_kind")
+
+# Sync session state if set externally
+if "strategy_mode" not in st.session_state:
+    if st.session_state.get("strategy_kind") == K_VISION:
+        st.session_state["strategy_mode"] = MODE_VISION
+    elif st.session_state.get("strategy_kind") == K_YAML:
+        st.session_state["strategy_mode"] = MODE_YAML
+    else:
+        st.session_state["strategy_mode"] = MODE_PRESET
+
+strategy_mode = st.radio(
+    "Strategy Source",
+    STRATEGY_MODES,
+    horizontal=True,
+    key="strategy_mode",
+    help="Select whether to test curated algorithms, upload a strategy screenshot with AI, or load a repository YAML config."
+)
+
+if strategy_mode == MODE_PRESET:
+    kind = st.radio(
+        "Which idea do you want to test?",
+        PRESET_STRATEGIES,
+        captions=[KIND_HELP[k] for k in PRESET_STRATEGIES],
+        key="strategy_kind"
+    )
+elif strategy_mode == MODE_VISION:
+    kind = K_VISION
+    st.session_state["strategy_kind"] = K_VISION
+elif strategy_mode == MODE_YAML:
+    kind = K_YAML
+    st.session_state["strategy_kind"] = K_YAML
+else:
+    kind = K_HMA
+
 own_rules = kind in (K_OWN, K_VISION)
 yaml_loaded_cfg = {}
 
@@ -191,58 +244,113 @@ if st.session_state.get("_bt_prev_kind") != kind:
 
 if kind == K_10K:
     strategy_name = "rules"
-    st.info("💡 Calibrated for ₹10,000 capital: limits maximum daily loss to ₹300 (3%) and uses a regime-filtered pullback setup.")
+    st.markdown("""
+    <div class="ta-preset-callout">
+        <span class="ta-callout-pill">₹10,000 CAPITAL</span>
+        <span class="ta-callout-text">Calibrated specifically for ₹10,000 capital: limits maximum daily loss to ₹300 (3%) and uses a regime-filtered pullback setup.</span>
+    </div>
+    """, unsafe_allow_html=True)
     with st.expander("See the exact rules behind this idea", expanded=True):
         st.code(CONSERVATIVE_10K_RULES, language="yaml")
 elif kind == K_YAML:
     strategy_name = "rules"
+    st.markdown("""
+    <div class="ta-vision-header-card">
+        <div class="ta-vision-badge">📁 REPOSITORY CONFIGURATIONS</div>
+        <div class="ta-vision-title">Load Strategy Configuration File</div>
+        <div class="ta-vision-desc">Select any audited or pre-configured strategy YAML file directly from the repository's <code>configs/</code> directory.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     cfg_files = sorted(glob.glob("configs/*.yaml"))
     def_idx = 0
     for idx, cpath in enumerate(cfg_files):
         if "conservative_10k.yaml" in cpath.replace("\\", "/"):
             def_idx = idx
             break
-    selected_yaml = st.selectbox("Pick a strategy YAML from configs/", cfg_files, index=def_idx, key="bt_yaml_select")
+    
+    col_sel, col_meta = st.columns([1.2, 0.8])
+    with col_sel:
+        selected_yaml = st.selectbox("Pick a strategy YAML from configs/", cfg_files, index=def_idx, key="bt_yaml_select")
+    
     if selected_yaml and os.path.exists(selected_yaml):
         with open(selected_yaml, "r", encoding="utf-8") as yf:
             yaml_raw_text = yf.read()
-        with st.expander(f"View content of {os.path.basename(selected_yaml)}", expanded=True):
-            st.code(yaml_raw_text, language="yaml")
         try:
             yaml_loaded_cfg = yaml.safe_load(yaml_raw_text) or {}
+            cap = yaml_loaded_cfg.get("capital", 10000)
+            max_l = yaml_loaded_cfg.get("risk", {}).get("max_daily_loss", 300)
+            with col_meta:
+                st.caption(f"📄 **{os.path.basename(selected_yaml)}** loaded · Starting Pretend Capital: **₹{cap:,}** · Max Loss: **₹{max_l:,}**")
         except Exception as exc:
             st.error(f"Could not parse YAML: {exc}")
+        
+        with st.expander(f"View content of {os.path.basename(selected_yaml)}", expanded=True):
+            st.code(yaml_raw_text, language="yaml")
 elif kind == K_VISION:
     strategy_name = "rules"
-    st.markdown("#### 📸 Upload photo or screenshot of strategy")
-    st.caption("Upload a TradingView chart screenshot, Pine script screenshot, or photo of handwritten strategy rules.")
-    photo_file = st.file_uploader("Upload strategy image (PNG, JPG, WEBP)", type=["png", "jpg", "jpeg", "webp"], key="bt_photo_file")
-    if photo_file:
-        st.image(photo_file, caption="Uploaded Strategy Image", width=420)
+    st.markdown("""
+    <div class="ta-vision-header-card">
+        <div class="ta-vision-badge">📸 MULTIMODAL AI VISION</div>
+        <div class="ta-vision-title">Upload Strategy Photo or Screenshot</div>
+        <div class="ta-vision-desc">Upload a TradingView chart screenshot, Pine script screenshot, or photo of handwritten strategy rules. TradeALGO's multimodal AI reads indicators, triggers, and SL/target levels to extract backtest rules automatically.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with st.expander("AI Vision Provider & API Key (Optional if already set in environment)"):
-        st.caption("TradeALGO automatically checks GEMINI_API_KEY / OPENAI_API_KEY from environment, or enter a key below:")
-        v_prov = st.selectbox("Vision Provider", ["Google Gemini (gemini-2.5-flash)", "OpenAI (gpt-4o-mini / gpt-4o)", "Anthropic Claude"], key="bt_v_prov")
-        prov_code = "gemini" if "Gemini" in v_prov else ("anthropic" if "Anthropic" in v_prov else "openai")
-        custom_key = st.text_input("API Key (password masked)", type="password", key="bt_v_key")
+    col_up, col_prov = st.columns([1.1, 0.9])
+    with col_up:
+        photo_file = st.file_uploader("Upload strategy image (PNG, JPG, WEBP)", type=["png", "jpg", "jpeg", "webp"], key="bt_photo_file")
+        if photo_file:
+            st.image(photo_file, caption="📷 Uploaded Strategy Snapshot", use_container_width=True)
+        else:
+            st.info("💡 **Supported**: TradingView screenshots, indicator charts, Pine script code snapshots, or clear mobile photos of strategy notes.")
 
-    if photo_file and st.button("🤖 Read Photo & Extract Strategy with AI", type="primary", key="bt_v_btn"):
-        with st.spinner("Multimodal AI is reading and converting strategy to strict YAML rules..."):
-            try:
-                mime = photo_file.type or "image/png"
-                res = read_strategy_image(photo_file.getvalue(), mime_type=mime, custom_key=custom_key.strip(), provider_name=prov_code)
-                st.session_state["vision_rules_text"] = res["yaml"]
-                st.session_state["vision_explanation"] = res["explanation"]
-                st.success("Strategy extracted successfully from photo!")
-            except Exception as exc:
-                st.error(f"AI Vision extraction error: {exc}. Please enter an API key above or enter rules below.")
+    with col_prov:
+        with st.container():
+            st.markdown("##### ⚙️ AI Vision Settings")
+            v_prov = st.selectbox("Vision Provider", ["Google Gemini (gemini-2.5-flash)", "OpenAI (gpt-4o-mini / gpt-4o)", "Anthropic Claude"], key="bt_v_prov")
+            prov_code = "gemini" if "Gemini" in v_prov else ("anthropic" if "Anthropic" in v_prov else "openai")
+            
+            env_key_found = False
+            if prov_code == "gemini" and os.getenv("GEMINI_API_KEY"):
+                env_key_found = True
+            elif prov_code == "openai" and os.getenv("OPENAI_API_KEY"):
+                env_key_found = True
+            elif prov_code == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
+                env_key_found = True
+            
+            if env_key_found:
+                st.caption(f"🔒 Environment key detected: `{prov_code.upper()}_API_KEY` is ready.")
+            else:
+                st.caption("Enter your API key below or set it in your environment variables.")
+
+            custom_key = st.text_input("API Key (password masked)", type="password", key="bt_v_key")
+
+            extract_btn = st.button("🤖 Read Photo & Extract Strategy with AI", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
+            if photo_file and extract_btn:
+                with st.spinner("Multimodal AI is reading and converting strategy to strict YAML rules..."):
+                    try:
+                        mime = photo_file.type or "image/png"
+                        res = read_strategy_image(photo_file.getvalue(), mime_type=mime, custom_key=custom_key.strip(), provider_name=prov_code)
+                        st.session_state["vision_rules_text"] = res["yaml"]
+                        st.session_state["vision_explanation"] = res["explanation"]
+                        st.success("✅ Strategy extracted successfully from photo!")
+                    except Exception as exc:
+                        st.error(f"AI Vision extraction error: {exc}. Please enter an API key above or enter rules below.")
 
     if st.session_state.get("vision_explanation"):
-        st.info(f"**AI detected:** {st.session_state['vision_explanation']}")
+        st.markdown(f"""
+        <div class="ta-vision-result-card">
+            <div class="ta-vision-result-badge">✨ AI DETECTED STRATEGY</div>
+            <div class="ta-vision-result-text">{escape(st.session_state['vision_explanation'])}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
+    st.markdown("##### 📝 Extracted Strategy Rules (YAML)")
+    st.caption("Verify or fine-tune what the AI extracted before executing your test:")
     vision_rules_text = st.text_area("Your rules (edit, or verify what the AI extracted)",
                                      st.session_state.get("vision_rules_text", DEFAULT_RULES),
-                                     height=230, key="vision_rules_text")
+                                     height=230, key="vision_rules_text", label_visibility="collapsed")
 elif kind == K_OWN:
     strategy_name = "rules"
     rules_text = st.text_area("Your rules (edit, or paste what an AI wrote)", DEFAULT_RULES, height=230,

@@ -43,11 +43,21 @@ def test_configs_yaml_option_loads_repository_configs():
     at = AppTest.from_file(APP, default_timeout=90)
     at.run()
     assert not at.exception
-    at.radio(key="strategy_kind").set_value("📁 Load from configs/ YAML (conservative_10k.yaml, etc.)").run()
+    at.radio(key="strategy_mode").set_value("📁 Load from configs/ YAML").run()
     assert not at.exception
     assert at.selectbox(key="bt_yaml_select") is not None
     at.button(key="btn_run").click().run()
     assert not at.exception
+
+
+def test_vision_upload_mode_can_be_selected_in_backtest():
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    assert not at.exception
+    at.radio(key="strategy_mode").set_value("📸 AI Photo-to-Strategy (Upload Image)").run()
+    assert not at.exception
+    assert at.file_uploader(key="bt_photo_file") is not None
+
 
 
 def test_read_strategy_image_parses_rules_cleanly(monkeypatch):

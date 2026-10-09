@@ -1167,6 +1167,230 @@ input, textarea {
 [data-testid="stSidebar"] .stToggle {
     margin-bottom:4px !important;
 }
+
+/* ==========================================================================
+   TRADEALGO PREMIUM STRATEGY SELECTION & CARDS (DARK DESK)
+   ========================================================================== */
+.st-key-strategy_mode {
+    margin-top: 6px;
+    margin-bottom: 22px;
+}
+.st-key-strategy_mode [data-testid="stWidgetLabel"] {
+    display: none !important;
+}
+.st-key-strategy_mode div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    background: #0D141F !important;
+    padding: 6px !important;
+    border-radius: 14px !important;
+    border: 1px solid #1E2B3C !important;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+    width: 100% !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"] {
+    flex: 1 1 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 11px 16px !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:hover {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:has(input:checked) {
+    background: linear-gradient(135deg, rgba(32, 217, 160, 0.16) 0%, rgba(47, 125, 246, 0.16) 100%), #141E2B !important;
+    border-color: #20D9A0 !important;
+    box-shadow: 0 4px 16px rgba(32, 217, 160, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"] [data-testid="stRadioItem"] {
+    display: none !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"] div[data-testid="stMarkdownContainer"] p {
+    font-size: 0.94rem !important;
+    font-weight: 700 !important;
+    color: #8E9EAF !important;
+    margin: 0 !important;
+    text-align: center !important;
+    letter-spacing: -0.01em !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:has(input:checked) div[data-testid="stMarkdownContainer"] p {
+    color: #FFFFFF !important;
+    font-weight: 850 !important;
+    text-shadow: 0 0 14px rgba(32, 217, 160, 0.4) !important;
+}
+
+/* Tick Options (Cards) */
+.st-key-strategy_kind {
+    margin-top: 4px;
+    margin-bottom: 24px;
+}
+.st-key-strategy_kind [data-testid="stWidgetLabel"] {
+    display: none !important;
+}
+.st-key-strategy_kind div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] {
+    position: relative !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    padding: 16px 20px !important;
+    border-radius: 14px !important;
+    background: linear-gradient(180deg, #151F2C 0%, #101622 100%) !important;
+    border: 1px solid #223245 !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22) !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    margin: 0 !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:hover {
+    background: linear-gradient(180deg, #1B2838 0%, #131A26 100%) !important;
+    border-color: #388BFD !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 26px rgba(56, 139, 253, 0.16), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) {
+    background: linear-gradient(145deg, rgba(32, 217, 160, 0.08) 0%, rgba(47, 125, 246, 0.05) 50%, #131C28 100%) !important;
+    border-color: #20D9A0 !important;
+    border-width: 1.5px !important;
+    box-shadow: 0 0 0 1px rgba(32, 217, 160, 0.35), 0 8px 28px rgba(32, 217, 160, 0.16), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stRadioItem"] {
+    margin-top: 3px !important;
+    margin-right: 16px !important;
+    flex-shrink: 0 !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stRadioItem"] > div {
+    border-color: #3D4F65 !important;
+    transition: all 0.18s ease !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:hover div[data-testid="stRadioItem"] > div {
+    border-color: #388BFD !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) div[data-testid="stRadioItem"] > div {
+    border-color: #20D9A0 !important;
+    background-color: transparent !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) div[data-testid="stRadioItem"] > div > div {
+    background-color: #20D9A0 !important;
+    box-shadow: 0 0 10px rgba(32, 217, 160, 0.7) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stMarkdownContainer"] p {
+    font-size: 1.04rem !important;
+    font-weight: 750 !important;
+    color: #F1F5F9 !important;
+    letter-spacing: -0.015em !important;
+    line-height: 1.35 !important;
+    margin-bottom: 5px !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) div[data-testid="stMarkdownContainer"] p {
+    color: #FFFFFF !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stRadioCaption"],
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stRadioCaption"] p {
+    font-size: 0.88rem !important;
+    line-height: 1.55 !important;
+    color: #8E9EAF !important;
+    font-weight: 400 !important;
+    margin: 0 !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) div[data-testid="stRadioCaption"] p {
+    color: #CBD5E1 !important;
+}
+
+/* Dedicated Layout Cards (Upload & Config) */
+.ta-vision-header-card {
+    padding: 22px 24px;
+    background: linear-gradient(135deg, rgba(32, 217, 160, 0.05) 0%, rgba(47, 125, 246, 0.08) 100%), #131A26;
+    border: 1px solid #233448;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+.ta-vision-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(32, 217, 160, 0.15);
+    border: 1px solid rgba(32, 217, 160, 0.35);
+    border-radius: 999px;
+    color: #20D9A0;
+    font-size: 0.70rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+}
+.ta-vision-title {
+    font-size: 1.35rem;
+    font-weight: 850;
+    color: #F8FAFC;
+    letter-spacing: -0.025em;
+    margin-bottom: 6px;
+}
+.ta-vision-desc {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #94A3B8;
+}
+.ta-preset-callout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(32, 217, 160, 0.06);
+    border: 1px solid rgba(32, 217, 160, 0.25);
+    border-radius: 12px;
+    margin-bottom: 14px;
+}
+.ta-callout-pill {
+    padding: 3px 8px;
+    background: #16C784;
+    color: #062316;
+    font-size: 0.70rem;
+    font-weight: 900;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.ta-callout-text {
+    font-size: 0.88rem;
+    color: #D1FAE5;
+    font-weight: 500;
+}
+.ta-vision-result-card {
+    padding: 16px 20px;
+    background: rgba(32, 217, 160, 0.07);
+    border: 1px solid rgba(32, 217, 160, 0.3);
+    border-radius: 12px;
+    margin-top: 14px;
+    margin-bottom: 16px;
+}
+.ta-vision-result-badge {
+    color: #20D9A0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+.ta-vision-result-text {
+    font-size: 0.92rem;
+    color: #F1F5F9;
+    line-height: 1.5;
+}
 </style>
 """
 
@@ -1501,6 +1725,76 @@ html::-webkit-scrollbar-thumb:hover {
 /* Sidebar appearance control */
 [data-testid="stSidebar"] .stToggle {
     margin-bottom: 4px !important;
+}
+
+/* Light mode adaptations for strategy cards */
+.st-key-strategy_mode div[role="radiogroup"] {
+    background: #EDF2F7 !important;
+    border-color: #E2E8F0 !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:has(input:checked) {
+    background: #FFFFFF !important;
+    border-color: #059669 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"] div[data-testid="stMarkdownContainer"] p {
+    color: #64748B !important;
+}
+.st-key-strategy_mode label[data-baseweb="radio"]:has(input:checked) div[data-testid="stMarkdownContainer"] p {
+    color: #0F172A !important;
+    font-weight: 800 !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:hover {
+    background: #F8FAFC !important;
+    border-color: #2563EB !important;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.10) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) {
+    background: linear-gradient(145deg, rgba(5, 150, 105, 0.05) 0%, #FFFFFF 100%) !important;
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 1px #059669, 0 6px 20px rgba(5, 150, 105, 0.12) !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stMarkdownContainer"] p {
+    color: #1E293B !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"] div[data-testid="stRadioCaption"] p {
+    color: #64748B !important;
+}
+.st-key-strategy_kind label[data-baseweb="radio"]:has(input:checked) div[data-testid="stRadioCaption"] p {
+    color: #475569 !important;
+}
+.ta-vision-header-card {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+.ta-vision-title {
+    color: #0F172A !important;
+}
+.ta-vision-desc {
+    color: #475569 !important;
+}
+.ta-preset-callout {
+    background: #ECFDF5 !important;
+    border-color: #A7F3D0 !important;
+}
+.ta-callout-text {
+    color: #065F46 !important;
+}
+.ta-vision-result-card {
+    background: #F0FDF4 !important;
+    border-color: #BBF7D0 !important;
+}
+.ta-vision-result-text {
+    color: #166534 !important;
 }
 </style>
 """
