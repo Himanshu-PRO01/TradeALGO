@@ -307,36 +307,30 @@ elif kind == K_VISION:
 
     with col_prov:
         with st.container():
-            st.markdown("##### ⚙️ AI Vision Settings")
-            v_prov = st.selectbox("Vision Provider", ["Google Gemini (gemini-2.5-flash)", "OpenAI (gpt-4o-mini / gpt-4o)", "Anthropic Claude"], key="bt_v_prov")
-            prov_code = "gemini" if "Gemini" in v_prov else ("anthropic" if "Anthropic" in v_prov else "openai")
-            
-            env_key_found = False
-            if prov_code == "gemini" and os.getenv("GEMINI_API_KEY"):
-                env_key_found = True
-            elif prov_code == "openai" and os.getenv("OPENAI_API_KEY"):
-                env_key_found = True
-            elif prov_code == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
-                env_key_found = True
-            
-            if env_key_found:
-                st.caption(f"🔒 Environment key detected: `{prov_code.upper()}_API_KEY` is ready.")
-            else:
-                st.caption("Enter your API key below or set it in your environment variables.")
+            st.markdown("##### ⚡ Grok AI Vision Engine")
+            st.markdown("""
+            <div style="padding: 14px 16px; background: rgba(32, 217, 160, 0.08); border: 1px solid rgba(32, 217, 160, 0.28); border-radius: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20D9A0; box-shadow: 0 0 8px #20D9A0;"></span>
+                    <span style="font-weight: 800; color: #20D9A0; font-size: 0.88rem; letter-spacing: 0.02em;">CONNECTED VIA SECRETS</span>
+                </div>
+                <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
+                    Using your Grok AI API key directly from Streamlit secrets. No manual key entry needed.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            custom_key = st.text_input("API Key (password masked)", type="password", key="bt_v_key")
-
-            extract_btn = st.button("🤖 Read Photo & Extract Strategy with AI", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
+            extract_btn = st.button("⚡ Read Photo & Extract Strategy with Grok AI", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
             if photo_file and extract_btn:
-                with st.spinner("Multimodal AI is reading and converting strategy to strict YAML rules..."):
+                with st.spinner("Grok AI is analyzing image and generating strict TradeALGO rules..."):
                     try:
                         mime = photo_file.type or "image/png"
-                        res = read_strategy_image(photo_file.getvalue(), mime_type=mime, custom_key=custom_key.strip(), provider_name=prov_code)
+                        res = read_strategy_image(photo_file.getvalue(), mime_type=mime)
                         st.session_state["vision_rules_text"] = res["yaml"]
                         st.session_state["vision_explanation"] = res["explanation"]
-                        st.success("✅ Strategy extracted successfully from photo!")
+                        st.success("✅ Strategy extracted successfully with Grok AI!")
                     except Exception as exc:
-                        st.error(f"AI Vision extraction error: {exc}. Please enter an API key above or enter rules below.")
+                        st.error(f"Grok AI Vision error: {exc}")
 
     if st.session_state.get("vision_explanation"):
         st.markdown(f"""

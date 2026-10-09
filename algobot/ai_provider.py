@@ -9,12 +9,23 @@ class ProviderError(RuntimeError):
 def _secret(name):
     try:
         import streamlit as st
-        return st.secrets.get(name)
+        if not hasattr(st, "secrets") or not st.secrets:
+            return None
+        v = st.secrets.get(name) or st.secrets.get(name.lower()) or st.secrets.get(name.upper())
+        if v:
+            return str(v).strip()
+        for sec in ("grok", "xai", "groq", "ai", "general"):
+            table = st.secrets.get(sec)
+            if isinstance(table, dict):
+                tv = table.get(name) or table.get(name.lower()) or table.get("api_key") or table.get("key")
+                if tv:
+                    return str(tv).strip()
+        return None
     except Exception:
         return None
 
 def _value(name):
-    v = os.environ.get(name) or _secret(name)
+    v = os.environ.get(name) or os.environ.get(name.lower()) or os.environ.get(name.upper()) or _secret(name)
     return str(v).strip() if v else ""
 
 class AIProvider:
@@ -76,6 +87,63 @@ class OpenAIProvider(AIProvider):
         return out.strip()
 
 
+class GrokProvider(AIProvider):
+    """xAI Grok Chat Completions and Multimodal Vision provider."""
+    name = "grok"
+    BASE_URL = "https://api.x.ai/v1/chat/completions"
+
+    def __init__(self, key, model="grok-2-vision-1212", timeout=60):
+        self.key, self.model, self.timeout = key, model, timeout
+
+    def generate(self, system_prompt: str, user_prompt: str) -> str:
+        text_model = "grok-2-1212" if "vision" in self.model else self.model
+        return _chat_completion(
+            self.BASE_URL,
+            self.key,
+            text_model,
+            system_prompt,
+            user_prompt,
+            self.timeout,
+            "Grok",
+        )
+
+    def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        vision_model = self.model if "vision" in self.model else "grok-2-vision-1212"
+        body = json.dumps({
+            "model": vision_model,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}},
+                    ],
+                },
+            ],
+        }).encode()
+        req = urllib.request.Request(
+            self.BASE_URL,
+            data=body,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.key}",
+                "User-Agent": "TradeALGO/1.0",
+            },
+        )
+        data = _send(req, self.timeout, "Grok")
+        try:
+            out = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            out = ""
+        if not out:
+            raise ProviderError("Grok returned no text.")
+        return out.strip()
+
+
 class GroqProvider(AIProvider):
     """Groq's OpenAI-compatible Chat Completions provider."""
     name = "groq"
@@ -94,6 +162,42 @@ class GroqProvider(AIProvider):
             self.timeout,
             "Groq",
         )
+
+    def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        vision_model = self.model if "vision" in self.model else "llama-3.2-11b-vision-preview"
+        body = json.dumps({
+            "model": vision_model,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}},
+                    ],
+                },
+            ],
+        }).encode()
+        req = urllib.request.Request(
+            self.BASE_URL,
+            data=body,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.key}",
+                "User-Agent": "TradeALGO/1.0",
+            },
+        )
+        data = _send(req, self.timeout, "Groq")
+        try:
+            out = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            out = ""
+        if not out:
+            raise ProviderError("Groq returned no text.")
+        return out.strip()
 
 
 class AnthropicProvider(AIProvider):
@@ -225,30 +329,43 @@ def _send(req, timeout, vendor):
         raise ProviderError(f"{vendor} returned invalid JSON.") from e
 
 def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIProvider]:
+    pname = (provider_name or "").lower().strip()
     if custom_key:
-        pname = (provider_name or "").lower().strip()
+        if custom_key.startswith("xai-") or "grok" in pname or "xai" in pname:
+            return GrokProvider(custom_key, _value("GROK_MODEL") or "grok-2-vision-1212")
+        if custom_key.startswith("gsk_") or "groq" in pname:
+            return GroqProvider(custom_key, _value("GROQ_MODEL") or "llama-3.2-11b-vision-preview")
         if "gemini" in pname:
-            return GeminiProvider(custom_key)
-        if "groq" in pname:
-            return GroqProvider(custom_key)
+            return GeminiProvider(custom_key, _value("GEMINI_MODEL") or "gemini-2.5-flash")
         if "anthropic" in pname or "claude" in pname:
-            return AnthropicProvider(custom_key)
-        return OpenAIProvider(custom_key)
+            return AnthropicProvider(custom_key, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+        return OpenAIProvider(custom_key, _value("OPENAI_MODEL") or "gpt-4o-mini")
 
-    # Prefer Groq when configured. This keeps the provider choice explicit
-    # while preserving OpenAI/Anthropic/Gemini fallbacks.
-    k = _value("GROQ_API_KEY")
+    # 1. Prefer Grok / xAI key from secrets or environment
+    k = _value("GROK_API_KEY") or _value("XAI_API_KEY") or _value("GROK_KEY") or _value("XAI_KEY")
     if k:
+        return GrokProvider(k, _value("GROK_MODEL") or "grok-2-vision-1212")
+
+    # 2. Check Groq key (if key starts with xai-, resolve as GrokProvider)
+    k = _value("GROQ_API_KEY") or _value("GROQ_KEY")
+    if k:
+        if k.startswith("xai-"):
+            return GrokProvider(k, _value("GROK_MODEL") or "grok-2-vision-1212")
         return GroqProvider(k, _value("GROQ_MODEL") or "openai/gpt-oss-120b")
 
+    # 3. Fallbacks
     k = _value("GEMINI_API_KEY")
     if k:
         return GeminiProvider(k, _value("GEMINI_MODEL") or "gemini-2.5-flash")
 
     k = _value("ANTHROPIC_API_KEY")
-    if k: return AnthropicProvider(k, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+    if k:
+        return AnthropicProvider(k, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
+
     k = _value("OPENAI_API_KEY")
-    if k: return OpenAIProvider(k, _value("OPENAI_MODEL") or "gpt-4o-mini")
+    if k:
+        return OpenAIProvider(k, _value("OPENAI_MODEL") or "gpt-4o-mini")
+
     return None
 
 
@@ -256,7 +373,9 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
     """Reads a strategy photo/screenshot and extracts strict TradeALGO rules YAML."""
     provider = get_provider(custom_key=custom_key, provider_name=provider_name)
     if not provider:
-        raise ProviderError("No AI provider available. Please provide an OpenAI or Gemini API key.")
+        raise ProviderError(
+            "No Grok AI API key found in secrets or environment. Please add GROK_API_KEY (or XAI_API_KEY / GROQ_API_KEY) in Streamlit secrets."
+        )
 
     system_prompt = (
         "You are an expert trading strategy vision assistant for TradeALGO. "
