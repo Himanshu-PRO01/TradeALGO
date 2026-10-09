@@ -9,7 +9,7 @@ import streamlit as st
 import yaml
 
 from algobot import ui
-from algobot.ai_provider import ProviderError, read_strategy_image
+from algobot.ai_provider import ProviderError, _find_grok_key, read_strategy_image
 from algobot.appstate import experiments_scope, strategies_scope
 from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
@@ -308,17 +308,31 @@ elif kind == K_VISION:
     with col_prov:
         with st.container():
             st.markdown("##### ⚡ Grok AI Vision Engine")
-            st.markdown("""
-            <div style="padding: 14px 16px; background: rgba(32, 217, 160, 0.08); border: 1px solid rgba(32, 217, 160, 0.28); border-radius: 12px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20D9A0; box-shadow: 0 0 8px #20D9A0;"></span>
-                    <span style="font-weight: 800; color: #20D9A0; font-size: 0.88rem; letter-spacing: 0.02em;">CONNECTED VIA SECRETS</span>
+            grok_connected = bool(_find_grok_key())
+            if grok_connected:
+                st.markdown("""
+                <div style="padding: 14px 16px; background: rgba(32, 217, 160, 0.08); border: 1px solid rgba(32, 217, 160, 0.28); border-radius: 12px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20D9A0; box-shadow: 0 0 8px #20D9A0;"></span>
+                        <span style="font-weight: 800; color: #20D9A0; font-size: 0.88rem; letter-spacing: 0.02em;">CONNECTED VIA SECRETS</span>
+                    </div>
+                    <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
+                        Using your Grok AI API key automatically from Streamlit secrets. Ready to analyze images.
+                    </div>
                 </div>
-                <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
-                    Using your Grok AI API key directly from Streamlit secrets. No manual key entry needed.
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.28); border-radius: 12px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
+                        <span style="font-weight: 800; color: #F59E0B; font-size: 0.88rem; letter-spacing: 0.02em;">GROK KEY NOT FOUND IN SECRETS</span>
+                    </div>
+                    <div style="color: #CBD5E1; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
+                        Add <code>GROK_API_KEY = "xai-..."</code> to Streamlit secrets (Manage app &rarr; Settings &rarr; Secrets) or environment variables. (Tip: On Streamlit Cloud, reboot the app after updating secrets).
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
             extract_btn = st.button("⚡ Read Photo & Extract Strategy with Grok AI", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
             if photo_file and extract_btn:

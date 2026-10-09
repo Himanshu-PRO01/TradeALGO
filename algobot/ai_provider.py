@@ -6,6 +6,102 @@ from typing import Optional
 class ProviderError(RuntimeError):
     pass
 
+def _find_grok_key() -> str:
+    # 1. Environment variables
+    for env_name in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "GROK_AI_KEY"):
+        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
+        if v and str(v).strip():
+            return str(v).strip()
+    for k, v in os.environ.items():
+        if v and str(v).strip().startswith("xai-"):
+            return str(v).strip()
+        if any(term in k.lower() for term in ("grok", "xai")) and v and str(v).strip():
+            return str(v).strip()
+
+    # 2. Streamlit secrets
+    try:
+        import streamlit as st
+        for k in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "GROK_AI_KEY", "API_KEY", "KEY"):
+            try:
+                v = st.secrets.get(k) or st.secrets.get(k.lower())
+                if v and str(v).strip():
+                    val = str(v).strip()
+                    if val.startswith("xai-") or "grok" in k.lower() or "xai" in k.lower():
+                        return val
+            except Exception:
+                pass
+
+        def _scan(obj):
+            if not obj:
+                return None
+            if hasattr(obj, "items"):
+                for k, v in obj.items():
+                    k_str = str(k).strip()
+                    k_lower = k_str.lower()
+                    if isinstance(v, (str, int, float)):
+                        val = str(v).strip()
+                        if val.startswith("xai-"):
+                            return val
+                        if any(term in k_lower for term in ("grok", "xai")) and val:
+                            return val
+                for k, v in obj.items():
+                    if hasattr(v, "items") or isinstance(v, dict):
+                        res = _scan(v)
+                        if res:
+                            return res
+            return None
+        res = _scan(st.secrets)
+        if res:
+            return res
+    except Exception:
+        pass
+
+    return ""
+
+
+def _find_groq_key() -> str:
+    for env_name in ("GROQ_API_KEY", "GROQ_KEY", "GROQ"):
+        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
+        if v and str(v).strip():
+            return str(v).strip()
+    for k, v in os.environ.items():
+        if v and str(v).strip().startswith("gsk_"):
+            return str(v).strip()
+        if "groq" in k.lower() and v and str(v).strip():
+            return str(v).strip()
+    try:
+        import streamlit as st
+        for k in ("GROQ_API_KEY", "GROQ_KEY", "GROQ"):
+            try:
+                v = st.secrets.get(k) or st.secrets.get(k.lower())
+                if v and str(v).strip():
+                    return str(v).strip()
+            except Exception:
+                pass
+        def _scan(obj):
+            if not obj:
+                return None
+            if hasattr(obj, "items"):
+                for k, v in obj.items():
+                    k_lower = str(k).strip().lower()
+                    if isinstance(v, (str, int, float)):
+                        val = str(v).strip()
+                        if val.startswith("gsk_") or "groq" in k_lower:
+                            return val
+                for k, v in obj.items():
+                    if hasattr(v, "items") or isinstance(v, dict):
+                        res = _scan(v)
+                        if res:
+                            return res
+            return None
+        res = _scan(st.secrets)
+        if res:
+            return res
+    except Exception:
+        pass
+    return ""
+
+
 def _secret(name):
     try:
         import streamlit as st
@@ -16,7 +112,7 @@ def _secret(name):
             return str(v).strip()
         for sec in ("grok", "xai", "groq", "ai", "general"):
             table = st.secrets.get(sec)
-            if isinstance(table, dict):
+            if hasattr(table, "get"):
                 tv = table.get(name) or table.get(name.lower()) or table.get("api_key") or table.get("key")
                 if tv:
                     return str(tv).strip()
@@ -53,6 +149,7 @@ class OpenAIProvider(AIProvider):
 
     def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
+        norm_mime = "image/jpeg" if mime_type.lower() in ("image/jpg", "jpg") else mime_type
         body = json.dumps({
             "model": self.model,
             "temperature": 0.2,
@@ -62,7 +159,7 @@ class OpenAIProvider(AIProvider):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": user_prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}},
+                        {"type": "image_url", "image_url": {"url": f"data:{norm_mime};base64,{b64}"}},
                     ],
                 },
             ],
@@ -91,57 +188,102 @@ class GrokProvider(AIProvider):
     """xAI Grok Chat Completions and Multimodal Vision provider."""
     name = "grok"
     BASE_URL = "https://api.x.ai/v1/chat/completions"
+    DEFAULT_MODEL = "grok-4.5"
+    CANDIDATE_MODELS = (
+        "grok-4.5",
+        "grok-4.7",
+        "grok-4.3",
+        "grok-4.20-non-reasoning",
+        "grok-2-vision-1212",
+        "grok-2-vision",
+        "grok-vision-beta",
+    )
 
-    def __init__(self, key, model="grok-2-vision-1212", timeout=60):
-        self.key, self.model, self.timeout = key, model, timeout
+    def __init__(self, key, model="grok-4.5", timeout=60):
+        self.key = key
+        self.model = model or self.DEFAULT_MODEL
+        self.timeout = timeout
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
-        text_model = "grok-2-1212" if "vision" in self.model else self.model
-        return _chat_completion(
-            self.BASE_URL,
-            self.key,
-            text_model,
-            system_prompt,
-            user_prompt,
-            self.timeout,
-            "Grok",
-        )
+        candidates = [self.model]
+        for m in self.CANDIDATE_MODELS:
+            if m not in candidates:
+                candidates.append(m)
+        last_err = None
+        for model_name in candidates:
+            try:
+                return _chat_completion(
+                    self.BASE_URL,
+                    self.key,
+                    model_name,
+                    system_prompt,
+                    user_prompt,
+                    self.timeout,
+                    "Grok",
+                )
+            except ProviderError as exc:
+                last_err = exc
+                err_text = str(exc).lower()
+                if any(k in err_text for k in ("model", "404", "400", "not found", "deprecated", "unknown")):
+                    continue
+                raise exc
+        if last_err:
+            raise last_err
+        raise ProviderError("Grok text generation failed with all candidate models.")
 
     def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
-        vision_model = self.model if "vision" in self.model else "grok-2-vision-1212"
-        body = json.dumps({
-            "model": vision_model,
-            "temperature": 0.2,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}},
-                    ],
+        norm_mime = "image/jpeg" if mime_type.lower() in ("image/jpg", "jpg") else mime_type
+
+        candidates = [self.model]
+        for m in self.CANDIDATE_MODELS:
+            if m not in candidates:
+                candidates.append(m)
+
+        last_err = None
+        for model_name in candidates:
+            body = json.dumps({
+                "model": model_name,
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": user_prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:{norm_mime};base64,{b64}"}},
+                        ],
+                    },
+                ],
+            }).encode()
+            req = urllib.request.Request(
+                self.BASE_URL,
+                data=body,
+                method="POST",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.key}",
+                    "User-Agent": "TradeALGO/1.0",
                 },
-            ],
-        }).encode()
-        req = urllib.request.Request(
-            self.BASE_URL,
-            data=body,
-            method="POST",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.key}",
-                "User-Agent": "TradeALGO/1.0",
-            },
-        )
-        data = _send(req, self.timeout, "Grok")
-        try:
-            out = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError):
-            out = ""
-        if not out:
-            raise ProviderError("Grok returned no text.")
-        return out.strip()
+            )
+            try:
+                data = _send(req, self.timeout, "Grok")
+                try:
+                    out = data["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError):
+                    out = ""
+                if not out:
+                    raise ProviderError("Grok returned no text.")
+                return out.strip()
+            except ProviderError as exc:
+                last_err = exc
+                err_text = str(exc).lower()
+                if any(k in err_text for k in ("model", "404", "400", "not found", "deprecated", "unknown")):
+                    continue
+                raise exc
+        if last_err:
+            raise last_err
+        raise ProviderError("Grok vision failed with all candidate models.")
 
 
 class GroqProvider(AIProvider):
@@ -319,12 +461,31 @@ def _chat_completion(url, key, model, system_prompt, user_prompt, timeout, vendo
 def _send(req, timeout, vendor):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw = r.read().decode("utf-8","replace")
+            raw = r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
-        raise ProviderError(f"{vendor} API error: HTTP {e.code}.") from e
+        body = ""
+        try:
+            body = e.read().decode("utf-8", "replace")
+        except Exception:
+            pass
+        detail = ""
+        if body:
+            try:
+                err_json = json.loads(body)
+                err_msg = err_json.get("error") or err_json.get("message")
+                if isinstance(err_msg, dict):
+                    err_msg = err_msg.get("message") or err_msg.get("code") or str(err_msg)
+                if err_msg:
+                    detail = f": {err_msg}"
+                else:
+                    detail = f": {body[:250]}"
+            except Exception:
+                detail = f": {body[:250]}"
+        raise ProviderError(f"{vendor} API error HTTP {e.code}{detail}") from e
     except (urllib.error.URLError, TimeoutError) as e:
-        raise ProviderError(f"Could not reach {vendor} API.") from e
-    try: return json.loads(raw)
+        raise ProviderError(f"Could not reach {vendor} API: {e}") from e
+    try:
+        return json.loads(raw)
     except json.JSONDecodeError as e:
         raise ProviderError(f"{vendor} returned invalid JSON.") from e
 
@@ -332,7 +493,7 @@ def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIPr
     pname = (provider_name or "").lower().strip()
     if custom_key:
         if custom_key.startswith("xai-") or "grok" in pname or "xai" in pname:
-            return GrokProvider(custom_key, _value("GROK_MODEL") or "grok-2-vision-1212")
+            return GrokProvider(custom_key, _value("GROK_MODEL") or "grok-4.5")
         if custom_key.startswith("gsk_") or "groq" in pname:
             return GroqProvider(custom_key, _value("GROQ_MODEL") or "llama-3.2-11b-vision-preview")
         if "gemini" in pname:
@@ -342,16 +503,16 @@ def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIPr
         return OpenAIProvider(custom_key, _value("OPENAI_MODEL") or "gpt-4o-mini")
 
     # 1. Prefer Grok / xAI key from secrets or environment
-    k = _value("GROK_API_KEY") or _value("XAI_API_KEY") or _value("GROK_KEY") or _value("XAI_KEY")
-    if k:
-        return GrokProvider(k, _value("GROK_MODEL") or "grok-2-vision-1212")
+    grok_k = _find_grok_key()
+    if grok_k:
+        return GrokProvider(grok_k, _value("GROK_MODEL") or "grok-4.5")
 
     # 2. Check Groq key (if key starts with xai-, resolve as GrokProvider)
-    k = _value("GROQ_API_KEY") or _value("GROQ_KEY")
-    if k:
-        if k.startswith("xai-"):
-            return GrokProvider(k, _value("GROK_MODEL") or "grok-2-vision-1212")
-        return GroqProvider(k, _value("GROQ_MODEL") or "openai/gpt-oss-120b")
+    groq_k = _find_groq_key()
+    if groq_k:
+        if groq_k.startswith("xai-"):
+            return GrokProvider(groq_k, _value("GROK_MODEL") or "grok-4.5")
+        return GroqProvider(groq_k, _value("GROQ_MODEL") or "openai/gpt-oss-120b")
 
     # 3. Fallbacks
     k = _value("GEMINI_API_KEY")

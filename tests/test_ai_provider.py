@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from algobot.ai_provider import GrokProvider, GroqProvider, ProviderError, get_provider
+from algobot.ai_provider import GrokProvider, GroqProvider, ProviderError, _find_grok_key, get_provider
 
 
 def test_grok_is_preferred_when_configured(monkeypatch):
@@ -15,8 +15,18 @@ def test_grok_is_preferred_when_configured(monkeypatch):
     provider = get_provider()
 
     assert isinstance(provider, GrokProvider)
-    assert provider.model == "grok-2-vision-1212"
+    assert provider.model == "grok-4.5"
     assert provider.key == "xai-test-grok-key"
+
+
+def test_find_grok_key_discovers_xai_prefixed_env_and_grok_names(monkeypatch):
+    monkeypatch.delenv("GROK_API_KEY", raising=False)
+    monkeypatch.setenv("CUSTOM_AI_KEY", "xai-12345-grok")
+    assert _find_grok_key() == "xai-12345-grok"
+
+    monkeypatch.delenv("CUSTOM_AI_KEY")
+    monkeypatch.setenv("XAI_API_KEY", "test-xai-key")
+    assert _find_grok_key() == "test-xai-key"
 
 
 def test_grok_provider_does_not_put_key_in_provider_errors(monkeypatch):
