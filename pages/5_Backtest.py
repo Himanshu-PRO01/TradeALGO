@@ -9,7 +9,7 @@ import streamlit as st
 import yaml
 
 from algobot import ui
-from algobot.ai_provider import ProviderError, _find_grok_key, read_strategy_image
+from algobot.ai_provider import ProviderError, _find_gemini_key, _find_groq_key, read_strategy_image
 from algobot.appstate import experiments_scope, strategies_scope
 from algobot.charts import candlestick, equity_drawdown
 from algobot.config import ConfigError, validate_config
@@ -307,44 +307,57 @@ elif kind == K_VISION:
 
     with col_prov:
         with st.container():
-            st.markdown("##### ⚡ Grok AI Vision Engine")
-            grok_connected = bool(_find_grok_key())
-            if grok_connected:
-                st.markdown("""
-                <div style="padding: 14px 16px; background: rgba(32, 217, 160, 0.08); border: 1px solid rgba(32, 217, 160, 0.28); border-radius: 12px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20D9A0; box-shadow: 0 0 8px #20D9A0;"></span>
-                        <span style="font-weight: 800; color: #20D9A0; font-size: 0.88rem; letter-spacing: 0.02em;">CONNECTED VIA SECRETS</span>
-                    </div>
-                    <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
-                        Using your Grok AI API key automatically from Streamlit secrets. Ready to analyze images.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown("##### ⚡ Dual Vision Engine (Gemini 3.5 Flash + Groq Failover)")
+            gemini_connected = bool(_find_gemini_key())
+            groq_connected = bool(_find_groq_key())
+            if gemini_connected and groq_connected:
+                badge_title = "DUAL AI READY · AUTO-FAILOVER ACTIVE"
+                badge_desc = "Gemini 3.5 Flash is primary. If tokens run out or rate limits hit, Groq automatically takes over."
+                badge_color = "#20D9A0"
+                badge_bg = "rgba(32, 217, 160, 0.08)"
+                badge_border = "rgba(32, 217, 160, 0.28)"
+            elif gemini_connected:
+                badge_title = "GEMINI 3.5 FLASH ACTIVE"
+                badge_desc = "Connected via secret.yml / secrets. (Optional: Add GROQ_API_KEY for automatic backup failover)."
+                badge_color = "#20D9A0"
+                badge_bg = "rgba(32, 217, 160, 0.08)"
+                badge_border = "rgba(32, 217, 160, 0.28)"
+            elif groq_connected:
+                badge_title = "GROQ ACTIVE"
+                badge_desc = "Connected via secret.yml / secrets. (Optional: Add GEMINI_API_KEY as primary engine)."
+                badge_color = "#20D9A0"
+                badge_bg = "rgba(32, 217, 160, 0.08)"
+                badge_border = "rgba(32, 217, 160, 0.28)"
             else:
-                st.markdown("""
-                <div style="padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.28); border-radius: 12px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
-                        <span style="font-weight: 800; color: #F59E0B; font-size: 0.88rem; letter-spacing: 0.02em;">GROK KEY NOT FOUND IN SECRETS</span>
-                    </div>
-                    <div style="color: #CBD5E1; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
-                        Add <code>GROK_API_KEY = "xai-..."</code> to Streamlit secrets (Manage app &rarr; Settings &rarr; Secrets) or environment variables. (Tip: On Streamlit Cloud, reboot the app after updating secrets).
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                badge_title = "WAITING FOR KEYS IN SECRET.YML"
+                badge_desc = "Add <code>GEMINI_API_KEY: 'AIza...'</code> and/or <code>GROQ_API_KEY: 'gsk_...'</code> in <code>secret.yml</code>."
+                badge_color = "#F59E0B"
+                badge_bg = "rgba(245, 158, 11, 0.08)"
+                badge_border = "rgba(245, 158, 11, 0.28)"
 
-            extract_btn = st.button("⚡ Read Photo & Extract Strategy with Grok AI", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
+            st.markdown(f"""
+            <div style="padding: 14px 16px; background: {badge_bg}; border: 1px solid {badge_border}; border-radius: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {badge_color}; box-shadow: 0 0 8px {badge_color};"></span>
+                    <span style="font-weight: 800; color: {badge_color}; font-size: 0.88rem; letter-spacing: 0.02em;">{badge_title}</span>
+                </div>
+                <div style="color: #94A3B8; font-size: 0.82rem; margin-top: 6px; line-height: 1.5;">
+                    {badge_desc}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            extract_btn = st.button("⚡ Read Photo & Extract Strategy (Dual AI)", type="primary", key="bt_v_btn", disabled=photo_file is None, use_container_width=True)
             if photo_file and extract_btn:
-                with st.spinner("Grok AI is analyzing image and generating strict TradeALGO rules..."):
+                with st.spinner("Analyzing image and extracting strict TradeALGO rules (with automatic failover)..."):
                     try:
                         mime = photo_file.type or "image/png"
                         res = read_strategy_image(photo_file.getvalue(), mime_type=mime)
                         st.session_state["vision_rules_text"] = res["yaml"]
                         st.session_state["vision_explanation"] = res["explanation"]
-                        st.success("✅ Strategy extracted successfully with Grok AI!")
+                        st.success("✅ Strategy extracted successfully with AI!")
                     except Exception as exc:
-                        st.error(f"Grok AI Vision error: {exc}")
+                        st.error(f"Vision extraction error: {exc}")
 
     if st.session_state.get("vision_explanation"):
         st.markdown(f"""

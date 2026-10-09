@@ -6,6 +6,91 @@ from typing import Optional
 class ProviderError(RuntimeError):
     pass
 
+def _find_gemini_key() -> str:
+    # 1. Check YAML secret files: secret.yml, secrets.yml, secret.yaml, secrets.yaml
+    candidate_files = [
+        "secret.yml",
+        "secrets.yml",
+        "secret.yaml",
+        "secrets.yaml",
+        os.path.join(".streamlit", "secret.yml"),
+        os.path.join(".streamlit", "secrets.yml"),
+        os.path.join(".streamlit", "secret.yaml"),
+        os.path.join(".streamlit", "secrets.yaml"),
+    ]
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml"):
+        p = os.path.join(base_dir, rel)
+        if p not in candidate_files:
+            candidate_files.append(p)
+
+    def _match_val(k_name: str, val_str: str) -> bool:
+        if not val_str:
+            return False
+        if val_str.startswith("AIza"):
+            return True
+        k_lower = k_name.lower()
+        if any(term in k_lower for term in ("gemini", "google", "flash")):
+            return True
+        if k_lower in ("api_key", "key", "secret", "token"):
+            return True
+        return False
+
+    def _walk(obj):
+        if not obj:
+            return None
+        if isinstance(obj, (str, int, float)):
+            s = str(obj).strip()
+            if s.startswith("AIza"):
+                return s
+        if hasattr(obj, "items") or isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (str, int, float)):
+                    val = str(v).strip()
+                    if _match_val(str(k), val):
+                        return val
+            for k, v in obj.items():
+                if isinstance(v, dict) or hasattr(v, "items"):
+                    res = _walk(v)
+                    if res:
+                        return res
+        return None
+
+    for fpath in candidate_files:
+        if os.path.exists(fpath):
+            try:
+                import yaml
+                with open(fpath, "r", encoding="utf-8") as f:
+                    content = yaml.safe_load(f)
+                res = _walk(content)
+                if res:
+                    return res
+            except Exception:
+                pass
+
+    # 2. Environment variables
+    for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_FLASH_KEY", "GEMINI_KEY", "GOOGLE_KEY"):
+        v = os.environ.get(env_name) or os.environ.get(env_name.lower())
+        if v and str(v).strip():
+            return str(v).strip()
+    for k, v in os.environ.items():
+        if v and str(v).strip().startswith("AIza"):
+            return str(v).strip()
+        if any(term in k.lower() for term in ("gemini", "google", "flash")) and v and str(v).strip():
+            return str(v).strip()
+
+    # 3. Streamlit secrets
+    try:
+        import streamlit as st
+        res = _walk(st.secrets)
+        if res:
+            return res
+    except Exception:
+        pass
+
+    return ""
+
+
 def _find_grok_key() -> str:
     # 1. Environment variables
     for env_name in ("GROK_API_KEY", "XAI_API_KEY", "GROK_KEY", "XAI_KEY", "GROK", "XAI", "GROK_AI_KEY"):
@@ -60,6 +145,66 @@ def _find_grok_key() -> str:
 
 
 def _find_groq_key() -> str:
+    # 1. Check YAML secret files: secret.yml, secrets.yml, secret.yaml, secrets.yaml
+    candidate_files = [
+        "secret.yml",
+        "secrets.yml",
+        "secret.yaml",
+        "secrets.yaml",
+        os.path.join(".streamlit", "secret.yml"),
+        os.path.join(".streamlit", "secrets.yml"),
+        os.path.join(".streamlit", "secret.yaml"),
+        os.path.join(".streamlit", "secrets.yaml"),
+    ]
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for rel in ("secret.yml", "secrets.yml", "secret.yaml", "secrets.yaml"):
+        p = os.path.join(base_dir, rel)
+        if p not in candidate_files:
+            candidate_files.append(p)
+
+    def _match_val(k_name: str, val_str: str) -> bool:
+        if not val_str:
+            return False
+        if val_str.startswith("gsk_"):
+            return True
+        k_lower = k_name.lower()
+        if "groq" in k_lower:
+            return True
+        return False
+
+    def _walk(obj):
+        if not obj:
+            return None
+        if isinstance(obj, (str, int, float)):
+            s = str(obj).strip()
+            if s.startswith("gsk_"):
+                return s
+        if hasattr(obj, "items") or isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (str, int, float)):
+                    val = str(v).strip()
+                    if _match_val(str(k), val):
+                        return val
+            for k, v in obj.items():
+                if isinstance(v, dict) or hasattr(v, "items"):
+                    res = _walk(v)
+                    if res:
+                        return res
+        return None
+
+    for fpath in candidate_files:
+        if os.path.exists(fpath):
+            try:
+                import yaml
+                with open(fpath, "r", encoding="utf-8") as f:
+                    content = yaml.safe_load(f)
+                res = _walk(content)
+                if res:
+                    return res
+            except Exception:
+                pass
+
+    # 2. Environment variables
     for env_name in ("GROQ_API_KEY", "GROQ_KEY", "GROQ"):
         v = os.environ.get(env_name) or os.environ.get(env_name.lower())
         if v and str(v).strip():
@@ -69,36 +214,16 @@ def _find_groq_key() -> str:
             return str(v).strip()
         if "groq" in k.lower() and v and str(v).strip():
             return str(v).strip()
+
+    # 3. Streamlit secrets
     try:
         import streamlit as st
-        for k in ("GROQ_API_KEY", "GROQ_KEY", "GROQ"):
-            try:
-                v = st.secrets.get(k) or st.secrets.get(k.lower())
-                if v and str(v).strip():
-                    return str(v).strip()
-            except Exception:
-                pass
-        def _scan(obj):
-            if not obj:
-                return None
-            if hasattr(obj, "items"):
-                for k, v in obj.items():
-                    k_lower = str(k).strip().lower()
-                    if isinstance(v, (str, int, float)):
-                        val = str(v).strip()
-                        if val.startswith("gsk_") or "groq" in k_lower:
-                            return val
-                for k, v in obj.items():
-                    if hasattr(v, "items") or isinstance(v, dict):
-                        res = _scan(v)
-                        if res:
-                            return res
-            return None
-        res = _scan(st.secrets)
+        res = _walk(st.secrets)
         if res:
             return res
     except Exception:
         pass
+
     return ""
 
 
@@ -131,6 +256,48 @@ class AIProvider:
 
     def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
         raise NotImplementedError(f"{self.name} does not support vision/image analysis.")
+
+
+class FallbackProvider(AIProvider):
+    """Executes requests using primary provider and seamlessly fails over to backup on token/rate/quota limits."""
+    name = "fallback"
+
+    def __init__(self, providers: list[AIProvider]):
+        self.providers = [p for p in providers if p is not None]
+        if not self.providers:
+            raise ValueError("FallbackProvider requires at least one provider.")
+        self.active_provider_name = self.providers[0].name
+
+    def generate(self, system_prompt: str, user_prompt: str) -> str:
+        last_exc = None
+        for i, p in enumerate(self.providers):
+            try:
+                self.active_provider_name = p.name
+                return p.generate(system_prompt, user_prompt)
+            except Exception as exc:
+                last_exc = exc
+                if i < len(self.providers) - 1:
+                    continue
+                raise exc
+        if last_exc:
+            raise last_exc
+        raise ProviderError("All providers exhausted.")
+
+    def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
+        last_exc = None
+        for i, p in enumerate(self.providers):
+            try:
+                self.active_provider_name = p.name
+                return p.generate_vision(system_prompt, user_prompt, image_bytes, mime_type)
+            except Exception as exc:
+                last_exc = exc
+                if i < len(self.providers) - 1:
+                    continue
+                raise exc
+        if last_exc:
+            raise last_exc
+        raise ProviderError("All vision providers exhausted.")
+
 
 class OpenAIProvider(AIProvider):
     name = "openai"
@@ -393,40 +560,93 @@ class AnthropicProvider(AIProvider):
 
 class GeminiProvider(AIProvider):
     name = "gemini"
-    def __init__(self, key, model="gemini-2.5-flash", timeout=60):
-        self.key, self.model, self.timeout = key, model, timeout
+    DEFAULT_MODEL = "gemini-3.5-flash"
+    CANDIDATE_MODELS = (
+        "gemini-3.5-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+    )
+
+    def __init__(self, key, model="", timeout=60):
+        self.key = key
+        self.model = model or self.DEFAULT_MODEL
+        self.timeout = timeout
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.key}"
-        body = json.dumps({
-            "system_instruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"parts": [{"text": user_prompt}]}],
-        }).encode()
-        req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": "application/json", "User-Agent": "TradeALGO/1.0"})
-        data = _send(req, self.timeout, "Gemini")
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception as e:
-            raise ProviderError("Gemini returned invalid response structure.") from e
+        candidates = [self.model]
+        for m in self.CANDIDATE_MODELS:
+            if m not in candidates:
+                candidates.append(m)
+        last_err = None
+        for m in candidates:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={self.key}"
+            body = json.dumps({
+                "system_instruction": {"parts": [{"text": system_prompt}]},
+                "contents": [{"parts": [{"text": user_prompt}]}],
+            }).encode()
+            req = urllib.request.Request(
+                url,
+                data=body,
+                method="POST",
+                headers={"Content-Type": "application/json", "User-Agent": "TradeALGO/1.0"},
+            )
+            try:
+                data = _send(req, self.timeout, "Gemini")
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                except Exception as e:
+                    raise ProviderError("Gemini returned invalid response structure.") from e
+            except ProviderError as exc:
+                last_err = exc
+                err_text = str(exc).lower()
+                if any(k in err_text for k in ("404", "not found", "model")):
+                    continue
+                raise exc
+        if last_err:
+            raise last_err
+        raise ProviderError("Gemini text generation failed on all candidate models.")
 
     def generate_vision(self, system_prompt: str, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.key}"
-        body = json.dumps({
-            "system_instruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{
-                "parts": [
-                    {"text": user_prompt},
-                    {"inline_data": {"mime_type": mime_type, "data": b64}},
-                ]
-            }],
-        }).encode()
-        req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": "application/json", "User-Agent": "TradeALGO/1.0"})
-        data = _send(req, self.timeout, "Gemini")
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception as e:
-            raise ProviderError("Gemini returned invalid response structure.") from e
+        norm_mime = "image/jpeg" if mime_type.lower() in ("image/jpg", "jpg") else mime_type
+        candidates = [self.model]
+        for m in self.CANDIDATE_MODELS:
+            if m not in candidates:
+                candidates.append(m)
+        last_err = None
+        for m in candidates:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={self.key}"
+            body = json.dumps({
+                "system_instruction": {"parts": [{"text": system_prompt}]},
+                "contents": [{
+                    "parts": [
+                        {"text": user_prompt},
+                        {"inline_data": {"mime_type": norm_mime, "data": b64}},
+                    ]
+                }],
+            }).encode()
+            req = urllib.request.Request(
+                url,
+                data=body,
+                method="POST",
+                headers={"Content-Type": "application/json", "User-Agent": "TradeALGO/1.0"},
+            )
+            try:
+                data = _send(req, self.timeout, "Gemini")
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                except Exception as e:
+                    raise ProviderError("Gemini returned invalid response structure.") from e
+            except ProviderError as exc:
+                last_err = exc
+                err_text = str(exc).lower()
+                if any(k in err_text for k in ("404", "not found", "model")):
+                    continue
+                raise exc
+        if last_err:
+            raise last_err
+        raise ProviderError("Gemini vision failed on all candidate models.")
 
 
 def _chat_completion(url, key, model, system_prompt, user_prompt, timeout, vendor):
@@ -492,33 +712,37 @@ def _send(req, timeout, vendor):
 def get_provider(custom_key: str = "", provider_name: str = "") -> Optional[AIProvider]:
     pname = (provider_name or "").lower().strip()
     if custom_key:
+        if custom_key.startswith("AIza") or "gemini" in pname or "google" in pname or "flash" in pname:
+            return GeminiProvider(custom_key, _value("GEMINI_MODEL") or "gemini-3.5-flash")
         if custom_key.startswith("xai-") or "grok" in pname or "xai" in pname:
             return GrokProvider(custom_key, _value("GROK_MODEL") or "grok-4.5")
         if custom_key.startswith("gsk_") or "groq" in pname:
             return GroqProvider(custom_key, _value("GROQ_MODEL") or "llama-3.2-11b-vision-preview")
-        if "gemini" in pname:
-            return GeminiProvider(custom_key, _value("GEMINI_MODEL") or "gemini-2.5-flash")
         if "anthropic" in pname or "claude" in pname:
             return AnthropicProvider(custom_key, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
         return OpenAIProvider(custom_key, _value("OPENAI_MODEL") or "gpt-4o-mini")
 
-    # 1. Prefer Grok / xAI key from secrets or environment
+    # 1. Dual key resolution: Google Gemini 3.5 Flash + Groq (with automatic token failover)
+    gemini_k = _find_gemini_key()
+    groq_k = _find_groq_key()
+
+    active_list = []
+    if gemini_k:
+        active_list.append(GeminiProvider(gemini_k, _value("GEMINI_MODEL") or "gemini-3.5-flash"))
+    if groq_k:
+        active_list.append(GroqProvider(groq_k, _value("GROQ_MODEL") or "openai/gpt-oss-120b"))
+
+    if len(active_list) > 1:
+        return FallbackProvider(active_list)
+    if len(active_list) == 1:
+        return active_list[0]
+
+    # 2. Check Grok / xAI key
     grok_k = _find_grok_key()
     if grok_k:
         return GrokProvider(grok_k, _value("GROK_MODEL") or "grok-4.5")
 
-    # 2. Check Groq key (if key starts with xai-, resolve as GrokProvider)
-    groq_k = _find_groq_key()
-    if groq_k:
-        if groq_k.startswith("xai-"):
-            return GrokProvider(groq_k, _value("GROK_MODEL") or "grok-4.5")
-        return GroqProvider(groq_k, _value("GROQ_MODEL") or "openai/gpt-oss-120b")
-
     # 3. Fallbacks
-    k = _value("GEMINI_API_KEY")
-    if k:
-        return GeminiProvider(k, _value("GEMINI_MODEL") or "gemini-2.5-flash")
-
     k = _value("ANTHROPIC_API_KEY")
     if k:
         return AnthropicProvider(k, _value("ANTHROPIC_MODEL") or "claude-sonnet-4-6")
@@ -535,7 +759,7 @@ def read_strategy_image(image_bytes: bytes, mime_type: str = "image/png", custom
     provider = get_provider(custom_key=custom_key, provider_name=provider_name)
     if not provider:
         raise ProviderError(
-            "No Grok AI API key found in secrets or environment. Please add GROK_API_KEY (or XAI_API_KEY / GROQ_API_KEY) in Streamlit secrets."
+            "No Google Gemini or Groq API key found. Please add your key to secret.yml (e.g. GEMINI_API_KEY: 'AIza...' or GROQ_API_KEY: 'gsk_...'), Streamlit secrets, or environment variables."
         )
 
     system_prompt = (

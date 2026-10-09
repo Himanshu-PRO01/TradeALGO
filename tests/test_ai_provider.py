@@ -3,10 +3,80 @@ import os
 
 import pytest
 
-from algobot.ai_provider import GrokProvider, GroqProvider, ProviderError, _find_grok_key, get_provider
+from algobot.ai_provider import (
+    FallbackProvider,
+    GeminiProvider,
+    GrokProvider,
+    GroqProvider,
+    ProviderError,
+    _find_gemini_key,
+    _find_grok_key,
+    _find_groq_key,
+    get_provider,
+)
+
+
+def test_gemini_is_preferred_when_configured(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "AIza-test-gemini-key")
+    monkeypatch.delenv("GROK_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    provider = get_provider()
+
+    assert isinstance(provider, GeminiProvider)
+    assert provider.model == "gemini-3.5-flash"
+    assert provider.key == "AIza-test-gemini-key"
+
+
+def test_dual_provider_fallback_when_both_configured(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "AIza-test-gemini-key")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test-groq-key")
+    monkeypatch.delenv("GROK_API_KEY", raising=False)
+
+    provider = get_provider()
+    assert isinstance(provider, FallbackProvider)
+    assert len(provider.providers) == 2
+    assert isinstance(provider.providers[0], GeminiProvider)
+    assert isinstance(provider.providers[1], GroqProvider)
+
+    # Test automatic failover when Gemini runs out of tokens
+    def gemini_fail(*args, **kwargs):
+        raise ProviderError("Gemini out of tokens: HTTP 429 quota exhausted.")
+
+    def groq_ok(*args, **kwargs):
+        return "```yaml\nindicators: []\n```\nGroq strategy rules."
+
+    monkeypatch.setattr(provider.providers[0], "generate_vision", gemini_fail)
+    monkeypatch.setattr(provider.providers[1], "generate_vision", groq_ok)
+
+    result = provider.generate_vision("system", "user", b"image")
+    assert "Groq strategy rules" in result
+
+
+def test_find_gemini_key_discovers_from_secret_yml(tmp_path, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    secret_file = tmp_path / "secret.yml"
+    secret_file.write_text("GEMINI_API_KEY: 'AIzaSecretYamlKey'\n")
+
+    monkeypatch.chdir(tmp_path)
+    assert _find_gemini_key() == "AIzaSecretYamlKey"
+
+
+def test_find_groq_key_discovers_from_secret_yml(tmp_path, monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    secret_file = tmp_path / "secret.yml"
+    secret_file.write_text("GROQ_API_KEY: 'gsk_SecretYamlGroqKey'\n")
+
+    monkeypatch.chdir(tmp_path)
+    assert _find_groq_key() == "gsk_SecretYamlGroqKey"
 
 
 def test_grok_is_preferred_when_configured(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.setenv("GROK_API_KEY", "xai-test-grok-key")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -44,6 +114,8 @@ def test_grok_provider_does_not_put_key_in_provider_errors(monkeypatch):
 
 
 def test_groq_is_preferred_when_configured(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GROK_API_KEY", raising=False)
     monkeypatch.delenv("XAI_API_KEY", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "test-groq-key")
@@ -59,6 +131,8 @@ def test_groq_is_preferred_when_configured(monkeypatch):
 
 
 def test_groq_uses_default_model(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GROK_API_KEY", raising=False)
     monkeypatch.delenv("XAI_API_KEY", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "test-groq-key")

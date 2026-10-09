@@ -10,6 +10,12 @@ __pycache__/
 
 feedback.csv
 .streamlit/secrets.toml
+*secret*.yml
+*secret*.yaml
+secret.yml
+secret.yaml
+secrets.yml
+secrets.yaml
 
 # Screenshots saved by scripts/check_live_site.py
 site-check-artifacts/
