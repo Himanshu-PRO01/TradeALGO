@@ -19,3 +19,8 @@ secrets.yaml
 
 # Screenshots saved by scripts/check_live_site.py
 site-check-artifacts/
+
+# Graphify local environment state and cache
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/cache/
